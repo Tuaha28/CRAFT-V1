@@ -1,0 +1,27 @@
+.schedule-view-switch {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.gantt-host {
+  --wx-gantt-task-color: #6d5bd0;
+  --wx-gantt-task-font-color: #fff;
+  --wx-gantt-task-border: 1px solid #5543bc;
+  --wx-gantt-summary-color: #dce7ef;
+  --wx-gantt-summary-font-color: #21405c;
+  --wx-gantt-summary-border: 1px solid #b8ccdc;
+}
+
+.gantt-host .wx-task[data-task-id^=":candidate-"] {
+  background-color: #6d5bd0;
+  color: #fff;
+  border: 1px solid #5543bc;
+}
+
+.gantt-host .wx-task[data-task-id^=":active-before-"] {
+  background-color: #eef4fc;
+  color: #1b578f;
+  border: 2px dashed #2374b9;
+  opacity: .85;
+}

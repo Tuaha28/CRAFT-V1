@@ -1,0 +1,41 @@
+# Core Data & DB
+pandas
+numpy
+SQLAlchemy
+PyMySQL          # SQLAlchemy driver for the mysql+pymysql:// URL in utils/config.py
+python-dotenv
+
+# AI & Graph
+torch
+torch-geometric
+networkx
+psutil            # per-epoch RSS logging in models/train.py -- memory-leak diagnostic, see chat
+
+# Genetic Algorithm
+deap
+
+# CP-SAT scheduling prototype (CP_SAT_PROPOSAL.md, scratch/cp_sat_*.py) --
+# scoping/evaluation only as of this addition, not wired into the production
+# pipeline
+ortools
+
+# Evaluation metrics (models/evaluate.py)
+scikit-learn
+
+# Hyperparameter search (scratch/optuna_completion_priority.py)
+optuna
+
+# Standing evaluation report (reporting/evaluation_report.py)
+matplotlib
+
+# Test dashboard (frontend/dashboard.py)
+streamlit
+
+# Synthetic data generation (data_generation/seed_database_fixed.py)
+Faker
+mysql-connector-python   # the seeder uses this directly, not SQLAlchemy
+
+# NOTE: fastapi and uvicorn were listed here but are not imported anywhere in
+# the project -- api/main.py is still an empty placeholder. Removed so the
+# file describes what the code actually needs. Add them back alongside the
+# API when it is built.

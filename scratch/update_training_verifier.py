@@ -1,0 +1,9 @@
+﻿from pathlib import Path
+p=Path('scratch/verify_training_run.py'); s=p.read_text(encoding='utf-8')
+s=s.replace("EXPECTED_EPOCHS = int(os.environ.get('GNN_EPOCHS', 150))", "EXPECTED_EPOCHS = int(os.environ.get('GNN_EPOCHS', 150))\nPROFILE = os.path.join(ROOT, 'outputs', 'integration_audit', 'graph_profile_new_staging.json')\nexpected_profile = json.load(open(PROFILE, encoding='utf-8'))\nEXPECTED_NODES = expected_profile['nodes']['operation']\nEXPECTED_TRAIN = expected_profile['split']['train_operations']\nEXPECTED_VAL = expected_profile['split']['validation_operations']\nEXPECTED_GRAPH = expected_profile['graph_fingerprint']")
+s=s.replace("chk('num_operation_nodes == 7809', m.get('num_operation_nodes') == 7809, str(m.get('num_operation_nodes')))\nchk('num_train_operations == 6236', m.get('num_train_operations') == 6236, str(m.get('num_train_operations')))\nchk('num_val_operations == 1573', m.get('num_val_operations') == 1573, str(m.get('num_val_operations')))", "chk(f'num_operation_nodes == {EXPECTED_NODES}', m.get('num_operation_nodes') == EXPECTED_NODES, str(m.get('num_operation_nodes')))\nchk(f'num_train_operations == {EXPECTED_TRAIN}', m.get('num_train_operations') == EXPECTED_TRAIN, str(m.get('num_train_operations')))\nchk(f'num_val_operations == {EXPECTED_VAL}', m.get('num_val_operations') == EXPECTED_VAL, str(m.get('num_val_operations')))")
+old="print(f\"    graph_fingerprint  {str(m.get('graph_fingerprint'))[:24]}...  \"\n      f\"(expected 39eba3caacd579c6d31605... -- NOT a freshness signal)\")"
+new="chk('manifest graph fingerprint == accepted corrected graph',\n    m.get('graph_fingerprint') == EXPECTED_GRAPH, str(m.get('graph_fingerprint'))[:24] + '...')"
+if old not in s: raise SystemExit('graph print target not found')
+s=s.replace(old,new)
+p.write_text(s,encoding='utf-8')

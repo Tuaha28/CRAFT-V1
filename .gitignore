@@ -1,0 +1,82 @@
+# Secrets -- never commit. See .env.example for the template.
+.env
+
+# Virtual environment
+venv/
+.venv/
+.venv*/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Generated artefacts. All of these are reproducible from the pipeline
+# (see README.md); committing them just makes diffs unreadable.
+logs/*.log
+outputs/*.json
+outputs/checkpoints/*.pth
+data/graphs/
+data/processed/
+data/raw/
+data/vector_store/
+
+# Database dumps (mysqldump output). Large, and they contain real data.
+backups/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Private recovery backup exclusions. Existing history requires separate review.
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.sql
+*.dump
+node_modules/
+dist/
+build/
+coverage/
+.coverage
+.mypy_cache/
+.ruff_cache/
+*.log
+playwright-report/
+test-results/
+.backup_staging/
+.backup_verification/
+.claude/
+.codex/
+.aws/
+scratch/backup_security_audit_*.json
+# Factory captures, schedules and binary research evidence are backed up separately.
+outputs/
+data/raw/
+data/processed/
+data/graphs/
+web_v1/audits/**/*.json
+web_v1/audits/**/*.csv
+web_v1/audits/**/*.png
+web_v1/audits/**/*.zip
+web_v1/audits/**/*.html
+web_v1/audits/**/pytest_temp/
+*.xlsx
+*.xls
+*.pth
+*.pt
+*.pkl
+*.parquet
