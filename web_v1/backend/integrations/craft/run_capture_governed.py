@@ -15,19 +15,33 @@ from crafter.production.checkpoints import CONTRACT as CHECKPOINT_CONTRACT
 
 def prepare(factory_id, target):
     source, readiness, normalized, source_hash = runner._source(factory_id)
-    routes = runner._select_routes(runner._eligible_order_routes(source, normalized), str(target))
+    eligible_routes = runner._eligible_order_routes(source, normalized)
+    available = sum(len(route) for _release, _order, route, _order_row in eligible_routes)
+    requested = int(target)
+    if requested < 1 or available < 1:
+        raise ValueError(f'CAPTURE_NO_SOURCE_ADMISSIBLE_OPERATIONS:F{factory_id}')
+    routes = runner._select_routes(eligible_routes, str(min(requested, available)))
     state = runner._prepare(factory_id, source, readiness, normalized, source_hash, routes)
     keys = list(state['keys'])
     ledger, executions, orders, dispositions, reasons = {}, {}, {}, {}, {}
+    eligible_keys = {row['operation_key'] for _, _, route, _ in eligible_routes for row in route}
     for op in normalized['operations']:
         key, q = op['operation_key'], op['quantity']
         ledger[key] = dict(required=int(q['target']), completed=int(q['completed']),
                            in_flight=int(q['in_flight']), remaining=int(q['not_started']))
         executions[key], orders[key] = op['execution_state'], str(op['order_id'])
-        dispositions[key] = ('SELECTED' if key in keys else 'COMPLETED'
-                             if op['execution_state'] == 'FULLY_COMPLETED' else 'BLOCKED')
-        if dispositions[key] == 'BLOCKED':
-            reasons[key] = 'OUTSIDE_PREPARED_TEST_DOMAIN_OR_EXECUTION_EVIDENCE_MISSING'
+        if op['execution_state'] == 'FULLY_COMPLETED':
+            dispositions[key] = 'COMPLETED'
+        elif op['execution_state'] == 'PARTIALLY_EXECUTED':
+            dispositions[key] = 'EXECUTING'
+        elif key in keys:
+            dispositions[key] = 'SELECTED'
+        elif key in eligible_keys:
+            dispositions[key] = 'DEFERRED'
+            reasons[key] = 'SOURCE_ADMISSIBLE_OUTSIDE_CURRENT_PREPARED_CYCLE'
+        else:
+            dispositions[key] = 'BLOCKED'
+            reasons[key] = 'SOURCE_ROUTE_WIP_OR_EXECUTION_BOUNDARY_NOT_ADMITTED'
     machines = {str(m['asset_id']): int(m['line_id']) for m in source['resources']['machines']}
     horizon = state['problem'].horizon_seconds
     holds = [{'factory_id': factory_id, 'operation_key': h['operation_key'],

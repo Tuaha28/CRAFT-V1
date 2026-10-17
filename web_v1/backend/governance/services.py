@@ -54,6 +54,13 @@ def implementation_hash():
     files += ['web_v1/backend/integrations/craft/capture_test_state.py',
               'web_v1/backend/integrations/craft/run_capture_governed.py',
               'web_v1/audits/factory46_operation_schedule_v1/run_factory_test.py',
+              'web_v1/backend/integrations/craft/global_resource_state.py',
+              'web_v1/backend/integrations/craft/snapshot_adapter.py',
+              'web_v1/backend/governance/services.py',
+              'web_v1/backend/governance/views.py',
+              'web_v1/backend/governance/serializers.py',
+              'web_v1/backend/governance/urls.py',
+              'web_v1/backend/governance/management/commands/craft_worker.py',
               'crafter/production/capture_boundaries.py']
     return fingerprint({name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in files})
 
@@ -234,6 +241,58 @@ def select_test_factory1_work(user, scope_id, selected_keys):
                               entity_id=str(scope.pk), reason='Controlled pinned simulation region',
                               details={'selected_keys': selected,
                                        'resource_revision': scope.resource_revision})
+    return scope
+
+
+@transaction.atomic
+def select_test_capture_work(user, scope_id, operation_keys, *, window_size=None):
+    """Select a precedence-closed subset of one factory's pinned TEST domain."""
+    scope = ScheduleScope.objects.select_for_update().get(pk=scope_id)
+    authorize(user, scope, 'request_run')
+    if scope.environment != 'TEST_CAPTURE':
+        raise ValidationError('CAPTURE_TEST_ONLY')
+    try:
+        base = capture_test_state.base_for(scope)
+    except (ValueError, KeyError, TypeError) as exc:
+        raise ValidationError(str(exc)) from exc
+    selected = list(operation_keys)
+    admitted = set(base['selected_keys'])
+    active_rows = scope.active_version.operations if scope.active_version else []
+    approved = {row['operation_key'] for row in active_rows}
+    if (not selected or len(selected) != len(set(selected)) or len(selected) > 200 or
+            not set(selected) <= admitted or set(selected) & approved):
+        raise ValidationError('CAPTURE_SELECTION_INVALID_OR_APPROVED')
+    ready = approved | set(base.get('completed_keys', ())) | set(selected)
+    for key in selected:
+        edge = base.get('route_edges', {}).get(key)
+        if edge is None:
+            raise ValidationError('CAPTURE_ROUTE_BOUNDARY_MISSING')
+        predecessor = edge.get('predecessor')
+        if predecessor and predecessor not in ready:
+            raise ValidationError(f'CAPTURE_PREDECESSOR_NOT_APPROVED:{key}:{predecessor}')
+    if window_size is None:
+        window_size = min(5, len(selected))
+    from crafter.production.cycles import policy as cycle_policy
+    try:
+        cycle_policy({'cycle_target': len(selected), 'window_size': window_size,
+                      'adaptive_retries': True})
+    except ValueError as exc:
+        raise ValidationError(str(exc)) from exc
+    scope.resource_state = {**scope.resource_state, 'selected_keys': selected,
+                            'cycle_target': len(selected), 'window_size': window_size,
+                            'adaptive_retries': True}
+    scope.resource_revision += 1
+    scope.source_hash = fingerprint(request_recipe(scope))
+    scope.save(update_fields=['resource_state', 'resource_revision', 'source_hash'])
+    AuditEvent.objects.create(scope=scope, actor=user, action='CAPTURE_TEST_SELECTION',
+                              entity_id=str(scope.pk),
+                              reason='Manager-authorized bounded captured TEST selection',
+                              details={'factory_id': scope.factory_external_id,
+                                       'selected_keys': selected,
+                                       'cycle_target': len(selected), 'window_size': window_size,
+                                       'resource_revision': scope.resource_revision,
+                                       'source_hash': scope.source_hash,
+                                       'classification': 'SIMULATED_TEST'})
     return scope
 
 

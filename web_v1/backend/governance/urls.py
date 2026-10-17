@@ -5,6 +5,7 @@ urlpatterns = [
     path('api/v1/governance/session', views.session),
     path('api/v1/governance/login', views.sign_in),
     path('api/v1/governance/scopes', views.Scopes.as_view()),
+    path('api/v1/governance/scopes/<int:scope_id>/capture-selection', views.select_capture_work),
     path('api/v1/governance/scopes/<int:scope_id>/priority', views.change_priority),
     path('api/v1/governance/events', views.Events.as_view()),
     path('api/v1/governance/runs', views.Runs.as_view()),

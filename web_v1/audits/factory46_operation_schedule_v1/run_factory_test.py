@@ -165,9 +165,12 @@ def _eligible_order_routes(source, snapshot):
 def _select_routes(routes, target):
     if target == "all":
         return [(rows, order) for _release, _oid, rows, order in routes]
-    count = int(target) if str(target) in {"10", "25", "50", "100", "200"} else None
-    if count is None:
-        raise ValueError("TARGET_MUST_BE_10_25_50_100_200_OR_ALL")
+    try:
+        count = int(target)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("TARGET_MUST_BE_POSITIVE_INTEGER_OR_ALL") from exc
+    if count <= 0:
+        raise ValueError("TARGET_MUST_BE_POSITIVE_INTEGER_OR_ALL")
     # Breadth-first route prefixes exercise multiple real orders before deep
     # serial chains dominate the first gate. Prefix closure is preserved for
     # every order; no operation is skipped to reach a numeric target.

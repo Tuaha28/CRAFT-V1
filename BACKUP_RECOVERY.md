@@ -54,3 +54,16 @@ correctness, six-factory validation, or industrial readiness.
 Backup verification covers remote privacy, Git object integrity, fresh clone,
 and file-hash parity. Pattern-based secret scanning is defense in depth, not a
 formal guarantee against every possible encoded secret or confidential datum.
+
+## Refresh 2026-10-17
+
+Refreshed from local commit `2645fc0` (branch `craft-v1-consolidation`), the
+pre-consolidation snapshot of CRAFT V1. This version adds the six-factory
+TEST_CAPTURE governance path (`run_capture_governed.py`, `capture_test_state.py`,
+`six_factory_governed_v1/run_progression.py`) and the ledger through 2026-10-17.
+Known open defects at this point: Factory 2/5 worker crash in
+`route_ready_probes` on empty resource configurations, and independent
+machine/worker sampling that can miss every allowed pair. `handout.md` is
+excluded from this backup because it contains a live credential. Flagged
+secret-scanner lines were reviewed as false positives and are listed in
+`SOURCE_BACKUP_MANIFEST.json`.

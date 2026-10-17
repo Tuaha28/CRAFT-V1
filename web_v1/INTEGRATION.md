@@ -185,6 +185,51 @@ The pinned Factory-1 simulation can be rechecked separately:
 venv\Scripts\python.exe web_v1/audits/global_resource_state_stage_a/run_factory1.py
 ```
 
+### Captured-source TEST scopes for Factories 1-6
+
+`TEST_CAPTURE` is a separate, application-owned simulated scope for each
+factory. The scope initializer verifies the immutable capture hashes and creates
+a source-admissible route-prefix domain capped at 200 identities. It does not
+read MySQL, does not modify the factory captures, and does not certify real
+crew-size rules. The execution contract explicitly marks its one-worker,
+one-machine, setup, and calendar rules as TEST assumptions. All captured
+completed work remains excluded; partial/WIP routes remain blocked or held by
+the conservative capture policy.
+
+After migrations, prepare or preserve the six isolated application TEST scopes:
+
+```powershell
+$env:DJANGO_SETTINGS_MODULE = 'config.settings_integration'
+$env:CRAFT_WORKER_PYTHON = (Resolve-Path 'venv\Scripts\python.exe').Path
+web_v1\backend\.venv\Scripts\python.exe web_v1/backend/manage.py migrate
+web_v1\backend\.venv\Scripts\python.exe web_v1/backend/manage.py init_craft_capture_scopes --domain-limit 200 --initial-target 25
+```
+
+Managers with `governance.request_run` and `FactoryAccess` may select up to 200
+prepared route-prefix operations via
+`POST /api/v1/governance/scopes/{scope_id}/capture-selection` with
+`{"operation_keys":[...],"window_size":25}`. The endpoint rejects identities
+outside the pinned prepared domain, already-approved operations, missing route
+predecessors, and invalid window limits. The run request then seals source,
+execution contracts, fixed captured holds, active TEST assignments, and the
+selection into the global resource snapshot. Worker/checkpoint/independent
+validation and manager TEST promotion use the ordinary governance gates.
+Tentative checkpoints are not approvals and production activation remains off.
+
+The progressive controlled harness uses a disposable SQLite file and the real
+background worker/CRAFT subprocess. It stops after a computational limit and
+preserves the active TEST version:
+
+```powershell
+web_v1\backend\.venv\Scripts\python.exe web_v1/audits/six_factory_governed_v1/run_progression.py --output web_v1/audits/six_factory_governed_v1/progression_<unique>.json --targets 25 50 100 200
+```
+
+Factories 4 and 6 have fewer than 100 source-admissible all-unstarted route
+operations in this pinned capture, so larger targets are explicitly reported
+as outside their prepared domain rather than padded. A 200-operation prepared
+cycle is not a complete-factory schedule; operations beyond that bounded domain
+remain deferred/blocked for later cycles and source evidence.
+
 It writes only into `audits/global_resource_state_stage_a/`. Its snapshot
 binds all 35 **hypothetical** fixed holds and the 25 selected identities; the
 independent assembled validator still supplies exact source-calendar, route,

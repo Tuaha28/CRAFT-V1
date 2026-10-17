@@ -46,6 +46,12 @@ class PriorityRequestSerializer(serializers.Serializer):
     expected_source_hash = serializers.RegexField(regex=r'^[0-9a-f]{64}$')
 
 
+class CaptureSelectionSerializer(serializers.Serializer):
+    operation_keys = serializers.ListField(child=serializers.CharField(max_length=80),
+                                           min_length=1, max_length=200)
+    window_size = serializers.IntegerField(min_value=1, max_value=25, required=False)
+
+
 class AuditEventSerializer(serializers.ModelSerializer):
     actor = serializers.SerializerMethodField()
 

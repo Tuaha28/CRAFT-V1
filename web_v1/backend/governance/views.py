@@ -9,7 +9,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import AuditEvent, CraftRun, ScheduleScope, ScheduleVersion
 from .serializers import (AuditEventSerializer, CandidateSerializer, DecisionSerializer,
-                          PriorityRequestSerializer, RunRequestSerializer, RunSerializer, ScopeSerializer)
+                          CaptureSelectionSerializer, PriorityRequestSerializer, RunRequestSerializer,
+                          RunSerializer, ScopeSerializer)
 from . import services
 
 
@@ -52,6 +53,20 @@ class Scopes(generics.ListAPIView):
     serializer_class = ScopeSerializer
     def get_queryset(self):
         return allowed_scopes(self.request.user).order_by('id')
+
+
+@api_view(['POST'])
+def select_capture_work(request, scope_id):
+    if not ScheduleScope.objects.filter(pk=scope_id, pk__in=allowed_scopes(request.user).values('pk')).exists():
+        return Response({'error': 'SCOPE_NOT_FOUND'}, status=404)
+    data = CaptureSelectionSerializer(data=request.data)
+    data.is_valid(raise_exception=True)
+    try:
+        scope = services.select_test_capture_work(request.user, scope_id,
+            data.validated_data['operation_keys'], window_size=data.validated_data.get('window_size'))
+    except ValidationError as exc:
+        return Response({'error': exc.messages}, status=409)
+    return Response(ScopeSerializer(scope).data)
 
 
 @api_view(['POST'])

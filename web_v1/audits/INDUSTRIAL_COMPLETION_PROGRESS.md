@@ -209,3 +209,90 @@ and report targets exceeding eligible source-supported TEST work explicitly.
 No scheduler, database or benchmark artifacts changed during this handoff
 inspection. The only change is this progress entry. Previous 98-test milestone
 remains historical evidence, not evidence for the unimplemented six-factory path.
+
+## 2026-10-16 six-factory capture-governance implementation
+
+Implemented a separate `TEST_CAPTURE` governance path for captured Factories
+1-6 without changing the existing `TEST_FACTORY1` contract. Scope preparation
+runs through the scheduler virtualenv, verifies raw/normalized capture
+provenance, and stores a bounded source-admissible domain of at most 200 route
+operations per factory. A manager-authenticated capture-selection endpoint
+checks selection membership, non-duplication, unapproved identity, and source
+predecessor readiness; request snapshots bind the active TEST version, captured
+holds, source, scenario, execution contracts and resource revision. One-worker
+and one-machine rules remain explicit `TEST_ASSUMPTION` semantics only.
+Factories 4 and 6 expose 63 and 56 source-admissible unstarted route identities
+in this capture; targets above those limits are not padded.
+
+Focused evidence: six-factory source snapshot/governance admission PASS (all six
+factories, prepared domain capped at 200, full operation ledgers: 2,879 / 2,124
+/ 1,329 / 94 / 2,288 / 85; the test method took 309.459 s); selection rejection
+for missing route predecessor and cross-factory identity PASS; scope initializer
+idempotency PASS; Django migration-state check PASS. An initial test expectation
+used Factory 4's breadth-first first 25 (single-operation order prefixes) and
+was corrected to use a longer Factory 4 route. This did not change scheduler
+constraints.
+
+Actual TEST integration evidence: Factory 4 cumulative target 25 PASS, seven
+accepted windows, exact replay PASS, physical VALID, scope SCOPE_VALID,
+assembled PASS, global conflict PASS, application-owned manager TEST approval;
+wall 123.958 s, sampled peak RSS 418.12 MiB. Factory 6 cumulative target 25
+was PARTIAL: 20 accepted, 11 bounded worker invocations, then
+COMPUTATIONAL_LIMIT; sampled peak RSS 408.24 MiB, cycle wall 484.091 s. No
+physical infeasibility was proven and no candidate was promoted. The first
+progression harness persisted this result but exited with a Windows temporary
+SQLite cleanup error; cleanup now closes Django connections, per-window attempt
+details are retained, and initialization is restricted to requested factories.
+The output artifact is
+`six_factory_governed_v1/small_factories_20261016_r2.json`.
+
+Existing Factory 1 regression rerun after the governance changes: the actual
+12+13 approved-outside worker-to-manager integration passed (1 test, 117.437 s;
+two candidates VALIDATED). New six-factory cumulative 25/50/100/200 governed
+progression has not yet run. Current actual evidence is only F4/6 target 25;
+do not infer 50/100/200 or complete-factory readiness. A full-factory cycle
+domain remains capped at 200 per TEST scope; future cycles require a safe domain
+rebasing strategy. Production remains disabled, legacy MySQL was not opened,
+and all capture scheduling remains explicitly simulated.
+
+Follow-up verification: `governance.test_capture_governed` passed all 3 tests
+(304.336 s) under `config.settings_integration`; all six TEST_CAPTURE snapshots,
+source/predecessor selection rejection, and scope initializer idempotency were
+verified. Changed Python files pass `py_compile`. Direct invocations with the
+default Django profile or without its test-only secret failed at test discovery;
+the successful run used integration settings and an isolated Django test DB.
+
+Next execution: run the governed 25-operation progression across all six
+factories in a new versioned artifact, retaining each factory's independent
+scope and stopping on bounded computational limits. The six-factory target-25
+run is not yet started; later 50/100/200 targets are gated on each factory's
+accepted and independently validated prior target. Do not treat target values
+above a factory's source-admissible prepared route domain (F4=63, F6=56 in this
+capture) as schedulable or pad them with unsupported identities.
+
+Update: all-factory target-25 progression is now running in a new disposable
+application SQLite database through the actual Django worker and scheduler
+interpreter. Intended evidence path:
+`six_factory_governed_v1/all_factories_25_20261016_r2.json`. The earlier launch
+with the scheduler virtualenv failed immediately because that interpreter does
+not include Django; it produced no database or schedule output. The active run
+uses the backend venv for Django and the configured scheduler venv for CRAFT.
+
+All-factory target-25 run completed (total 3,122.605 s). Factories 3 and 4
+VALIDATED and TEST_PROMOTED 25/25: respectively 13 windows / 472.457 s / peak
+736.72 MiB, and 7 windows / 125.524 s / peak 417.62 MiB. Both had replay PASS,
+physical VALID, scope SCOPE_VALID, assembled PASS and global conflict PASS.
+Factory 1 accepted 21 of 25 windows/operations then COMPUTATIONAL_LIMIT (25
+invocations, 1,856.002 s, peak 1,196.59 MiB); no assembled candidate or TEST
+promotion. Rejected windows report `RESOURCE_DOMAIN_EXPANSION_LIMIT`, incomplete
+domains, and `physical_infeasibility_proven=false`. Factory 6 accepted 20/25,
+then COMPUTATIONAL_LIMIT (8 window attempts / 11 invocations, 347.559 s, peak
+406.59 MiB); unresolved predecessor tail is explicitly deferred and no
+promotion occurred. Neither is a physical-infeasibility finding. Factories 2
+and 5 each ended `WORKER_PROCESS_FAILED` at their first invocation (51.614 s
+and 59.995 s); no candidate was promoted. The progression harness did not
+retain the worker's detailed stderr/exception for these two failures, so their
+root cause remains UNKNOWN and must be captured before retrying. No test target
+above 25 was attempted. Full evidence is the versioned JSON artifact named
+above. Production activation remains DISABLED and the legacy database was not
+accessed.

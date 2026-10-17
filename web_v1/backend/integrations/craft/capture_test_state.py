@@ -1,13 +1,41 @@
 """Application-owned approvals over immutable, explicitly hypothetical captures."""
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import tempfile
 from .global_resource_state import assignment_from_row, digest, seal, verify
 
 ROOT = Path(__file__).resolve().parents[4]
 CAPTURE = ROOT / 'web_v1/audits/factory_source_integration_v1/capture_20261012T223420800478Z'
 CONTRACT = 'CAPTURE_GOVERNED_TEST_V1'
 SOURCE = 'PINNED_CAPTURE_TEST_ONLY_NOT_PRODUCTION'
+
+
+def build_base(factory_id, *, domain_limit=200):
+    """Prepare a bounded domain in the scheduler interpreter, never in Django."""
+    if type(factory_id) is not int or factory_id not in range(1, 7):
+        raise ValueError('CAPTURE_FACTORY_NOT_SUPPORTED')
+    if type(domain_limit) is not int or not 1 <= domain_limit <= 200:
+        raise ValueError('CAPTURE_DOMAIN_LIMIT')
+    root = Path(__file__).resolve().parents[4]
+    interpreter = Path(os.environ.get('CRAFT_WORKER_PYTHON', root / 'venv/Scripts/python.exe'))
+    script = root / 'web_v1/backend/integrations/craft/run_capture_governed.py'
+    if not interpreter.is_file():
+        raise ValueError('CAPTURE_SCHEDULER_INTERPRETER_MISSING')
+    with tempfile.TemporaryDirectory(prefix='craft-capture-base-') as directory:
+        destination = Path(directory) / 'capture_base.json'
+        try:
+            completed = subprocess.run(
+                [str(interpreter), str(script), '--prepare', str(factory_id),
+                 str(domain_limit), str(destination)], cwd=root, capture_output=True,
+                text=True, timeout=180, check=False)
+        except subprocess.TimeoutExpired as exc:
+            raise ValueError('CAPTURE_BASE_PREPARATION_TIMEOUT') from exc
+        if completed.returncode or not destination.is_file():
+            raise ValueError(f'CAPTURE_BASE_PREPARATION_FAILED:{completed.returncode}')
+        return json.loads(destination.read_text(encoding='utf-8'))
 
 
 def base_for(scope):
@@ -23,6 +51,15 @@ def base_for(scope):
     manifest = json.loads((CAPTURE / 'manifest.json').read_text())
     if actual != base['source_hash'] or actual != manifest[path.name]:
         raise ValueError('CAPTURE_SOURCE_CHANGED')
+    readiness_path = CAPTURE / f'factory{scope.factory_external_id}_readiness.json'
+    readiness = json.loads(readiness_path.read_text(encoding='utf-8'))
+    if (base.get('calendar_revision') != readiness.get('normalized_snapshot_hash') or
+            base.get('eligibility_revision') != readiness.get('normalized_snapshot_hash')):
+        raise ValueError('CAPTURE_NORMALIZED_REVISION_CHANGED')
+    if (not base.get('selected_keys') or len(base['selected_keys']) > 200 or
+            not base.get('execution_contracts') or
+            set(base['execution_contracts']) != set(base['selected_keys'])):
+        raise ValueError('CAPTURE_PREPARED_DOMAIN_INVALID')
     return base
 
 
@@ -31,10 +68,20 @@ def recipe(scope):
     keys = scope.resource_state.get('selected_keys', ())
     if not keys or len(keys) != len(set(keys)) or not set(keys) <= set(base['selected_keys']):
         raise ValueError('CAPTURE_SELECTION_OUTSIDE_PREPARED_DOMAIN')
+    cycle_target = scope.resource_state.get('cycle_target', len(keys))
+    window_size = scope.resource_state.get('window_size', 5)
+    adaptive_retries = scope.resource_state.get('adaptive_retries', True)
+    if type(cycle_target) is not int or cycle_target != len(keys):
+        raise ValueError('CAPTURE_CYCLE_TARGET_MISMATCH')
+    if type(adaptive_retries) is not bool:
+        raise ValueError('CAPTURE_ADAPTIVE_POLICY_INVALID')
+    from crafter.production.cycles import policy as cycle_policy
+    cycle_policy({'cycle_target': cycle_target, 'window_size': window_size})
     return {'contract': CONTRACT, 'source': SOURCE, 'factory_id': scope.factory_external_id,
             'source_fingerprint': base['source_hash'], 'scenario_hash': base['scenario_hash'],
             'selected_keys': list(keys), 'capture_base_fingerprint': base['fingerprint'],
-            'cycle_target': 200, 'window_size': 5, 'adaptive_retries': True}
+            'cycle_target': cycle_target, 'window_size': window_size,
+            'adaptive_retries': adaptive_retries}
 
 
 def export_state(scope, keys):
