@@ -51,6 +51,16 @@ def _signature(config):
 
 
 def _anchor(state,key,configs):
+    # Improvement moves (CRAFT V2) re-solve operations of a valid schedule:
+    # anchor on that schedule's own configuration so the first stage and the
+    # hints start from a known-legal incumbent.
+    wanted=(state.get('_incumbent_configs') or {}).get(key)
+    if wanted is not None:
+        signature=(int(wanted[0]),int(wanted[1]),tuple(int(x) for x in wanted[2]),
+                   tuple(str(x) for x in wanted[3]))
+        exact=next((c for c in configs if _signature(c)==signature),None)
+        if exact is not None:
+            return exact,{'status':'EXACT_MOVE_INCUMBENT_CONFIGURATION','signature':signature}
     # A first INITIAL_PLAN has no prior provisional schedule.  Existing
     # database rows may describe historical/completed state, but they must not
     # become a hidden stability reference or steer the candidate stages.
@@ -85,10 +95,15 @@ def _diverse(configs,anchor,limit):
 def _restrict(state,regimes,selected,window_days):
     from .engine import _routing_aware_earliest
     bounds=_routing_aware_earliest(state,regimes); out={}
+    anchors=state.get('_incumbent_starts') or {}
     for key in sorted(state['keys']):
         allowed=set(selected[key]); lower=int(bounds['earliest_start'].get(key,0))
         upper=int(state['problem'].horizon_seconds)
-        if window_days is not None: upper=min(upper,lower+int(window_days*86400))
+        if window_days is not None and key in anchors:
+            # Improvement move: free to start earlier, at most window_days
+            # later than the incumbent plan (a bounded neighbourhood).
+            upper=min(upper,max(lower,int(anchors[key]))+int(window_days*86400))
+        elif window_days is not None and not anchors: upper=min(upper,lower+int(window_days*86400))
         out[key]=tuple({**r,'lo':max(int(r['lo']),lower),'hi':min(int(r['hi']),upper)}
                        for r in regimes[key] if r['config'] in allowed
                        and max(int(r['lo']),lower)<=min(int(r['hi']),upper))
@@ -113,15 +128,70 @@ def _hints(state,regimes,artifact,bounds,incumbent_selected=None):
                      and int(r['lo']) <= int(preferred.get('start_seconds',wanted)) <= int(r['hi'])]
             if options:
                 wanted=int(preferred.get('start_seconds', wanted))
+            elif state.get('_incumbent_configs'):
+                same=[r for r in regimes[key] if _signature(r['config']) == signature]
+                rows.append({'operation_key':key,'incumbent_missing':
+                             'CONFIG_NOT_IN_STAGE' if not same else
+                             f"START_OUTSIDE:{int(preferred.get('start_seconds',0))}:"
+                             f"{min(int(r['lo']) for r in same)}-{max(int(r['hi']) for r in same)}"})
         if not options:
             options=[(i,r) for i,r in enumerate(regimes[key]) if int(r['lo'])<=wanted<=int(r['hi'])]
         if not options: continue
+        if preferred is not None and state.get('_incumbent_configs'):
+            # Improvement move: prefer the regime that reproduces the
+            # incumbent's own end, and hint every regime literal of this
+            # operation so the incumbent is a complete solution hint.
+            end=int(preferred.get('end_seconds',-1))
+            options.sort(key=lambda item: int(item[1]['formula'][0][0])*wanted+int(item[1]['formula'][0][1])!=end)
+            i,r=options[0]; a,b=r['formula'][0]
+            for j,lit in enumerate(artifact['reg_lit'][key]):
+                artifact['model'].AddHint(lit,1 if j==i else 0)
+            artifact['model'].AddHint(artifact['starts'][key],wanted)
+            artifact['model'].AddHint(artifact['ends'][key],int(a)*wanted+int(b))
+            rows.append({'operation_key':key,'regime_index':i,'start_seconds':wanted,'incumbent':True,
+                         'end_reproduced':int(a)*wanted+int(b)==end})
+            continue
         i,r=options[0]; a,b=r['formula'][0]
         artifact['model'].AddHint(artifact['reg_lit'][key][i],1)
         artifact['model'].AddHint(artifact['starts'][key],wanted)
         artifact['model'].AddHint(artifact['ends'][key],int(a)*wanted+int(b))
         rows.append({'operation_key':key,'regime_index':i,'start_seconds':wanted})
     return rows
+
+
+def _incumbent_core(state, artifact, hints):
+    """Diagnostic only: which incumbent placements the model rejects.
+
+    Re-solves a copy of the model with each incumbent operation's start and
+    regime as an assumption literal; an infeasible core names the operations
+    whose (validated) incumbent placement contradicts the move model. An
+    empty core means the model is infeasible regardless of the incumbent.
+    """
+    model = artifact['model'].clone()
+    model.ClearHints()
+    names = {}
+    for h in hints:
+        if not h.get('incumbent'):
+            continue
+        key = h['operation_key']
+        flag = model.NewBoolVar(f"dbg_incumbent_{key}")
+        start = model.GetIntVarFromProtoIndex(artifact['starts'][key].Index())
+        regime = model.GetBoolVarFromProtoIndex(artifact['reg_lit'][key][h['regime_index']].Index())
+        model.Add(start == int(h['start_seconds'])).OnlyEnforceIf(flag)
+        model.AddImplication(flag, regime)
+        names[flag.Index()] = key
+    model.AddAssumptions([model.GetBoolVarFromProtoIndex(i) for i in names])
+    solver = cp_model.CpSolver()
+    solver.parameters.num_search_workers = 1
+    solver.parameters.max_time_in_seconds = 20.0
+    code = solver.Solve(model)
+    core = [names[i] for i in solver.SufficientAssumptionsForInfeasibility() if i in names] \
+        if code == cp_model.INFEASIBLE else []
+    return {'status': solver.StatusName(code), 'core': core,
+            'core_details': {key: {'incumbent': next(h for h in hints if h.get('operation_key') == key),
+                                   'regimes': [{'lo': r['lo'], 'hi': r['hi']} for r in
+                                               artifact.get('regimes', {}).get(key, ())][:6]}
+                             for key in core[:6]}}
 
 
 def _solution_hints(artifact, solver):
@@ -138,11 +208,26 @@ def _solution_hints(artifact, solver):
 
 def _solver():
     solver=cp_model.CpSolver()
-    solver.parameters.num_search_workers=8
-    solver.parameters.random_seed=42
+    solver.parameters.num_search_workers=int(os.environ.get("CRAFT_SOLVER_WORKERS", "8"))
+    solver.parameters.random_seed=int(os.environ.get("CRAFT_SOLVER_SEED", "42"))
     solver.parameters.use_optimization_hints=True
     solver.parameters.cp_model_presolve=True
+    if os.environ.get("CRAFT_DETERMINISTIC") == "1":
+        # Reproducible parallel search: results depend on the work done, not
+        # on how fast this computer is.
+        solver.parameters.interleave_search=True
     return solver
+
+
+def _set_limit(solver, seconds):
+    """Stage limit: wall seconds, or deterministic work units (opt-in)."""
+    seconds=float(seconds)
+    if os.environ.get("CRAFT_DETERMINISTIC") == "1":
+        solver.parameters.max_deterministic_time=seconds
+        # Wall cap only as a safety net on slow machines.
+        solver.parameters.max_time_in_seconds=seconds*float(os.environ.get("CRAFT_WALL_CAP_FACTOR", "8"))
+    else:
+        solver.parameters.max_time_in_seconds=seconds
 
 
 def _adaptive_cp_budget_ladder(initial_budget):
@@ -181,7 +266,7 @@ def _solve_stage_with_adaptive_budget(artifact, initial_budget, *, checkpoint_ar
     winning_row = None
     for attempt_index, budget in enumerate(_adaptive_cp_budget_ladder(initial_budget), 1):
         solver = _solver()
-        solver.parameters.max_time_in_seconds = float(budget)
+        _set_limit(solver, budget)
         if os.environ.get("CRAFT_DIAGNOSTIC_CHECKPOINT_DIR"):
             solver.parameters.log_search_progress = True
         checkpoint_metadata = None
@@ -370,8 +455,7 @@ def solve_lexicographic_objectives(state, artifact, feasible_solver, *, manager_
                         'deadline_exhausted':True})
             partial=True; stages.append(row); break
         model.ClearObjective(); model.Minimize(expression)
-        solver=_solver(); solver.parameters.max_time_in_seconds=float(
-            min(float(time_limit_seconds), remaining))
+        solver=_solver(); _set_limit(solver, min(float(time_limit_seconds), remaining))
         started=time.perf_counter(); code=solver.Solve(model); elapsed=time.perf_counter()-started
         row.update({'status':solver.StatusName(code),'runtime_seconds':elapsed,
                     'solver_wall_seconds':solver.WallTime(),'best_bound':float(solver.BestObjectiveBound()),
@@ -623,6 +707,9 @@ def run_canonical_schedule(prepared, *, plan=((1,None,30),(2,7,180),(3,7,240),(9
         row={'stage':stage,'config_limit':limit,'window_days':window,
              'resource_configurations':sum(len(x) for x in chosen.values()),
              'regimes':sum(len(x) for x in stage_regimes.values()),'hint_count':len(hints),
+             'incumbent_hints':sum(1 for h in hints if h.get('incumbent')),
+             'incumbent_end_reproduced':sum(1 for h in hints if h.get('end_reproduced')),
+             'incumbent_missing':[h for h in hints if h.get('incumbent_missing')][:5],
              'model_validation':'PASS','status':final_attempt.get('status', 'UNKNOWN'),
              'solve_seconds':solver_wall_time,
              'deadline_remaining_before_stage':before_stage,
@@ -646,6 +733,12 @@ def run_canonical_schedule(prepared, *, plan=((1,None,30),(2,7,180),(3,7,240),(9
              'time_scope':'UNRESTRICTED_EXACT_REGIMES' if use_unrestricted else 'BOUNDED',
              'diagnostic_checkpoint': row_checkpoint,
              **artifact['size']}
+        if (code == cp_model.INFEASIBLE and os.environ.get("CRAFT_DEBUG_INCUMBENT_CORE") == "1"
+                and any(h.get('incumbent') for h in hints)):
+            try:
+                row['incumbent_core'] = _incumbent_core(state, artifact, hints)
+            except Exception as exc:  # diagnostic must never break a run
+                row['incumbent_core'] = {'status': 'DIAGNOSTIC_FAILED', 'error': repr(exc)}
         stages.append(row)
         if code in (cp_model.FEASIBLE,cp_model.OPTIMAL): solution=(artifact,solver,row); break
     selected=[]; material=[]; replay={'status':'NOT_REACHED'}; validator={'status':'NOT_REACHED'}

@@ -239,6 +239,87 @@ def routing_for(garment_type: str, short_sleeve: bool = False) -> list:
     return GARMENT_TYPE_TO_ROUTING.get(garment_type, WOVEN)
 
 
+# ---------------------------------------------------------------------------
+# DATA v2: relative work content per routing step, from published operation
+# bulletins. Each weight is the sum of the bulletin operations that the step
+# covers (minutes in that bulletin); only the RATIOS are used -- the garment
+# total stays the company's real GarmentSmv (Plan.xlsx). Bulletin operations
+# with no matching routing step are left out. A step with no published value
+# gets the mean of its routing's sourced steps (documented, not invented).
+#   Woven  : Full-sleeve formal men's shirt, 41 ops, 22.322 min
+#            onlineclothingstudy.com/?p=11066
+#   Trouser: Basic jeans, 30 ops, 11.645 min
+#            onlineclothingstudy.com/?p=10932
+#   Knit   : Basic neck T-shirt SMV data bank, 4.93 min
+#            scribd.com/document/705846950/Smv-Data-Bank
+# Zipped outerwear has no machine-readable bulletin; its knit-analogue steps
+# reuse the knit values (shoulder, sleeve, side seam, rib hems) and the rest
+# take the routing mean.
+# ---------------------------------------------------------------------------
+STEP_WORK_WEIGHTS = {
+    # Woven: panel prep = pleats + front hem + patch pieces; placket = front
+    # placket + sleeve placket + lock/diamond; yoke/shoulder = yoke attach and
+    # topstitch + shoulder join and topstitch; collar = 10 collar-make ops +
+    # attach + close; sleeve = attach + armhole topstitch; cuff = 7 cuff-make
+    # ops + attach/close + topstitch.
+    "Panel serging": {"woven": 1.730, "trouser": 0.860},
+    "Placket attach": {"woven": 2.424},
+    "Yoke / shoulder join": {"woven": 2.136},
+    "Collar make + attach": {"woven": 5.166},
+    "Sleeve attach": {"woven": 1.540, "knit_top": 0.48, "zipped_outerwear": 0.48},
+    "Side seam + armhole close": {"woven": 1.036},
+    "Cuff attach": {"woven": 5.071},
+    "Bottom hem": {"woven": 0.947, "trouser": 0.33, "knit_top": 0.23},
+    # Trouser: pocket = back and front pocket/coin/bag ops; fly = zipper,
+    # left/right fly, J-stitch; inseam = inseam topstitch + back rise + back
+    # yoke (FOA); side seam = join + topstitch; waistband = joining, stitch,
+    # corners; loops = preparation + attach.
+    "Pocket attach / welt": {"trouser": 4.335},
+    "Fly / zip attach": {"trouser": 1.490},
+    "Inseam close": {"trouser": 1.200},
+    "Side seam close": {"trouser": 1.030},
+    "Waistband attach": {"trouser": 1.400},
+    "Belt loop attach": {"trouser": 0.800},
+    # Bartack (B/T at leg and waist) 0.33 min, Styrax Fashions operation
+    # bulletin, scribd.com/document/486148541/Layout-Inline -- minutes per
+    # piece like the other bulletins, so directly comparable. Buttonhole +
+    # button has no usable published value and takes the routing mean.
+    "Bartack reinforcement": {"trouser": 0.33},
+    "Bartack (pocket corners, zip base)": {"zipped_outerwear": 0.33},
+    # Knit top data bank: shoulder 0.35, neck rib 0.18, sleeve 0.48, side
+    # seam 0.52, sleeve hem 0.36, body hem 0.23.
+    "Shoulder join": {"knit_top": 0.35, "zipped_outerwear": 0.35},
+    "Neck rib attach": {"knit_top": 0.18},
+    "Side seam + underarm close": {"knit_top": 0.52, "zipped_outerwear": 0.52},
+    "Sleeve hem": {"knit_top": 0.36},
+    "Cuff / sleeve rib attach": {"zipped_outerwear": 0.36},
+    "Bottom rib / hem": {"zipped_outerwear": 0.23},
+}
+
+
+def step_weight_fractions(routing: list, group: str) -> list:
+    """Each step's share of the garment's work content (sums to 1)."""
+    sourced = [STEP_WORK_WEIGHTS.get(name, {}).get(group) for name, _machine in routing]
+    known = [w for w in sourced if w is not None]
+    mean = sum(known) / len(known) if known else 1.0
+    weights = [w if w is not None else mean for w in sourced]
+    return [w / sum(weights) for w in weights]
+
+
+def sam_by_step(total_garment_smv: float, routing: list, group: str) -> list:
+    """Per-step SAM proportional to sourced work weights, summing to the total.
+
+    Rounded to 2 decimals like the v1 equal split; the rounding remainder is
+    put on the heaviest step so the routing still sums to the real total.
+    """
+    weights = step_weight_fractions(routing, group)
+    scale = total_garment_smv
+    sams = [round(w * scale, 2) for w in weights]
+    heaviest = max(range(len(sams)), key=lambda i: weights[i])
+    sams[heaviest] = round(sams[heaviest] + round(total_garment_smv, 2) - round(sum(sams), 2), 2)
+    return sams
+
+
 def sam_per_step(total_garment_smv: float, num_steps: int) -> float:
     """
     Distributes a garment's total real SMV equally across its routing

@@ -1,5 +1,6 @@
 """Capture-only worker; real CRAFT solver, no database access, no approvals."""
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -13,16 +14,51 @@ from crafter.production.cycles import seal as checkpoint_seal
 from crafter.production.checkpoints import CONTRACT as CHECKPOINT_CONTRACT
 
 
-def prepare(factory_id, target):
+def _remaining_routes(eligible_routes, approved, excluded=frozenset()):
+    """Route suffixes after an approved prefix; approval must be prefix-closed.
+
+    A route stops at its first excluded operation: that operation and every
+    successor stay out of later cycles (explicitly reported, never dropped).
+    """
+    remaining, prefixes = [], {}
+    for release, order_id, rows, order in eligible_routes:
+        done = [row for row in rows if row['operation_key'] in approved]
+        if [row['operation_key'] for row in done] != [row['operation_key'] for row in rows[:len(done)]]:
+            raise ValueError(f'CAPTURE_APPROVED_NOT_ROUTE_PREFIX:{order_id}')
+        prefixes[order_id] = done
+        suffix = []
+        for row in rows[len(done):]:
+            if row['operation_key'] in excluded:
+                break
+            suffix.append(row)
+        if suffix:
+            remaining.append((release, order_id, suffix, order))
+    return remaining, prefixes
+
+
+def prepare(factory_id, target, approved_keys=(), excluded_keys=()):
+    """Prepare the next bounded domain.
+
+    ``approved_keys`` rebases past approved cycles; ``excluded_keys`` are
+    operations deferred by an earlier cycle (with their route successors).
+    """
     source, readiness, normalized, source_hash = runner._source(factory_id)
     eligible_routes = runner._eligible_order_routes(source, normalized)
-    available = sum(len(route) for _release, _order, route, _order_row in eligible_routes)
+    approved, excluded = set(approved_keys), set(excluded_keys)
+    known = {row['operation_key'] for _, _, rows, _ in eligible_routes for row in rows}
+    if not approved <= known or not excluded <= known or approved & excluded:
+        raise ValueError('CAPTURE_APPROVED_OR_EXCLUDED_OUTSIDE_UNSTARTED_TEST_ROUTES')
+    remaining, prefixes = _remaining_routes(eligible_routes, approved, excluded)
+    available = sum(len(route) for _release, _order, route, _order_row in remaining)
     requested = int(target)
     if requested < 1 or available < 1:
         raise ValueError(f'CAPTURE_NO_SOURCE_ADMISSIBLE_OPERATIONS:F{factory_id}')
-    routes = runner._select_routes(eligible_routes, str(min(requested, available)))
+    routes = runner._select_routes(remaining, str(min(requested, available)))
+    # Approved predecessors stay in each route so route edges and contracts
+    # are derived exactly as in the first cycle; they are not re-selected.
+    routes = [(prefixes[str(order['production_order_id'])] + rows, order) for rows, order in routes]
     state = runner._prepare(factory_id, source, readiness, normalized, source_hash, routes)
-    keys = list(state['keys'])
+    keys = [key for key in state['keys'] if key not in approved]
     ledger, executions, orders, dispositions, reasons = {}, {}, {}, {}, {}
     eligible_keys = {row['operation_key'] for _, _, route, _ in eligible_routes for row in route}
     for op in normalized['operations']:
@@ -34,6 +70,8 @@ def prepare(factory_id, target):
             dispositions[key] = 'COMPLETED'
         elif op['execution_state'] == 'PARTIALLY_EXECUTED':
             dispositions[key] = 'EXECUTING'
+        elif key in approved:
+            dispositions[key] = 'APPROVED'
         elif key in keys:
             dispositions[key] = 'SELECTED'
         elif key in eligible_keys:
@@ -50,9 +88,23 @@ def prepare(factory_id, target):
               'start_seconds': 0, 'end_seconds': horizon,
               'provenance': 'TEST_QUARANTINE_UNKNOWN_RELEASE:' + str(h['lot_id'])}
              for h in state['test_partial_holds']]
-    contracts = state['operation_execution_contracts']
+    contracts = {key: state['operation_execution_contracts'][key] for key in keys}
     releases = {o.order_id: o.release_seconds for o in state['problem'].orders}
+    # Approved rows re-enter as fixed commitments and are checked against the
+    # same source eligibility and route releases, derived by the same rules.
+    approved_contracts, approved_horizon = {}, horizon
+    approved_routes = [(prefixes[order_id], order) for _, order_id, _, order in eligible_routes
+                       if prefixes.get(order_id)]
+    if approved_routes:
+        prior = runner._prepare(factory_id, source, readiness, normalized, source_hash, approved_routes)
+        approved_contracts = prior['operation_execution_contracts']
+        approved_horizon = max(horizon, prior['problem'].horizon_seconds)
+        releases.update({o.order_id: o.release_seconds for o in prior['problem'].orders})
+    rebase = {'rebased_on_approved_keys': sorted(approved)} if approved else {}
+    if excluded:
+        rebase['excluded_deferred_keys'] = sorted(excluded)
     packet = seal({
+        **rebase,
         'contract': 'GLOBAL_RESOURCE_STATE_V1', 'classification': 'SIMULATED_TEST',
         'factory_id': factory_id, 'source_hash': source_hash,
         'source_identity': source['dataset'], 'reference_time': source['reference_time'],
@@ -70,9 +122,10 @@ def prepare(factory_id, target):
         'completed_keys': [k for k, s in dispositions.items() if s == 'COMPLETED'],
         'eligibility': {k: {'machines': c['eligible_machine_ids'],
                             'workers': c['eligible_worker_ids'], 'lines': c['eligible_line_ids']}
-                        for k, c in contracts.items()},
-        'calendar_windows': {k: [[0, horizon]] for k in keys},
-        'route_releases': {k: releases[orders[k]] for k in keys},
+                        for k, c in {**approved_contracts, **contracts}.items()},
+        'calendar_windows': {**{k: [[0, approved_horizon]] for k in approved_contracts},
+                             **{k: [[0, horizon]] for k in keys}},
+        'route_releases': {k: releases[orders[k]] for k in [*approved_contracts, *keys]},
         'route_edges': {k: {'predecessor': state['after_index'].route_predecessor[k],
                              'successor': state['after_index'].route_successor[k]} for k in keys},
         'priority_revision': 0})
@@ -88,11 +141,18 @@ def advance(snapshot, checkpoint=None):
     factory_id = snapshot['factory_id']
     if factory_id != global_state['factory_id'] or snapshot['source_fingerprint'] != global_state['source_hash']:
         raise ValueError('CAPTURE_WORKER_SOURCE')
-    # Rebuild the complete preflight domain independently from the pinned source.
-    base = prepare(factory_id, len(global_state['execution_contracts']))
-    if (base['fingerprint'] != snapshot['capture_base_fingerprint'] or
-            digest(base['execution_contracts']) != digest(global_state['execution_contracts'])):
-        raise ValueError('CAPTURE_EXECUTION_CONTRACT_CHANGED')
+    # Rebuild the complete preflight domain independently from the pinned
+    # source on a run's first invocation. Resumed invocations are bound to that
+    # verified state by the sealed checkpoint identity (source, snapshot,
+    # scenario, approval fingerprint, implementation hash), so repeating the
+    # rebuild each window only added minutes per cycle.
+    if checkpoint is None:
+        base = prepare(factory_id, len(global_state['execution_contracts']),
+                       approved_keys=global_state.get('rebased_on_approved_keys', ()),
+                       excluded_keys=global_state.get('excluded_deferred_keys', ()))
+        if (base['fingerprint'] != snapshot['capture_base_fingerprint'] or
+                digest(base['execution_contracts']) != digest(global_state['execution_contracts'])):
+            raise ValueError('CAPTURE_EXECUTION_CONTRACT_CHANGED')
     captured = []
     def save(identity, payload):
         captured.append(checkpoint_seal({'contract': CHECKPOINT_CONTRACT,
@@ -102,10 +162,15 @@ def advance(snapshot, checkpoint=None):
         if checkpoint:
             resume = Path(directory) / 'checkpoint.json'
             resume.write_text(json.dumps(checkpoint), encoding='utf-8')
+        budget = float(os.environ.get('CRAFT_ATTEMPT_BUDGET_SECONDS', '0') or 0)
         output = runner._run(factory_id, 'all', selected_keys=snapshot['selected_keys'],
             approved_rows=global_state.get('approved_rows', []),
             approval_fingerprint=global_state['fingerprint'], checkpoint=save,
-            resume=resume, max_new_attempts=1, route_ready_objective=True)
+            resume=resume, route_ready_objective=True,
+            window_size=snapshot.get('window_size'),
+            # Budget 0 keeps the original one-attempt-per-invocation contract.
+            max_new_attempts=None if budget > 0 else 1,
+            attempt_time_budget_seconds=budget if budget > 0 else None)
     if not captured:
         raise ValueError('CAPTURE_NO_CHECKPOINT_PROGRESS')
     cp = captured[-1]
@@ -142,7 +207,10 @@ def advance(snapshot, checkpoint=None):
 
 if __name__ == '__main__':
     if sys.argv[1] == '--prepare':
-        result = prepare(int(sys.argv[2]), int(sys.argv[3]))
+        rebase = json.loads(Path(sys.argv[5]).read_text()) if len(sys.argv) > 5 else {}
+        result = prepare(int(sys.argv[2]), int(sys.argv[3]),
+                         approved_keys=rebase.get('approved', ()),
+                         excluded_keys=rebase.get('excluded', ()))
         destination = Path(sys.argv[4])
     else:
         destination = Path(sys.argv[1])

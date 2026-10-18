@@ -67,3 +67,11 @@ machine/worker sampling that can miss every allowed pair. `handout.md` is
 excluded from this backup because it contains a live credential. Flagged
 secret-scanner lines were reviewed as false positives and are listed in
 `SOURCE_BACKUP_MANIFEST.json`.
+
+## Refresh 2026-10-19
+
+Refreshed from local commit `04b913c` (branch `craft-v1-consolidation`): pair-aware
+resource sampling fix, whole-factory cycles, dispatch baselines, lanes and
+adaptive crews, DATA v2 generator, fast calendar, and CRAFT V2 (EDD start +
+CP-SAT LNS improvement with SLOW/NORMAL/FAST manager pace levels). Still
+source-only: `handout.md`, `.env`, data captures, databases and outputs excluded.

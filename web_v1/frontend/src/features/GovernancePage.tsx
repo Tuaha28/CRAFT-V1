@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { governance } from "../services/governance";
 import { Badge, EmptyBlock, ErrorBlock, LoadingBlock, PageTitle, Panel } from "../components/Primitives";
 import { CandidateComparison } from "./CandidateComparison";
+import { CaptureSelection } from "./CaptureSelection";
 import { RunProgress } from "./RunProgress";
 
 export default function GovernancePage() {
@@ -42,6 +43,7 @@ export default function GovernancePage() {
     {[login.error, start.error, changePriority.error, promote.error, cancel.error, scopes.error, runs.error, candidates.error, events.error].filter(Boolean).map((error, i) => <ErrorBlock key={i} message={String(error)}/>)}
     {!authenticated && !session.isError && <Panel title="Authorized access"><form className="panel-body" onSubmit={e => { e.preventDefault(); login.mutate(); }}><label>Username <input autoComplete="username" value={username} onChange={e => setUsername(e.target.value)}/></label><label>Password <input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)}/></label><button className="button" disabled={login.isPending || !username || !password}>Sign in</button></form></Panel>}
     {authenticated && <><Panel title="Isolated scheduling scope" subtitle={`Signed in as ${session.data?.username}. Existing active version remains unchanged during solving.`}><div className="panel-body"><label>Factory test scope <select value={scopeId} onChange={e => setScopeId(e.target.value)}><option value="">Select scope</option>{scopes.data?.results.map(s => <option key={s.id} value={s.id}>Factory {s.factory_external_id} · {s.environment}</option>)}</select></label> <button className="button button-violet" disabled={!scopeId || !session.data?.can_request || start.isPending} onClick={() => start.mutate()}>Queue isolated CRAFT proof</button></div></Panel>
+    {selectedScope?.environment === "TEST_CAPTURE" && <CaptureSelection scope={selectedScope} canRequest={session.data?.can_request === true} onSelected={() => void refresh()}/>}
     {selectedScope?.environment === "TEST_PRIORITY" && <Panel title="Controlled order priority" subtitle="Two synthetic orders share one machine and skilled worker. The request changes CRAFT's delivery objective, never a physical constraint."><div className="panel-body">
       <div className="craft-demo-notice"><Badge tone="warning">SYNTHETIC TEST</Badge><span>Order A: residual plus final route step, customer target +1,050 s. Order B: one residual step, customer target +3,000 s. Both have 40 completed and 60 unstarted units. A fixed 0–300 s resource hold remains protected.</span></div>
       <p>Current manager priority: <strong>{selectedScope.priority_state.tier ?? "NORMAL"}</strong>{selectedScope.priority_state.selected_order_id ? ` for order ${selectedScope.priority_state.selected_order_id}` : ""}. Revision {selectedScope.priority_state.revision ?? 0}.</p>

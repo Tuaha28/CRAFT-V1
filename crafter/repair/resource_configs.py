@@ -65,6 +65,38 @@ def _diverse_sets(pool, k, limit):
     return out, _legal_combination_count(len(pool), k) > len(out)
 
 
+def _spread_explicit_pairs(allowed_pairs, machines_by_id, eligible_lines,
+                           machine_pool, worker_pool):
+    """Deterministic, cap-independent order over contract-allowed pairs.
+
+    Lines are visited round-robin; within a line, pairs introducing an unseen
+    machine and an unseen worker come first.  Taking any prefix therefore
+    spreads alternatives across lines and resources, and a larger cap only
+    appends to a smaller cap's prefix.
+    """
+    by_line = {}
+    for worker, machine in sorted({(str(w), int(m)) for w, m in allowed_pairs},
+                                  key=lambda pair: (pair[1], pair[0])):
+        if machine not in machine_pool or worker not in worker_pool:
+            continue
+        line = int(machines_by_id[machine].line_id)
+        if line in eligible_lines:
+            by_line.setdefault(line, []).append((machine, worker))
+    queues = []
+    for line in sorted(by_line):
+        fresh, rest, machines, workers = [], [], set(), set()
+        for machine, worker in by_line[line]:
+            if machine not in machines and worker not in workers:
+                fresh.append((machine, worker)); machines.add(machine); workers.add(worker)
+            else:
+                rest.append((machine, worker))
+        queues.append(fresh + rest)
+    ordered = []
+    for depth in range(max(map(len, queues), default=0)):
+        ordered.extend(queue[depth] for queue in queues if depth < len(queue))
+    return ordered
+
+
 def _legal_combination_count(pool_size, k):
     """Return the exact finite set count without materializing combinations."""
     if int(pool_size) < int(k):
@@ -101,7 +133,7 @@ def _source_authoritative_configurations(state, keys, machine_cap, worker_cap):
         operation = operations_by_key[key]
         factory = int(orders_by_id[operation.order_id].factory_id)
         if int(spec['factory_id']) != factory or int(spec['crew_size']) != 1 or \
-                operation.min_machine_count != 1 or operation.max_machine_count != 1:
+                operation.min_machine_count != 1:
             raise ValueError(f'SOURCE_RESOURCE_UNSUPPORTED_CREW_OR_FACTORY:{key}')
         capability = str(operation.required_capability).strip().lower()
         machine_pool = tuple(int(mid) for mid in spec['machine_ids'])
@@ -144,37 +176,128 @@ def _source_authoritative_configurations(state, keys, machine_cap, worker_cap):
                 or tuple(contract.required_skills) != (capability,)
                 or any(contract.worker_efficiencies[wid] / Decimal(100)
                        != Decimal(str(efficiency[wid])) for wid in worker_pool)
-                or contract.setup_seconds != int(spec['setup_seconds'])):
+                or contract.setup_seconds != int(spec['setup_seconds'])
+                or operation.max_machine_count != max(contract.crew_sizes)):
             raise ValueError(f'EXECUTION_CONTRACT_DOMAIN_MISMATCH:{key}')
         base_minutes = Decimal(str(spec['base_productive_minutes']))
         if base_minutes <= 0 or int(spec['setup_seconds']) != operation.setup_seconds:
             raise ValueError(f'SOURCE_RESOURCE_DURATION_INVALID:{key}')
-        configs = []
+        configs, exposed = [], set()
+        eligible_lines = set(contract.eligible_line_ids)
+
+        def add(mid, wid):
+            if (mid, wid) in exposed or int(machines_by_id[mid].line_id) not in eligible_lines:
+                return
+            try:
+                duration = contract.expected_productive_seconds((wid,), (mid,))
+            except ValueError as exc:
+                if str(exc) == 'RESOURCE_PAIR_NOT_ALLOWED':
+                    return
+                raise
+            productive_minutes = calendar_minutes_from_integer_seconds(duration)
+            if duration != int((base_minutes * 60 / Decimal(str(efficiency[wid]))).to_integral_value(rounding=ROUND_CEILING)):
+                raise ValueError(f'EXECUTION_CONTRACT_DURATION_MISMATCH:{key}:{wid}')
+            exposed.add((mid, wid))
+            configs.append(ResourceConfiguration(
+                key, factory, int(machines_by_id[mid].line_id), 1, (mid,), (wid,),
+                int(spec['setup_seconds']), duration,
+                ('SOURCE_RESOURCE_DOMAIN_V1', source['source_sha256']),
+                float(productive_minutes), int(contract.quantity),
+                contract.contract_version, contract.evidence_class))
+
         for (mid,) in selected_machines:
             for (wid,) in selected_workers:
-                if int(machines_by_id[mid].line_id) not in set(contract.eligible_line_ids):
-                    continue
+                add(mid, wid)
+        pair_more = False
+        if contract.pairing_policy == 'EXPLICIT_PAIRS':
+            # Independent machine/worker prefixes can contain no allowed pair
+            # even when hundreds exist.  Fill the same cap budget from the
+            # contract's own pairs; earlier exposed options stay first.
+            budget = int(machine_cap) * int(worker_cap)
+            ordered = _spread_explicit_pairs(contract.allowed_worker_machine_pairs,
+                                             machines_by_id, eligible_lines,
+                                             set(machine_pool), set(worker_pool))
+            for mid, wid in ordered:
+                if len(configs) >= budget:
+                    break
+                add(mid, wid)
+            pair_more = len(exposed) < len(ordered)
+        if len(contract.crew_sizes) > 1:
+            # Adaptive crews: k allowed pairs on one line and one shift
+            # calendar (a fixed crew pauses together), distinct machines and
+            # workers. Same per-size budget as the machine cap, so domain
+            # expansion widens crews exactly like single-worker options.
+            groups = {}
+            for mid, wid in _spread_explicit_pairs(contract.allowed_worker_machine_pairs,
+                                                   machines_by_id, eligible_lines,
+                                                   set(machine_pool), set(worker_pool)):
+                calendar = _calendar_key(state['operator_index'],
+                                         int(wid) if str(wid).isdigit() else wid)
+                groups.setdefault((int(machines_by_id[mid].line_id), calendar), []).append((mid, wid))
+            for k in contract.crew_sizes[1:]:
+                made = 0
+                for (line, _calendar), pairs in sorted(groups.items(), key=lambda kv: (-len(kv[1]), str(kv[0]))):
+                    for offset in range(0, max(1, len(pairs)), k):
+                        crew, used_m, used_w = [], set(), set()
+                        for mid, wid in pairs[offset:] + pairs[:offset]:
+                            if mid not in used_m and wid not in used_w:
+                                crew.append((mid, wid)); used_m.add(mid); used_w.add(wid)
+                            if len(crew) == k:
+                                break
+                        if len(crew) < k:
+                            break
+                        mids = tuple(sorted(m for m, _w in crew))
+                        wids = tuple(sorted(w for _m, w in crew))
+                        if any(c.machine_ids == mids and c.worker_ids == wids for c in configs):
+                            continue
+                        duration = contract.expected_productive_seconds(wids, mids)
+                        rate = sum(Decimal(str(efficiency[w])) for w in wids)
+                        if duration != int((base_minutes * 60 / rate).to_integral_value(rounding=ROUND_CEILING)):
+                            raise ValueError(f'EXECUTION_CONTRACT_DURATION_MISMATCH:{key}:{wids}')
+                        configs.append(ResourceConfiguration(
+                            key, factory, line, k, mids, wids,
+                            int(spec['setup_seconds']), duration,
+                            ('SOURCE_RESOURCE_DOMAIN_V1', source['source_sha256'], 'ADAPTIVE_CREW'),
+                            float(calendar_minutes_from_integer_seconds(duration)), int(contract.quantity),
+                            contract.contract_version, contract.evidence_class))
+                        made += 1
+                        if made >= int(machine_cap):
+                            break
+                    if made >= int(machine_cap):
+                        break
+        wanted = (state.get('_incumbent_configs') or {}).get(key)
+        if wanted is not None:
+            # Improvement moves: always expose the incumbent schedule's own
+            # (legal) choice, so the solver can keep it -- a move is never
+            # forced to a worse plan by candidate sampling.
+            _line, k, mids, wids = (int(wanted[0]), int(wanted[1]),
+                                    tuple(sorted(int(x) for x in wanted[2])),
+                                    tuple(sorted(str(x) for x in wanted[3])))
+            present = any(c.machine_ids == mids and c.worker_ids == wids for c in configs)
+            if not present and k == 1 and mids[0] in machine_pool and wids[0] in worker_pool:
+                add(mids[0], wids[0])
+            elif (not present and k > 1 and k in contract.crew_sizes
+                  and set(mids) <= set(machine_pool) and set(wids) <= set(worker_pool)
+                  and len({int(machines_by_id[m].line_id) for m in mids}) == 1
+                  and int(machines_by_id[mids[0]].line_id) in eligible_lines):
                 try:
-                    duration = contract.expected_productive_seconds((wid,), (mid,))
-                except ValueError as exc:
-                    if str(exc) == 'RESOURCE_PAIR_NOT_ALLOWED':
-                        continue
-                    raise
-                productive_minutes = calendar_minutes_from_integer_seconds(duration)
-                if duration != int((base_minutes * 60 / Decimal(str(efficiency[wid]))).to_integral_value(rounding=ROUND_CEILING)):
-                    raise ValueError(f'EXECUTION_CONTRACT_DURATION_MISMATCH:{key}:{wid}')
-                configs.append(ResourceConfiguration(
-                    key, factory, int(machines_by_id[mid].line_id), 1, (mid,), (wid,),
-                    int(spec['setup_seconds']), duration,
-                    ('SOURCE_RESOURCE_DOMAIN_V1', source['source_sha256']),
-                    float(productive_minutes), int(contract.quantity),
-                    contract.contract_version, contract.evidence_class))
+                    duration = contract.expected_productive_seconds(wids, mids)
+                except ValueError:
+                    duration = None
+                if duration is not None:
+                    configs.append(ResourceConfiguration(
+                        key, factory, int(machines_by_id[mids[0]].line_id), k, mids, wids,
+                        int(spec['setup_seconds']), duration,
+                        ('SOURCE_RESOURCE_DOMAIN_V1', source['source_sha256'], 'ADAPTIVE_CREW'),
+                        float(calendar_minutes_from_integer_seconds(duration)), int(contract.quantity),
+                        contract.contract_version, contract.evidence_class))
         result[key] = tuple(configs)
-        truncated = len(selected_machines) < len(machine_pool) or len(selected_workers) < len(worker_pool)
+        truncated = (len(selected_machines) < len(machine_pool)
+                     or len(selected_workers) < len(worker_pool) or pair_more)
         audit.append({
             'operation_key': key, 'factory': factory,
             'eligible_lines': list(operation.eligible_line_ids),
-            'legal_k_by_line': {str(line): [1] for line in operation.eligible_line_ids},
+            'legal_k_by_line': {str(line): list(contract.crew_sizes) for line in operation.eligible_line_ids},
             'total_resource_configurations': len(configs),
             'additional_legal_configurations_available': truncated, 'truncated': truncated,
             'source_sha256': source['source_sha256'], 'snapshot_hash': source['snapshot_hash'],

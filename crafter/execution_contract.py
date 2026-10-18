@@ -15,6 +15,8 @@ CONTRACT_VERSION = "CRAFT_OPERATION_EXECUTION_V1"
 AUTHORITATIVE = "AUTHORITATIVE"
 TEST_ASSUMPTION = "TEST_ASSUMPTION"
 KNOWN_EVIDENCE_CLASSES = {AUTHORITATIVE, TEST_ASSUMPTION}
+PARALLEL_SPLIT = "PARALLEL_SPLIT_SUM_OF_MEMBER_RATES"
+CREW_EFFICIENCY_POLICIES = {PARALLEL_SPLIT}
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,12 @@ class OperationExecutionContract:
     crew_efficiency_percent: tuple[tuple[str, str], ...] = ()
     allowed_worker_machine_pairs: tuple[tuple[str, int], ...] = ()
     contract_version: str = CONTRACT_VERSION
+    # Adaptive crew sizing (opt-in). Empty keeps the single declared crew
+    # size. Otherwise the scheduler may choose any listed size k: k workers,
+    # each on their own allowed machine, split the quantity in parallel. The
+    # duration rule for k > 1 must be declared by crew_efficiency_policy.
+    allowed_crew_sizes: tuple[int, ...] = ()
+    crew_efficiency_policy: str = ""
 
     def __post_init__(self):
         if self.contract_version != CONTRACT_VERSION:
@@ -76,6 +84,23 @@ class OperationExecutionContract:
             raise ValueError("EXPLICIT_RESOURCE_PAIRS_REQUIRED")
         if self.worker_calendar_policy == "UNSPECIFIED" or self.machine_calendar_policy == "UNSPECIFIED":
             raise ValueError("EXECUTION_CONTRACT_CALENDAR_POLICY_REQUIRED")
+        if self.allowed_crew_sizes:
+            sizes = tuple(int(x) for x in self.allowed_crew_sizes)
+            if (sizes != tuple(sorted(set(sizes))) or sizes[0] != int(self.required_worker_count)
+                    or int(self.required_worker_count) != int(self.required_machine_count)
+                    or self.pairing_policy != "EXPLICIT_PAIRS"
+                    or (len(sizes) > 1 and self.crew_efficiency_policy not in CREW_EFFICIENCY_POLICIES)):
+                raise ValueError("INVALID_ADAPTIVE_CREW_POLICY")
+
+    @property
+    def crew_sizes(self) -> tuple[int, ...]:
+        return tuple(int(x) for x in self.allowed_crew_sizes) or (int(self.required_worker_count),)
+
+    def skills_for(self, crew_size: int) -> tuple[str, ...]:
+        """Required skill slots for a chosen crew size (same skill per slot)."""
+        if int(crew_size) == int(self.required_worker_count):
+            return tuple(self.required_skills)
+        return tuple(self.required_skills[0] for _ in range(int(crew_size)))
 
     @property
     def worker_efficiencies(self) -> dict[str, Decimal]:
@@ -93,10 +118,16 @@ class OperationExecutionContract:
     def expected_productive_seconds(self, worker_ids, machine_ids) -> int:
         workers = tuple(sorted(str(x) for x in worker_ids))
         machines = tuple(sorted(int(x) for x in machine_ids))
-        if len(workers) != self.required_worker_count:
-            raise ValueError("REQUIRED_WORKER_COUNT_MISMATCH")
-        if len(machines) != self.required_machine_count:
-            raise ValueError("REQUIRED_MACHINE_COUNT_MISMATCH")
+        if self.allowed_crew_sizes:
+            if len(workers) not in self.crew_sizes:
+                raise ValueError("REQUIRED_WORKER_COUNT_MISMATCH")
+            if len(machines) != len(workers):
+                raise ValueError("REQUIRED_MACHINE_COUNT_MISMATCH")
+        else:
+            if len(workers) != self.required_worker_count:
+                raise ValueError("REQUIRED_WORKER_COUNT_MISMATCH")
+            if len(machines) != self.required_machine_count:
+                raise ValueError("REQUIRED_MACHINE_COUNT_MISMATCH")
         if not set(workers).issubset(set(self.eligible_worker_ids)):
             raise ValueError("INELIGIBLE_WORKER")
         if not set(machines).issubset(set(self.eligible_machine_ids)):
@@ -122,6 +153,11 @@ class OperationExecutionContract:
         efficiencies = self.worker_efficiencies
         if len(workers) == 1:
             efficiency = efficiencies.get(workers[0])
+        elif self.allowed_crew_sizes and self.crew_efficiency_policy == PARALLEL_SPLIT:
+            # Each member sews a share on their own machine, balanced by
+            # efficiency, so the crew's rate is the sum of member rates.
+            members = [efficiencies.get(worker) for worker in workers]
+            efficiency = None if any(v is None for v in members) else sum(members)
         else:
             efficiency = self.crew_efficiencies.get(workers)
         if efficiency is None or efficiency <= 0:
@@ -140,7 +176,8 @@ class OperationExecutionContract:
         fields = dict(value)
         for name in ("required_skills", "eligible_worker_ids", "eligible_machine_ids",
                      "eligible_line_ids", "worker_efficiency_percent",
-                     "crew_efficiency_percent", "allowed_worker_machine_pairs"):
+                     "crew_efficiency_percent", "allowed_worker_machine_pairs",
+                     "allowed_crew_sizes"):
             if name in fields:
                 fields[name] = tuple(tuple(x) if isinstance(x, (list, tuple)) else x
                                      for x in fields[name])

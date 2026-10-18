@@ -10,6 +10,11 @@ import re
 from .contracts import json_value
 
 
+# The canonical v1 database or a DATA v2 staging dataset built and validated
+# by data_generation/run_seed_staging.py; nothing else is a legitimate source.
+SOURCE_DATABASE_PATTERN = r"garment_fyp_db(?:_seed_v2_data2_load\d+_\d{8}_\d{6})?"
+
+
 def verify_select_only_grants(grants):
     """Fail closed unless every effective grant is USAGE or SELECT only.
 
@@ -22,7 +27,7 @@ def verify_select_only_grants(grants):
     select_on_source = False
     for statement in statements:
         match = re.fullmatch(
-            r"GRANT (USAGE|SELECT) ON (\*\.\*|`?garment_fyp_db`?\.\*) TO .+",
+            r"GRANT (USAGE|SELECT) ON (\*\.\*|`?" + SOURCE_DATABASE_PATTERN + r"`?\.\*) TO .+",
             statement, flags=re.IGNORECASE,
         )
         if not match or "WITH GRANT OPTION" in statement.upper():
@@ -34,15 +39,19 @@ def verify_select_only_grants(grants):
 
 
 class LegacyExecutionRepository:
-    def __init__(self, connection_factory):
+    def __init__(self, connection_factory, database="garment_fyp_db"):
+        if not re.fullmatch(SOURCE_DATABASE_PATTERN, database):
+            raise ValueError("Unsupported legacy source database")
         self.connection_factory = connection_factory
+        self.database = database
 
     @classmethod
     def from_config(cls, config):
         import pymysql
 
-        if config.get("LEGACY_DB_NAME", "garment_fyp_db") != "garment_fyp_db":
-            raise ValueError("Expected canonical garment_fyp_db")
+        database = config.get("LEGACY_DB_NAME", "garment_fyp_db")
+        if not re.fullmatch(SOURCE_DATABASE_PATTERN, database):
+            raise ValueError("Expected canonical garment_fyp_db or a validated DATA v2 staging database")
         user = config.get("LEGACY_DB_USER")
         password = config.get("LEGACY_DB_PASSWORD")
         if not user or user.lower() == "root" or not password:
@@ -52,9 +61,9 @@ class LegacyExecutionRepository:
             port=int(config.get("LEGACY_DB_PORT", config.get("DB_PORT", 3306))),
             user=user,
             password=password,
-            database="garment_fyp_db", connect_timeout=5, read_timeout=60,
+            database=database, connect_timeout=5, read_timeout=60,
             cursorclass=pymysql.cursors.DictCursor,
-        ))
+        ), database)
 
     def read_factory(self, factory_id, reference_time=None):
         import json
@@ -79,10 +88,10 @@ class LegacyExecutionRepository:
                     return list(cursor.fetchall())
 
                 identity = read("SELECT DATABASE() AS database_name, @@session.transaction_read_only AS read_only")[0]
-                if identity != {"database_name": "garment_fyp_db", "read_only": 1}:
+                if identity != {"database_name": self.database, "read_only": 1}:
                     raise RuntimeError("Legacy database identity/read-only guard failed")
                 engines = read("SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES "
-                               "WHERE TABLE_SCHEMA=%s AND TABLE_TYPE='BASE TABLE'", ("garment_fyp_db",))
+                               "WHERE TABLE_SCHEMA=%s AND TABLE_TYPE='BASE TABLE'", (self.database,))
                 if not engines or any(row["ENGINE"].upper() != "INNODB" for row in engines):
                     raise RuntimeError("Consistent InnoDB source snapshot is not established")
                 raw_calibration = read("SELECT payload FROM dataset_calibration")
@@ -91,7 +100,7 @@ class LegacyExecutionRepository:
                 calibration = raw_calibration[0]["payload"]
                 if isinstance(calibration, str):
                     calibration = json.loads(calibration)
-                dataset = {"database": "garment_fyp_db", **{k: calibration.get(k) for k in
+                dataset = {"database": self.database, **{k: calibration.get(k) for k in
                            ("dataset_version", "reference_time", "timeline_generation_contract", "artifact_version")}}
                 if not dataset["dataset_version"] or not dataset["reference_time"]:
                     raise ValueError("Missing calibrated dataset identity/clock")

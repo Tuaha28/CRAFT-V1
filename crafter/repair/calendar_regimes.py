@@ -12,6 +12,7 @@ import hashlib
 
 from crafter.lns_probe.joint_modes import _fixed_crew_execution
 from crafter.lns_probe.transaction import _machine_accepts
+from crafter.repair.fast_calendar import fast_execution
 
 
 def _freeze_worker_reservations(state):
@@ -32,6 +33,9 @@ class CalendarRegimeCache:
     machine_acceptance: dict = field(default_factory=dict)
     crew_availability: dict = field(default_factory=dict)
     crew_availability_signature: object = None
+    # Exact signature -> small integer, so per-sample cache keys hash an int
+    # instead of re-hashing the full frozen reservation map each lookup.
+    signature_tokens: dict = field(default_factory=dict)
     statistics: dict = field(default_factory=lambda: {
         'execution_hits': 0, 'execution_misses': 0, 'execution_seconds': 0.0,
         'breakpoint_hits': 0, 'breakpoint_misses': 0, 'breakpoint_seconds': 0.0,
@@ -140,11 +144,25 @@ def _execution(state, config, start, cache=None, worker_signature=None):
             cache.crew_availability.clear()
             cache.crew_availability_signature = worker_signature
         availability_cache = cache.crew_availability
-    end, segments = _fixed_crew_execution(state['problem'], state['operator_index'],
-                                           config.worker_ids, ready,
-                                           productive_minutes,
-                                           state['_worker_res'], availability_cache=availability_cache)
-    value=(_sec(state['problem'], end), tuple((_sec(state['problem'],a),_sec(state['problem'],b)) for a,b in segments))
+    value = None
+    mode = str(os.environ.get('CRAFT_FAST_CALENDAR', '1')).strip().lower()
+    if availability_cache is not None and mode not in {'0', 'false', 'no', 'off'}:
+        # Exact integer-second walk (fast_calendar) for cached regime
+        # generation only. Uncached callers -- replay and scoped validation --
+        # keep the original primitive so they remain an independent check.
+        crews = availability_cache.setdefault(('fast_crews',), {})
+        value = fast_execution(state['problem'], state['operator_index'], config.worker_ids,
+                               int(start + config.setup_seconds), productive_minutes,
+                               state['_worker_res'], crews)
+    if value is None or mode == 'verify':
+        end, segments = _fixed_crew_execution(state['problem'], state['operator_index'],
+                                               config.worker_ids, ready,
+                                               productive_minutes,
+                                               state['_worker_res'], availability_cache=availability_cache)
+        exact = (_sec(state['problem'], end), tuple((_sec(state['problem'],a),_sec(state['problem'],b)) for a,b in segments))
+        if value is not None and value != exact:
+            raise AssertionError(f'FAST_CALENDAR_MISMATCH:{config.worker_ids}:{start}')
+        value = exact
     if cache is not None:
         cache.statistics['execution_seconds'] += time.perf_counter() - mark
         cache.execution[cache_key]=value
@@ -247,8 +265,10 @@ def generate_calendar_regimes(state, configurations, *, cache=None,
                               operation_keys=None):
     regimes, summary, total, checks = {}, [], 0, []
     cache = cache or CalendarRegimeCache()
-    calendar_signature = _calendar_signature(state)
-    worker_signature = _worker_calendar_signature(state)
+    tokens = cache.signature_tokens
+    # Equal tokens <=> equal exact signatures within this cache object.
+    calendar_signature = ('calendar', tokens.setdefault(_calendar_signature(state), len(tokens)))
+    worker_signature = ('worker', tokens.setdefault(_worker_calendar_signature(state), len(tokens)))
     event=state.get('event'); md=getattr(event,'metadata',{}) or {}
     delayed=str(md.get('predecessor_operation_key','')); delayed_end=int(md.get('delayed_end_seconds',0) or 0)
     keys = tuple(sorted(str(key) for key in (
@@ -266,6 +286,13 @@ def generate_calendar_regimes(state, configurations, *, cache=None,
         if state['after_index'].route_predecessor.get(key)==delayed: lower=max(lower,delayed_end)
         rows=[]
         extra = (additional_breakpoints_by_operation or {}).get(str(key), ())
+        incumbent_start = (state.get('_incumbent_starts') or {}).get(str(key))
+        if incumbent_start is not None:
+            # CRAFT V2 improvement move: split the calendar at the incumbent's
+            # own start so the slice containing it is evaluated exactly and
+            # the current valid plan stays representable (a slice is dropped
+            # whole if any sampled point in it fails).
+            extra = tuple(extra) + (int(incumbent_start), int(incumbent_start) + 1)
         for config in configurations.get(key,()):
             bp=_breakpoints(state,key,config,lower,cache,calendar_signature,
                             additional_breakpoints=extra)

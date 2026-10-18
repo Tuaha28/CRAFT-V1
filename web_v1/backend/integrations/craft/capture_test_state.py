@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from .global_resource_state import assignment_from_row, digest, seal, verify
@@ -13,8 +14,14 @@ CONTRACT = 'CAPTURE_GOVERNED_TEST_V1'
 SOURCE = 'PINNED_CAPTURE_TEST_ONLY_NOT_PRODUCTION'
 
 
-def build_base(factory_id, *, domain_limit=200):
-    """Prepare a bounded domain in the scheduler interpreter, never in Django."""
+def build_base(factory_id, *, domain_limit=200, approved_keys=(), excluded_keys=()):
+    """Prepare a bounded domain in the scheduler interpreter, never in Django.
+
+    ``approved_keys`` rebases the domain past an approved cycle: those
+    operations become fixed predecessors and the next unstarted route work
+    (up to ``domain_limit``) is prepared. ``excluded_keys`` (operations an
+    earlier cycle deferred) are skipped together with their route successors.
+    """
     if type(factory_id) is not int or factory_id not in range(1, 7):
         raise ValueError('CAPTURE_FACTORY_NOT_SUPPORTED')
     if type(domain_limit) is not int or not 1 <= domain_limit <= 200:
@@ -26,15 +33,24 @@ def build_base(factory_id, *, domain_limit=200):
         raise ValueError('CAPTURE_SCHEDULER_INTERPRETER_MISSING')
     with tempfile.TemporaryDirectory(prefix='craft-capture-base-') as directory:
         destination = Path(directory) / 'capture_base.json'
+        arguments = [str(interpreter), str(script), '--prepare', str(factory_id),
+                     str(domain_limit), str(destination)]
+        if approved_keys or excluded_keys:
+            rebase_path = Path(directory) / 'rebase.json'
+            rebase_path.write_text(json.dumps({'approved': sorted(approved_keys),
+                                               'excluded': sorted(excluded_keys)}), encoding='utf-8')
+            arguments.append(str(rebase_path))
         try:
-            completed = subprocess.run(
-                [str(interpreter), str(script), '--prepare', str(factory_id),
-                 str(domain_limit), str(destination)], cwd=root, capture_output=True,
-                text=True, timeout=180, check=False)
+            completed = subprocess.run(arguments, cwd=root, capture_output=True,
+                text=True, timeout=600, check=False)
         except subprocess.TimeoutExpired as exc:
             raise ValueError('CAPTURE_BASE_PREPARATION_TIMEOUT') from exc
         if completed.returncode or not destination.is_file():
-            raise ValueError(f'CAPTURE_BASE_PREPARATION_FAILED:{completed.returncode}')
+            # Surface the scheduler's own reason (e.g. an exhausted domain)
+            # instead of only an exit code.
+            reasons = re.findall(r'(CAPTURE_[A-Z_]+(?::F?\d+)?)', completed.stderr or '')
+            raise ValueError(f'CAPTURE_BASE_PREPARATION_FAILED:{completed.returncode}'
+                             + (f':{reasons[-1]}' if reasons else ''))
         return json.loads(destination.read_text(encoding='utf-8'))
 
 
@@ -140,9 +156,11 @@ def verify_progress(checkpoint, previous, snapshot):
         raise ValueError('CAPTURE_CHECKPOINT_ACCOUNTING')
     if previous:
         old = previous['payload']
-        if (identity != previous['identity'] or payload['attempt_number'] != old['attempt_number'] + 1 or
+        # One invocation may now advance several attempts within its time
+        # budget; progress must still be strictly forward and prefix-preserving.
+        if (identity != previous['identity'] or payload['attempt_number'] <= old['attempt_number'] or
                 payload['windows'][:len(old['windows'])] != old['windows'] or
                 payload['selected_schedule'][:len(old['selected_schedule'])] != old['selected_schedule']):
             raise ValueError('CAPTURE_CHECKPOINT_INVALID_PROGRESS')
-    elif payload['attempt_number'] != 1:
+    elif payload['attempt_number'] < 1:
         raise ValueError('CAPTURE_CHECKPOINT_INVALID_PROGRESS')

@@ -42,7 +42,8 @@ from utils.shift_rotation import (
     batch_available_at,
     shift_band_for_batch,
 )
-from data_generation.routing_tables import routing_for, routing_group_name, sam_per_step, SHORT_SLEEVE_SHARE
+from data_generation.routing_tables import (routing_for, routing_group_name, sam_by_step, sam_per_step,
+                                            SHORT_SLEEVE_SHARE)
 
 load_dotenv()
 fake = Faker()
@@ -77,6 +78,27 @@ db_config = {
 # scheduler. Two copies of a rotation calendar would drift, and the drift
 # would only show up as crews quietly rostered to the wrong shift.
 SHIFTS = SHIFT_BANDS
+
+# DATA v2 (opt-in; v1 stays the default and reproduces garment_fyp_db):
+#   * order volume set by a target LOAD -- required worker-minutes over the
+#     available operator worker-minutes of an ORDER WINDOW centred on the
+#     reference date -- instead of the grid.xls extract's order count, which
+#     loads the 8,500 operators to under 1%;
+#   * per-step SAM split by published operation-bulletin weights
+#     (routing_tables.sam_by_step), garment totals unchanged;
+#   * machines placed on lines in proportion to line worker capacity;
+#   * the company's real location (Ad-Dulayl Industrial Park QIZ);
+#   * phase A streamed into phase B so the larger order book never holds
+#     every lot row in memory (same decisions, same order).
+SEED_DATA_VERSION = os.getenv("SEED_DATA_VERSION", "v1").strip().lower()
+if SEED_DATA_VERSION not in ("v1", "v2"):
+    raise ValueError(f"Unsupported SEED_DATA_VERSION={SEED_DATA_VERSION!r}")
+DATA_V2 = SEED_DATA_VERSION == "v2"
+SEED_LOAD_FACTOR = float(os.getenv("SEED_LOAD_FACTOR", "0.6"))
+SEED_ORDER_WINDOW_DAYS = int(os.getenv("SEED_ORDER_WINDOW_DAYS", "56"))
+if DATA_V2 and not (0 < SEED_LOAD_FACTOR <= 1.5 and 7 <= SEED_ORDER_WINDOW_DAYS <= 365):
+    raise ValueError("SEED_LOAD_FACTOR must be in (0, 1.5] and SEED_ORDER_WINDOW_DAYS in [7, 365]")
+COMPANY_LOCATION = "Ad-Dulayl Industrial Park (QIZ), Zarqa, Jordan"
 # DURATION_CALIBRATION_FACTOR used to be a hardcoded 1.3 here, with a
 # separate undocumented /50.0 divisor at its one use site -- both invented,
 # no cited derivation. DATA_AUDIT.md Module 5 replaced it with a value
@@ -332,6 +354,53 @@ def build_frozen_planned_schedule(
     immutable rows and may delay their execution, but may never choose a
     different resource or feed an outcome back into this function.
     """
+    ownership, stats = {}, {"batch": 0, "factory": 0, "global": 0, "off_shift": 0}
+    plans = list(iter_frozen_planned_schedule(
+        order_ids=order_ids, prod_order_details=prod_order_details,
+        product_routing_map=product_routing_map, base_date=base_date, base_time=base_time,
+        factory_capacity=factory_capacity, capable_machines_by_type=capable_machines_by_type,
+        asset_to_line_map=asset_to_line_map, line_to_factory_map=line_to_factory_map,
+        qualified_operators_by_op_factory=qualified_operators_by_op_factory,
+        employee_leave_lookup=employee_leave_lookup, employee_batch_lookup=employee_batch_lookup,
+        line_to_batches=line_to_batches, batch_offsets=batch_offsets,
+        employee_shift_lookup=employee_shift_lookup, employee_skill_lookup=employee_skill_lookup,
+        order_deadlines=order_deadlines, duration_calibration_factor=duration_calibration_factor,
+        planning_rng=planning_rng, target_lot_size=target_lot_size,
+        max_lots_per_order=max_lots_per_order, ownership=ownership, stats=stats))
+    return plans, ownership, stats
+
+
+def iter_frozen_planned_schedule(
+    *,
+    order_ids,
+    prod_order_details,
+    product_routing_map,
+    base_date,
+    base_time,
+    factory_capacity,
+    capable_machines_by_type,
+    asset_to_line_map,
+    line_to_factory_map,
+    qualified_operators_by_op_factory,
+    employee_leave_lookup,
+    employee_batch_lookup,
+    line_to_batches,
+    batch_offsets,
+    employee_shift_lookup,
+    employee_skill_lookup,
+    order_deadlines,
+    duration_calibration_factor,
+    planning_rng,
+    target_lot_size,
+    max_lots_per_order,
+    ownership,
+    stats,
+):
+    """Phase A as a stream: identical decisions, one plan row at a time.
+
+    ``ownership`` and ``stats`` are filled in place as orders are planned, so
+    a v2 order book far larger than v1 never holds every row in memory.
+    """
     eligible_workers = {
         key: [e for e in pool if not employee_leave_lookup[e]]
         for key, pool in qualified_operators_by_op_factory.items()
@@ -352,9 +421,6 @@ def build_frozen_planned_schedule(
         for workers in eligible_workers.values()
         for employee_id in workers
     }
-    ownership = {}
-    plans = []
-    stats = {"batch": 0, "factory": 0, "global": 0, "off_shift": 0}
     order_arrival = sorted(
         order_ids,
         key=lambda oid: (prod_order_details[oid].get("start_date", base_date), oid),
@@ -454,11 +520,10 @@ def build_frozen_planned_schedule(
                     planned_end_time=end,
                     planned_work_segments=tuple(segments),
                 )
-                plans.append(plan)
                 planned_employee_free[employee_id] = end
                 planned_prev_end = end
                 heapq.heappush(planned_machine_heaps[heap_key], (end, asset_id))
-    return plans, ownership, stats
+                yield plan
 
 
 def simulate_actual_from_frozen_plan(
@@ -574,7 +639,7 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
     from pathlib import Path
     source_root = Path(__file__).resolve().parent
     input_paths = [source_root / n for n in ('grid.xls', 'Plan.xlsx', 'PPC-1.xlsx', 'WorkStation.xlsx')]
-    source_paths = [source_root / n for n in ('seed_database_fixed.py', 'simulation_calendar.py', 'validate_seed.py', 'operating_regimes.py')]
+    source_paths = [source_root / n for n in ('seed_database_fixed.py', 'simulation_calendar.py', 'validate_seed.py', 'operating_regimes.py', 'routing_tables.py')]
     source_hashes = {str(p.relative_to(source_root)): hashlib.sha256(p.read_bytes()).hexdigest()
                      for p in input_paths + source_paths}
     dataset_version = str(uuid.uuid4())
@@ -784,6 +849,13 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
         # real order -- adopted as the disambiguator for the unlabeled 93.5%.
         _no_po_rows = df_grid[df_grid['PO'].isna()]
         _no_po_order_groups = _no_po_rows.groupby(['StyleId', 'Color', 'BuyMonth']).size()
+        if DATA_V2:
+            # v2 resamples a much larger order book, so draw quantities from
+            # all 1,029 real order-equivalents: the 139 PO totals plus the 890
+            # StyleId+Color+BuyMonth proxy groups' real PlanTarget sums
+            # (the same grouping v1 already trusts for the order COUNT).
+            _proxy_quantities = _no_po_rows.groupby(['StyleId', 'Color', 'BuyMonth'])['PlanTarget'].sum()
+            real_po_quantities = real_po_quantities + [q for q in _proxy_quantities.tolist() if q > 0]
         # Count calibration only: all records resample attributes independently;
         # this does not copy the 139 genuine or 890 proxy source tuples.
         TOTAL_ORDERS = len(_po_groups) + len(_no_po_order_groups)
@@ -844,15 +916,17 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
         # 2. Seed Corporate & Factory Structure
         cursor.execute(
             "INSERT INTO Companies (company_id, name, registration_number, headquarters_address) "
-            "VALUES (1, 'Needle Craft Jordan', 'NC-JOR-AMM-2000', 'Amman Industrial Estate, Jordan')"
+            "VALUES (1, 'Needle Craft Jordan', 'NC-JOR-AMM-2000', %s)",
+            (COMPANY_LOCATION if DATA_V2 else 'Amman Industrial Estate, Jordan',)
         )
 
         factories_detected = df_ws['Department'].dropna().unique()
         fact_map = {}
         for idx, f_name in enumerate(factories_detected, start=1):
+            estate = COMPANY_LOCATION if DATA_V2 else "Al-Hassan Industrial Estate, Jordan"
             cursor.execute(
                 "INSERT INTO Factories (factory_id, company_id, name, location) VALUES (%s, 1, %s, %s)",
-                (idx, f"{f_name} Branch", f"{f_name} Manufacturing Block, Al-Hassan Industrial Estate, Jordan")
+                (idx, f"{f_name} Branch", f"{f_name} Manufacturing Block, {estate}")
             )
             fact_map[f_name] = idx
 
@@ -952,6 +1026,15 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
         # weighting, not a modelling error) to use as the allocation basis.
         _demand_total_weight = sum(category_weights)
         machine_type_demand = {m: 0.0 for m in machine_types}
+
+        def _step_shares(cat, routing):
+            # v1: equal per step (structural step counts). v2: the same
+            # bulletin work shares that split each garment's SAM below, so
+            # machine allocation follows where the work actually is.
+            if DATA_V2:
+                from data_generation.routing_tables import step_weight_fractions
+                return step_weight_fractions(routing, routing_group_name(cat))
+            return [1 / len(routing)] * len(routing)
         for cat, w in zip(real_categories, category_weights):
             share = w / _demand_total_weight
             if cat in ("Blouse", "Dress"):
@@ -965,12 +1048,12 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
                     (routing_for(cat, short_sleeve=False), 1 - SHORT_SLEEVE_SHARE),
                     (routing_for(cat, short_sleeve=True), SHORT_SLEEVE_SHARE),
                 ):
-                    for _, m_type in routing:
-                        machine_type_demand[m_type] += share * variant_share / len(routing)
+                    for (_, m_type), step_share in zip(routing, _step_shares(cat, routing)):
+                        machine_type_demand[m_type] += share * variant_share * step_share
             else:
                 routing = routing_for(cat)
-                for _, m_type in routing:
-                    machine_type_demand[m_type] += share / len(routing)
+                for (_, m_type), step_share in zip(routing, _step_shares(cat, routing)):
+                    machine_type_demand[m_type] += share * step_share
         _demand_sum = sum(machine_type_demand.values())
 
         # Real duration-formula calibration (DATA_AUDIT.md Module 5, the
@@ -1045,6 +1128,7 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
         product_ids = []
         variant_ids = []
         product_routing_map = {}
+        product_total_smv = {}
         op_counter = 1
         var_counter = 1
 
@@ -1105,10 +1189,15 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
             is_short_sleeve = cat in ("Blouse", "Dress") and random.random() < SHORT_SLEEVE_SHARE
             routing = routing_for(cat, short_sleeve=is_short_sleeve)
             total_smv = smv_by_type.get(cat, _dataset_wide_smv_mean)
-            per_step_sam = round(sam_per_step(total_smv, len(routing)), 2)
+            if DATA_V2:
+                step_sams = sam_by_step(total_smv, routing, routing_group_name(cat))
+            else:
+                step_sams = [round(sam_per_step(total_smv, len(routing)), 2)] * len(routing)
+            product_total_smv[idx] = sum(step_sams)
 
             for step, (op_name, m_type) in enumerate(routing, start=1):
                 op_type = optype_by_machine_type[m_type]
+                per_step_sam = step_sams[step - 1]
 
                 cursor.execute("""
                     INSERT INTO Routing_Operations
@@ -1378,11 +1467,34 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
         asset_to_line_map = {}
         capable_machines_by_type = {m: [] for m in machine_types}
 
+        coverage_lines = {}
+        if DATA_V2:
+            # Every branch keeps at least one Active machine of each type, so
+            # a small 2-line branch is not left unable to run any routing by
+            # line-weighted chance (v2 at 30% gave branch 6 zero orders).
+            # No source assigns machine types to branches; this is the
+            # minimum that keeps every branch able to produce.
+            for m_type in machine_types:
+                indices = [i for i, t in enumerate(machine_pool, start=1) if t == m_type]
+                for f_id, asset_index in zip(sorted(set(line_to_factory_map.values())), indices):
+                    lines_f = [l for l in line_ids if line_to_factory_map[l] == f_id]
+                    coverage_lines[asset_index] = random.choices(
+                        lines_f, weights=[worker_capacity_by_line[l] for l in lines_f], k=1)[0]
+
         for i in range(1, 3001):
             serial = f"SYNTH-SN-{i:08d}"
             m_type = machine_pool[i-1]
             m_status = random.choices(machine_statuses, weights=machine_status_weights, k=1)[0]
-            assigned_line = random.choice(line_ids)
+            if i in coverage_lines:
+                m_status = 'Active'
+                assigned_line = coverage_lines[i]
+            elif DATA_V2:
+                # A 34-worker half line gets half the machines of a 68-worker
+                # line (v1 drew lines uniformly: 1.5-4.1 employees/machine).
+                assigned_line = random.choices(
+                    line_ids, weights=[worker_capacity_by_line[l] for l in line_ids], k=1)[0]
+            else:
+                assigned_line = random.choice(line_ids)
             # FIX (root cause of the 84% mismatch): the machine's factory is
             # now DERIVED from its assigned line's true home factory, not
             # picked independently at random. A machine can't belong to a
@@ -1485,6 +1597,38 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
         print("Preparing order contexts...")
         prod_order_details = {}
         order_meta_cache = {}
+        load_calibration = None
+        if DATA_V2:
+            # Size the order book to a target LOAD of the available operator
+            # time in an order window centred on the reference date. Start
+            # dates keep grid.xls's real (re-anchored) distribution inside the
+            # window; quantities, products, end gaps and deadline leads stay
+            # the same real distributions as v1. Only the COUNT is derived.
+            half = timedelta(days=SEED_ORDER_WINDOW_DAYS / 2)
+            window_starts = [d for d in real_start_dates if base_date - half <= d < base_date + half]
+            if not window_starts:
+                raise ValueError("No real start dates fall inside the order window")
+            real_start_dates = window_starts
+            present_operators = sum(1 for e in employee_batch
+                                    if e[4] == 'Operator' and not employee_leave_lookup[e[0]])
+            available_minutes = present_operators * 8 * 60 * (6 / 7) * SEED_ORDER_WINDOW_DAYS
+            efficiencies = [v for skills in employee_skill_lookup.values() for v in skills.values()]
+            mean_efficiency = sum(efficiencies) / len(efficiencies)
+            mean_qty = sum(real_po_quantities) / len(real_po_quantities)
+            mean_product_smv = sum(product_total_smv.values()) / len(product_total_smv)
+            minutes_per_order = (DURATION_CALIBRATION_FACTOR * mean_qty * mean_product_smv
+                                 / (mean_efficiency / 100.0))
+            TOTAL_ORDERS = max(1, round(SEED_LOAD_FACTOR * available_minutes / minutes_per_order))
+            load_calibration = {
+                "load_factor": SEED_LOAD_FACTOR, "order_window_days": SEED_ORDER_WINDOW_DAYS,
+                "window_start": (base_date - half).isoformat(), "window_end": (base_date + half).isoformat(),
+                "present_operators": present_operators, "available_worker_minutes": round(available_minutes),
+                "expected_worker_minutes_per_order": round(minutes_per_order, 1),
+                "mean_order_quantity": round(mean_qty, 1), "mean_product_smv": round(mean_product_smv, 3),
+                "mean_operator_efficiency": round(mean_efficiency, 2),
+                "orders": TOTAL_ORDERS, "real_start_dates_in_window": len(window_starts),
+            }
+            print(f"DATA v2 load calibration: {load_calibration}")
 
         for i in range(1, TOTAL_ORDERS + 1):
             # Real start date (re-anchored grid.xls StartDate) -- replaces
@@ -1625,8 +1769,13 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
             )
             for po_id in prod_order_ids
         }
-        frozen_plan, order_factory_ownership, plan_assignment_stats = (
-            build_frozen_planned_schedule(
+        # v2 streams phase A into phase B (identical decisions and order); v1
+        # keeps the materialized list it was validated with.
+        planner = iter_frozen_planned_schedule if DATA_V2 else build_frozen_planned_schedule
+        streamed = {"ownership": {}, "stats": {"batch": 0, "factory": 0, "global": 0, "off_shift": 0}} if DATA_V2 else {}
+        planned = (
+            planner(
+                **streamed,
                 order_ids=prod_order_ids,
                 prod_order_details=prod_order_details,
                 product_routing_map=product_routing_map,
@@ -1650,6 +1799,11 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
                 max_lots_per_order=MAX_LOTS_PER_ORDER,
             )
         )
+        if DATA_V2:
+            frozen_plan = planned
+            order_factory_ownership, plan_assignment_stats = streamed["ownership"], streamed["stats"]
+        else:
+            frozen_plan, order_factory_ownership, plan_assignment_stats = planned
 
         # 8b. Simulate actual execution only after every phase-A assignment
         # and planned timestamp is frozen. The independent actual seed may
@@ -1912,6 +2066,8 @@ def execute_complete_seed(*, reference_time=None, planning_seed=SEED, actual_see
                 "from PPC-1.xlsx (DATA_AUDIT.md Module 5)"
             ),
             "order_count": len(prod_order_ids),
+            "data_version": SEED_DATA_VERSION,
+            "load_calibration": load_calibration,
             "slack_days_quantiles": {
                 "p25": _q(25), "p50": _q(50), "p75": _q(75),
             },

@@ -249,10 +249,14 @@ def validate_exported_schedule(schedule_rows, context):
             if owned is None or contract.factory_id != int(owned):
                 _issue(errors, "execution_contract_factory_mismatch",
                        "Contract factory differs from order ownership", key)
-            if len(eids) != contract.required_worker_count:
+            # Adaptive contracts allow any declared crew size, with one
+            # machine per worker; fixed contracts keep their single size.
+            crew_sizes = getattr(contract, "crew_sizes", (contract.required_worker_count,))
+            adaptive = bool(getattr(contract, "allowed_crew_sizes", ()))
+            if len(eids) not in crew_sizes:
                 _issue(errors, "required_worker_count_mismatch",
                        "Assignment does not match contract crew size", key)
-            if len(mids) != contract.required_machine_count:
+            if len(mids) != (len(eids) if adaptive else contract.required_machine_count):
                 _issue(errors, "required_machine_count_mismatch",
                        "Assignment does not match contract machine count", key)
             if _norm(line) not in {_norm(v) for v in contract.eligible_line_ids}:
@@ -277,17 +281,19 @@ def validate_exported_schedule(schedule_rows, context):
                 worker = context.workers.get(int(eid) if eid.isdigit() and int(eid) in context.workers else eid)
                 worker_skills = {_norm(v).strip().lower() for v in (worker or {}).get("skills", ())}
                 worker_skills_by_id[eid] = worker_skills
-            if eids and len(eids) == contract.required_worker_count:
+            if eids and len(eids) in crew_sizes:
+                required_skills = (contract.skills_for(len(eids)) if adaptive
+                                   else contract.required_skills)
                 # Match crew members to required skill slots; checking that
                 # every worker has any one of the skills can falsely accept
                 # crews that leave a specialist slot unfilled.
-                slots = sorted(range(len(contract.required_skills)),
+                slots = sorted(range(len(required_skills)),
                                key=lambda i: sum(
-                                   _norm(contract.required_skills[i]).strip().lower() in skills
+                                   _norm(required_skills[i]).strip().lower() in skills
                                    for skills in worker_skills_by_id.values()))
                 matched = {}
                 def assign_skill(slot, seen):
-                    wanted = _norm(contract.required_skills[slot]).strip().lower()
+                    wanted = _norm(required_skills[slot]).strip().lower()
                     for worker_id in sorted(worker_skills_by_id):
                         if worker_id in seen or wanted not in worker_skills_by_id[worker_id]:
                             continue

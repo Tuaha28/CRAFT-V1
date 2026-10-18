@@ -16,16 +16,21 @@ def main():
     planning_seed = int(os.getenv('SEED_PLANNING_SEED', str(seed.SEED)))
     actual_seed = int(os.getenv('SEED_ACTUAL_EXECUTION_SEED', str(seed.SEED)))
     source = seed.db_config['database']
-    target = source + '_seed_v2_' + datetime.now().strftime('%Y%m%d_%H%M%S')
+    # DATA v2 datasets carry their load in the name (e.g. ..._seed_data2_load60_...).
+    tag = (f"data2_load{round(seed.SEED_LOAD_FACTOR * 100)}_" if seed.DATA_V2 else '')
+    target = source + '_seed_v2_' + tag + datetime.now().strftime('%Y%m%d_%H%M%S')
     assert all(c.isalnum() or c=='_' for c in source+target)
     out=ROOT/'outputs/seeder_v2'/target;out.mkdir(parents=True, exist_ok=False)
     manifest={'source_schema':source,'database':target,'reference_time':reference.isoformat(),
               'company':'Needle Craft Jordan','workforce':9000,
               'planning_seed':planning_seed,'actual_execution_seed':actual_seed,
+              'data_version':seed.SEED_DATA_VERSION,
+              'load_factor':seed.SEED_LOAD_FACTOR if seed.DATA_V2 else None,
+              'order_window_days':seed.SEED_ORDER_WINDOW_DAYS if seed.DATA_V2 else None,
               'provenance':'Resampled synthetic scenarios; no observed production outcomes',
               'policy':'One factory per order; scenario-wide leave exclusion; same-worker pause/resume; synthetic repair before work',
               'success':False}
-    manifest['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'data_generation'/n for n in ('seed_database_fixed.py','simulation_calendar.py','validate_seed.py','grid.xls','Plan.xlsx','PPC-1.xlsx','WorkStation.xlsx')]}
+    manifest['source_hashes']={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'data_generation'/n for n in ('seed_database_fixed.py','simulation_calendar.py','validate_seed.py','routing_tables.py','grid.xls','Plan.xlsx','PPC-1.xlsx','WorkStation.xlsx')]}
     path=out/'manifest.json'
     path.write_text(json.dumps(manifest,indent=2),encoding='utf-8')
     config=dict(seed.db_config)

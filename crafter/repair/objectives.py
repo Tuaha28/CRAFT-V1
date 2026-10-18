@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import os
 from typing import Any, Mapping
 
 from ortools.sat.python import cp_model
@@ -246,6 +247,61 @@ def add_objective_variables(state, artifact, context):
         for name in ("changed_operations", "line_changes", "crew_changes", "machine_changes", "k_changes", "late_start_shift_seconds", "absolute_start_shift_seconds"):
             expressions.append({"name": name, "level": "STABILITY", "expression": sum(churn[name]) if churn[name] else 0,
                                 "orders": (), "unit": "operations" if name.endswith("changes") or name == "changed_operations" else "seconds"})
+    # Adaptive crews: once delivery is optimal, use as few workers as that
+    # delivery needs, so extra hands go only where they cut lateness and the
+    # rest stay free for later windows. Absent for fixed one-worker domains.
+    crew_configs = [(cfg, lit) for key in state["keys"]
+                    for cfg, lit in artifact["cfg_lit"].get(key, {}).items() if hasattr(cfg, "k")]
+    # FAST mode (CRAFT_OBJECTIVE_MODE=FAST): once delivery is optimal, finish
+    # every operation as early as possible -- idle workers join crews where
+    # that shortens work -- before economising on crew size.
+    pace = os.environ.get("CRAFT_OBJECTIVE_MODE", "ECONOMY").upper()
+    if pace == "FAST" and artifact["ends"]:
+        expressions.append({"name": "total_completion_seconds", "level": "FAST_COMPLETION",
+                            "expression": sum(artifact["ends"].values()), "orders": (), "unit": "seconds"})
+    if pace == "SLOW":
+        # SLOW (just-in-time): once delivery is optimal, finish each order as
+        # close as possible to its due date minus a safety buffer -- less
+        # unfinished work waiting on the floor. Never later than delivery
+        # allows: the delivery levels above are already fixed.
+        buffer = int(float(os.environ.get("CRAFT_JIT_BUFFER_DAYS", "2")) * 86400)
+        early = []
+        for row in context["orders"]:
+            end = artifact["ends"].get(row["final_operation_key"])
+            if row["effective_due_seconds"] is None or end is None:
+                continue
+            gap = model.NewIntVar(0, horizon, f"obj_jit_early_{row['order_id']}")
+            model.AddMaxEquality(gap, [int(row["effective_due_seconds"]) - buffer - end, 0])
+            early.append(gap)
+        if early:
+            expressions.append({"name": "jit_earliness_seconds", "level": "PACE_SLOW_JIT",
+                                "expression": sum(early), "orders": (), "unit": "seconds"})
+    if pace in ("ECONOMY", "SLOW") and state.get("distinct_worker_objective"):
+        # Concentrate work: a worker already busy elsewhere in the schedule
+        # costs nothing; each newly engaged worker costs one. Idle workers
+        # stay free for the manager to reassign.
+        in_use = {str(w) for w in state.get("_workers_in_use", ())}
+        literals = {}
+        for key in state["keys"]:
+            for cfg, lit in artifact["cfg_lit"].get(key, {}).items():
+                for worker in getattr(cfg, "worker_ids", ()):
+                    if str(worker) not in in_use:
+                        literals.setdefault(str(worker), []).append(lit)
+        used = []
+        for worker, lits in sorted(literals.items()):
+            flag = model.NewBoolVar(f"obj_new_worker_{worker}")
+            for lit in lits:
+                model.AddImplication(lit, flag)
+            used.append(flag)
+        if used:
+            expressions.append({"name": "newly_engaged_workers", "level": "WORKER_CONCENTRATION",
+                                "expression": sum(used), "orders": (), "unit": "workers"})
+    # Dispatch-rule baselines (greedy one-operation windows) skip this level:
+    # a greedy rule takes the crew that finishes the operation earliest.
+    if state.get("crew_economy_objective", True) and any(int(cfg.k) > 1 for cfg, _lit in crew_configs):
+        expressions.append({"name": "assigned_crew_workers", "level": "CREW_ECONOMY",
+                            "expression": sum(int(cfg.k) * lit for cfg, lit in crew_configs),
+                            "orders": (), "unit": "workers"})
     if artifact["ends"]:
         makespan = model.NewIntVar(0, horizon, "obj_regional_makespan")
         model.AddMaxEquality(makespan, list(artifact["ends"].values()))

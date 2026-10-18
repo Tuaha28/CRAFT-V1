@@ -94,11 +94,23 @@ def main():
                     if not created:
                         raise RuntimeError('IDEMPOTENCY_COLLISION_IN_DISPOSABLE_DATABASE')
                     invocations = 0
+                    worker_log = []
                     while run.status in ('QUEUED', 'CHECKPOINTED') and invocations < args.max_worker_invocations:
-                        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                            call_command('craft_worker', verbosity=0)
+                        out, err = io.StringIO(), io.StringIO()
+                        started_call = time.perf_counter()
+                        command_error = None
+                        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                            try:
+                                call_command('craft_worker', verbosity=0)
+                            except Exception as exc:  # Recorded, then the run state decides.
+                                command_error = f'{type(exc).__name__}:{exc}'
                         invocations += 1
                         run.refresh_from_db()
+                        worker_log.append({'invocation': invocations, 'status_after': run.status,
+                                           'seconds': round(time.perf_counter() - started_call, 3),
+                                           'command_error': command_error,
+                                           'stdout_tail': out.getvalue()[-500:],
+                                           'stderr_tail': err.getvalue()[-2000:]})
                     capture_result = run.result.get('capture_result', {})
                     checkpoint_payload = run.result.get('checkpoint', {}).get('payload', {})
                     attempt_rows = checkpoint_payload.get('windows', capture_result.get('windows', []))
@@ -107,6 +119,10 @@ def main():
                              'wall_seconds': round(time.perf_counter() - cycle_start, 3),
                              'controller_status': run.result.get('controller_status'),
                              'reason': run.result.get('reason'),
+                             'exit_code': run.result.get('exit_code'),
+                             'exception': run.result.get('exception'),
+                             'worker_stderr_tail': run.result.get('stderr_tail'),
+                             'worker_invocation_log': worker_log,
                              'accepted_total': (len(run.result.get('acceptance', {}).get(
                                  'selected_schedule', [])) + previous_target if run.status == 'VALIDATED' else
                                  len(capture_result.get('selected_schedule', []))),
@@ -121,7 +137,13 @@ def main():
                                            'domain_complete': row.get('resource_domain', {}).get(
                                                'resource_domain_complete'),
                                            'calendar_regimes': row.get('calendar_regimes'),
-                                           'recovery': row.get('recovery')}
+                                           'recovery': row.get('recovery'),
+                                           'replay': row.get('replay'),
+                                           'physical': row.get('physical'),
+                                           'scope': row.get('scope'),
+                                           'resource_domain_detail': row.get('resource_domain'),
+                                           'stages': row.get('stages'),
+                                           'complete_domain_diagnostic': row.get('complete_domain_diagnostic')}
                                           for row in attempt_rows],
                              'scheduled_operation_keys': capture_result.get('scheduled_keys'),
                              'deferred_operations': capture_result.get('deferred_operations'),

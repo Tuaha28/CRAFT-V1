@@ -1,8 +1,12 @@
 export interface Session { authenticated: boolean; username: string | null; csrf_token: string; can_request: boolean; can_promote: boolean; can_change_priority: boolean; environment: string; live_admission: boolean }
 export interface PriorityState { revision?: number; selected_order_id?: string; tier?: string; target_due_seconds?: number; reason?: string; recorded_at?: string; override?: { order_id: string; tier: string; target_due_at: number; override_id: string } | null }
-export interface Scope { id: number; factory_external_id: number; environment: string; source_hash: string; active_version: string | null; priority_state: PriorityState; request_snapshot: Record<string, unknown> }
+export interface CaptureState { prepared_keys: string[]; selected_keys: string[]; approved_keys: string[]; window_size: number | null; ledger_operations: number; source_hash: string | null }
+export interface Scope { id: number; factory_external_id: number; environment: string; source_hash: string; active_version: string | null; priority_state: PriorityState; request_snapshot: Record<string, unknown>; capture?: CaptureState | null }
 export interface Run { id: string; scope: number; status: string; cp_status: string; created_at: string; input_hash: string; result?: {
   reason?: string;
+  exception?: string | null;
+  exit_code?: number;
+  controller_status?: string;
   checkpoint?: { revision: number; accepted_keys: string[]; operation_keys: string[]; deferred: Record<string, string>; approval_status: string; pending_windows?: { keys: string[]; cycle_number: number }[] };
   progress?: { accepted: number; remaining: number; cycle_number?: number; window_number?: number; first_failure?: Record<string, string> | null; deferred?: Record<string, string> };
 } }
@@ -37,6 +41,8 @@ export const governance = {
   changePriority: (scope: Scope, order_id: string, tier: string, target_due_seconds: number, reason: string) =>
     request<Scope>(`scopes/${scope.id}/priority`, { order_id, tier, target_due_seconds, reason,
       expected_source_hash: scope.source_hash }),
+  selectCapture: (scope: Scope, operation_keys: string[], window_size: number) =>
+    request<Scope>(`scopes/${scope.id}/capture-selection`, { operation_keys, window_size }),
   promote: (id: string, reason: string) => request<Candidate>(`candidates/${id}/promote`, { reason }),
   reject: (id: string, reason: string) => request<Candidate>(`candidates/${id}/reject`, { reason }),
   compare: (id: string) => request<Comparison>(`candidates/${id}/compare`),

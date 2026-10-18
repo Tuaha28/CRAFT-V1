@@ -53,7 +53,7 @@ def main():
             cursor.execute('SET SESSION TRANSACTION READ ONLY')
             cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ')
             cursor.execute('START TRANSACTION WITH CONSISTENT SNAPSHOT')
-            cursor.execute('SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=%s ORDER BY TABLE_NAME, ORDINAL_POSITION', ('garment_fyp_db',))
+            cursor.execute('SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=%s ORDER BY TABLE_NAME, ORDINAL_POSITION', (repo.database,))
             schema = list(cursor.fetchall())
             cursor.execute('SELECT factory_id FROM factories ORDER BY factory_id')
             factories = [row['factory_id'] for row in cursor.fetchall()]

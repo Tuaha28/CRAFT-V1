@@ -94,8 +94,15 @@ def route_ready_probes(state, regimes, committed, keys):
         else:
             # This is a breakpoint hint only. It never becomes a committed
             # completion or a CP lower bound; exact execution still gates it.
+            configs = state["resource_configurations_for_probes"].get(key, ())
+            if not configs:
+                # A zero domain is allowed here and is reported by the
+                # regime/domain stage; offer no hint rather than fail.
+                earliest_end[key] = ready
+                probes[key] = ()
+                continue
             duration = min(config.productive_seconds + config.setup_seconds
-                           for config in state["resource_configurations_for_probes"][key])
+                           for config in configs)
             earliest_end[key] = ready + duration
         probes[key] = tuple(ready + day * 86400 for day in range(3))
     return probes, earliest_end

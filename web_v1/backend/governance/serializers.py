@@ -4,15 +4,30 @@ from .models import AuditEvent, CraftRun, ScheduleScope, ScheduleVersion
 
 class ScopeSerializer(serializers.ModelSerializer):
     request_snapshot = serializers.SerializerMethodField()
+    capture = serializers.SerializerMethodField()
 
     def get_request_snapshot(self, obj):
         from .services import request_recipe
         return request_recipe(obj)
 
+    def get_capture(self, obj):
+        """Read-only selection context for a captured TEST scope; selection rules stay server-side."""
+        if obj.environment != 'TEST_CAPTURE':
+            return None
+        state = obj.resource_state or {}
+        base = state.get('capture_state') or {}
+        approved = [row['operation_key'] for row in obj.active_version.operations] if obj.active_version else []
+        return {'prepared_keys': list(base.get('selected_keys', ())),
+                'selected_keys': list(state.get('selected_keys', ())),
+                'approved_keys': approved,
+                'window_size': state.get('window_size'),
+                'ledger_operations': len(base.get('operation_ledger', {})),
+                'source_hash': base.get('source_hash')}
+
     class Meta:
         model = ScheduleScope
         fields = ['id', 'factory_external_id', 'environment', 'source_hash', 'active_version',
-                  'priority_state', 'request_snapshot']
+                  'priority_state', 'request_snapshot', 'capture']
 
 
 class RunSerializer(serializers.ModelSerializer):

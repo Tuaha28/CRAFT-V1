@@ -296,6 +296,69 @@ def select_test_capture_work(user, scope_id, operation_keys, *, window_size=None
     return scope
 
 
+def _approved_capture_keys(scope):
+    return sorted(row['operation_key'] for row in scope.active_version.operations) if scope.active_version else []
+
+
+def rebase_test_capture_domain(user, scope_id, *, domain_limit=200, initial_target=200, window_size=15,
+                               exclude_keys=()):
+    """Prepare the next bounded cycle domain after an approved TEST cycle.
+
+    Approved operations become fixed predecessors; the next unstarted route
+    work (up to ``domain_limit``) is prepared from the same pinned capture.
+    The slow preparation runs outside the database transaction, then the
+    scope is re-checked under lock so a concurrent run or approval cannot be
+    silently overwritten.
+    """
+    scope = ScheduleScope.objects.get(pk=scope_id)
+    authorize(user, scope, 'request_run')
+    if scope.environment != 'TEST_CAPTURE':
+        raise ValidationError('CAPTURE_TEST_ONLY')
+    approved = _approved_capture_keys(scope)
+    previous = scope.resource_state.get('capture_state') or {}
+    excluded = sorted(set(previous.get('excluded_deferred_keys', ())) | set(exclude_keys))
+    if set(excluded) & set(approved):
+        raise ValidationError('CAPTURE_EXCLUDED_OPERATION_APPROVED')
+    revision = scope.resource_revision
+    try:
+        base = capture_test_state.build_base(scope.factory_external_id, domain_limit=domain_limit,
+                                             approved_keys=approved, excluded_keys=excluded)
+    except ValueError as exc:
+        if 'CAPTURE_NO_SOURCE_ADMISSIBLE_OPERATIONS' in str(exc):
+            raise ValidationError('CAPTURE_DOMAIN_EXHAUSTED') from exc
+        raise ValidationError(str(exc)) from exc
+    with transaction.atomic():
+        scope = ScheduleScope.objects.select_for_update().get(pk=scope_id)
+        if (scope.resource_revision != revision or _approved_capture_keys(scope) != approved or
+                CraftRun.objects.filter(scope=scope, status__in=['QUEUED', 'PREPARING', 'CHECKPOINTED']).exists()):
+            raise ValidationError('CAPTURE_REBASE_STATE_CHANGED')
+        selected = base['selected_keys'][:min(initial_target, len(base['selected_keys']))]
+        size = min(window_size, len(selected))
+        from crafter.production.cycles import policy as cycle_policy
+        try:
+            cycle_policy({'cycle_target': len(selected), 'window_size': size, 'adaptive_retries': True})
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        scope.resource_state = {**scope.resource_state, 'capture_state': base, 'selected_keys': selected,
+                                'cycle_target': len(selected), 'window_size': size,
+                                'adaptive_retries': True}
+        scope.resource_revision += 1
+        scope.source_hash = fingerprint(request_recipe(scope))
+        scope.save(update_fields=['resource_state', 'resource_revision', 'source_hash'])
+        AuditEvent.objects.create(scope=scope, actor=user, action='CAPTURE_TEST_DOMAIN_REBASED',
+                                  entity_id=str(scope.pk),
+                                  reason='Next bounded TEST cycle prepared after approved work',
+                                  details={'factory_id': scope.factory_external_id,
+                                           'approved_predecessors': len(approved),
+                                           'excluded_deferred': excluded,
+                                           'prepared_domain': len(base['selected_keys']),
+                                           'selected': len(selected), 'window_size': size,
+                                           'capture_base_fingerprint': base['fingerprint'],
+                                           'resource_revision': scope.resource_revision,
+                                           'classification': 'SIMULATED_TEST'})
+    return scope
+
+
 def authorize(user, scope, permission):
     if not user.is_authenticated or not user.has_perm('governance.' + permission):
         raise PermissionDenied('Scheduling permission required')

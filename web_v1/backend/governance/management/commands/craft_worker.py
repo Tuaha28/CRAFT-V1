@@ -2,10 +2,28 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from django.core.management.base import BaseCommand, CommandError
 from governance.services import claim_run, finish_run, expire_abandoned_runs
+
+_SECRET_PATTERNS = (
+    re.compile(r'(?i)((?:password|passwd|secret|token|api[_-]?key)\s*[=:]\s*)\S+'),
+    re.compile(r'(?i)(\w+://[^:/@\s]+:)[^@\s]+(@)'),
+)
+
+
+def _redact(text):
+    for pattern in _SECRET_PATTERNS:
+        text = pattern.sub(lambda m: m.group(1) + '[REDACTED]' + (m.group(2) if m.lastindex > 1 else ''), text)
+    return text
+
+
+def _last_exception_line(text):
+    lines = [line.strip() for line in _redact(text).splitlines()
+             if re.match(r'^[A-Za-z_][\w.]*(Error|Exception|Exit)\b', line.strip())]
+    return lines[-1][:500] if lines else None
 
 
 class Command(BaseCommand):
@@ -47,12 +65,20 @@ class Command(BaseCommand):
                     checkpoint_path.write_text(json.dumps(run.result.get('checkpoint'), sort_keys=True),
                                                encoding='utf-8')
                     arguments.append(str(checkpoint_path))
+                # Larger packed windows may need a longer lease; the default
+                # stays 180 s. The child's attempt budget must stay below it.
+                timeout = int(os.environ.get('CRAFT_WORKER_TIMEOUT_SECONDS', '180'))
                 child = subprocess.run(arguments,
-                    cwd=root, capture_output=True, text=True, timeout=180, check=False)
+                    cwd=root, capture_output=True, text=True, timeout=timeout, check=False)
                 if child.returncode or not output.exists():
                     if child.stderr:
                         self.stderr.write(child.stderr[-4000:])
-                    result = {'reason': 'WORKER_PROCESS_FAILED', 'exit_code': child.returncode}
+                    # Persist a bounded, redacted diagnostic so a failed run's
+                    # cause survives even when the caller discards stderr.
+                    result = {'reason': 'WORKER_PROCESS_FAILED', 'exit_code': child.returncode,
+                              'output_written': output.exists(),
+                              'stderr_tail': _redact(child.stderr or '')[-4000:],
+                              'exception': _last_exception_line(child.stderr or '')}
                 else:
                     result = json.loads(output.read_text(encoding='utf-8'))
         except subprocess.TimeoutExpired:
