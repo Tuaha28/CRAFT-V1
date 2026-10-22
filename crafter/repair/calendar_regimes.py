@@ -44,6 +44,36 @@ class CalendarRegimeCache:
         'evictions': 0,
     })
 
+    # Tokens are never reused, so an evicted signature can never be confused
+    # with a later one. Only the most recent signatures per kind are kept:
+    # every commitment changes the reservation signature, and stale ones (each
+    # a frozen copy of the whole reservation map) otherwise grow without bound.
+    next_token: int = 0
+    max_signatures: int = field(default_factory=lambda: max(1, int(os.environ.get('CRAFT_CACHE_SIGNATURES', '8'))))
+
+    def token(self, kind, signature):
+        """Small integer for an exact signature; evicts the entries of the
+        oldest signature of this kind beyond max_signatures. Cache-only:
+        evicted values are recomputed on demand with the same primitive."""
+        tokens, entry = self.signature_tokens, (kind, signature)
+        if entry in tokens:
+            tokens[entry] = tokens.pop(entry)  # most recently used last
+            return tokens[entry]
+        tokens[entry] = (kind, self.next_token)
+        self.next_token += 1
+        same_kind = [e for e in tokens if e[0] == kind]
+        for stale in same_kind[:max(0, len(same_kind) - self.max_signatures)]:
+            dead = tokens.pop(stale)
+            before = len(self.execution) + len(self.breakpoints) + len(self.machine_acceptance)
+            if kind == 'worker':
+                self.execution = {k: v for k, v in self.execution.items() if k[0] != dead}
+            else:
+                self.breakpoints = {k: v for k, v in self.breakpoints.items() if k[0] != dead}
+                self.machine_acceptance = {k: v for k, v in self.machine_acceptance.items() if k[0] != dead}
+            after = len(self.execution) + len(self.breakpoints) + len(self.machine_acceptance)
+            self.statistics['evictions'] += before - after
+        return tokens[entry]
+
     def snapshot(self):
         return dict(self.statistics)
 
@@ -265,10 +295,9 @@ def generate_calendar_regimes(state, configurations, *, cache=None,
                               operation_keys=None):
     regimes, summary, total, checks = {}, [], 0, []
     cache = cache or CalendarRegimeCache()
-    tokens = cache.signature_tokens
     # Equal tokens <=> equal exact signatures within this cache object.
-    calendar_signature = ('calendar', tokens.setdefault(_calendar_signature(state), len(tokens)))
-    worker_signature = ('worker', tokens.setdefault(_worker_calendar_signature(state), len(tokens)))
+    calendar_signature = cache.token('calendar', _calendar_signature(state))
+    worker_signature = cache.token('worker', _worker_calendar_signature(state))
     event=state.get('event'); md=getattr(event,'metadata',{}) or {}
     delayed=str(md.get('predecessor_operation_key','')); delayed_end=int(md.get('delayed_end_seconds',0) or 0)
     keys = tuple(sorted(str(key) for key in (

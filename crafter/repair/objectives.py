@@ -203,6 +203,22 @@ def add_objective_variables(state, artifact, context):
             {"name": f"maximum_tardiness_seconds_{tier}", "level": f"DELIVERY_{tier}", "expression": maximum, "orders": tuple(group["records"]), "unit": "seconds"},
         ])
 
+    # Operation due dates (CRAFT V3, opt-in): each operation's own deadline
+    # (order due date minus the work its later route steps still need), so
+    # CP-SAT ranks operations, not only whole orders, right after delivery.
+    op_due = state.get("operation_due_seconds") or {}
+    op_late = []
+    for key in sorted(op_due):
+        end = artifact["ends"].get(key)
+        if end is None:
+            continue
+        gap = model.NewIntVar(0, horizon, f"obj_op_late_{key}")
+        model.AddMaxEquality(gap, [end - int(op_due[key]), 0])
+        op_late.append(gap)
+    if op_late:
+        expressions.append({"name": "operation_tardiness_seconds", "level": "OPERATION_DUE",
+                            "expression": sum(op_late), "orders": (), "unit": "seconds"})
+
     churn = {name: [] for name in ("changed_operations", "line_changes", "crew_changes", "machine_changes", "k_changes", "late_start_shift_seconds", "absolute_start_shift_seconds")}
     churn_records = []
     stability_applicable = state.get("objective_profile") != "INITIAL_PLAN_NO_STABILITY"

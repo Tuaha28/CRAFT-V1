@@ -75,3 +75,13 @@ resource sampling fix, whole-factory cycles, dispatch baselines, lanes and
 adaptive crews, DATA v2 generator, fast calendar, and CRAFT V2 (EDD start +
 CP-SAT LNS improvement with SLOW/NORMAL/FAST manager pace levels). Still
 source-only: `handout.md`, `.env`, data captures, databases and outputs excluded.
+
+## Refresh 2026-10-22
+
+Refreshed from local commit `d48876e` (branch `craft-v1-consolidation`): CRAFT V3
+(locked as tag `craft-v3-final`): CP-SAT rolling time-window construction with
+operation due dates, then CP-SAT improvement from both the CP-SAT plan and the best
+validated start, keeping the better plan. Also the calendar regime cache memory
+fix (LRU eviction of stale reservation signatures), rolling weekly mode, the Excel
+workbook export, and `--order-offset` for the Kaggle paper experiments. Still
+source-only: `handout.md`, `.env`, data captures, databases and outputs excluded.

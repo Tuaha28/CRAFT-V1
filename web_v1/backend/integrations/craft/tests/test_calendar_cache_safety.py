@@ -85,3 +85,24 @@ def test_calendar_shape_transition_keeps_exact_single_second_starts(monkeypatch)
     assert evidence['mismatches'] == 0
     assert {row['lo'] for row in regimes['1_2']} == {0, 1}
     assert all(row['lo'] == row['hi'] for row in regimes['1_2'])
+
+
+def test_signature_eviction_bounds_cache_and_never_reuses_a_token():
+    p, _, index = fixture()
+    state = {'problem': p, 'operator_index': index, '_worker_res': {}}
+    config = ResourceConfiguration('1_2', 1, 1, 1, (1,), ('1',), 0, 600, (), 10)
+    cache = c.CalendarRegimeCache(max_signatures=2)
+    seen = []
+    for minutes in range(1, 6):  # five commitment states, each a new signature
+        state['_worker_res']['1'] = [(p.origin, p.origin + timedelta(seconds=60 * minutes))]
+        token = cache.token('worker', c._worker_calendar_signature(state))
+        assert token not in seen
+        seen.append(token)
+        assert c._execution(state, config, 0, cache=cache, worker_signature=token) == c._execution(state, config, 0)
+    assert len(cache.signature_tokens) == 2 and len(cache.execution) == 2
+    assert cache.statistics['evictions'] == 3
+    # A signature seen again after eviction gets a fresh token, never an old one.
+    state['_worker_res']['1'] = [(p.origin, p.origin + timedelta(seconds=60))]
+    again = cache.token('worker', c._worker_calendar_signature(state))
+    assert again not in seen
+    assert c._execution(state, config, 0, cache=cache, worker_signature=again) == c._execution(state, config, 0)

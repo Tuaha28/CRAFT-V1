@@ -3044,8 +3044,8 @@
     },
     {
       "path": "crafter/repair/calendar_regimes.py",
-      "bytes": 26412,
-      "sha256": "a2645330e3e998988ab7ed44aaa57cb994a54eebbd73ea2b507aabf935a05d38"
+      "bytes": 29510,
+      "sha256": "5b2ea97f5def7d2ad0a7fe44d9aca039de5e4a36ba0bc26e7acc216e396a69b7"
     },
     {
       "path": "crafter/repair/causal_closure.py",
@@ -3084,8 +3084,8 @@
     },
     {
       "path": "crafter/repair/objectives.py",
-      "bytes": 20458,
-      "sha256": "b90c2f99d7d660b6df5df1c52cf1c4e524122ce819956d6a8bd52adb52d31998"
+      "bytes": 24419,
+      "sha256": "ce3126b678239c39be91765f54fd91d0fb1f021ed6c9649a0e2def922cccbb5e"
     },
     {
       "path": "crafter/repair/planning.py",
@@ -3863,6 +3863,11 @@
       "sha256": "30cea850da8e59ed9ee1618e5a1d170fed53202b971ea582081b6cd71668e68a"
     },
     {
+      "path": "scratch/export_craft_workbook.py",
+      "bytes": 16090,
+      "sha256": "eb3176caaf92344b1e4d48b3f84e8608a5756a415f6d8cebc6fefc3be8e77175"
+    },
+    {
       "path": "scratch/fairfight_optionB.py",
       "bytes": 6557,
       "sha256": "9eacb351316a250b35d3e2a94c587141ca7377a0bfc51c9606669f9245fab42b"
@@ -4231,6 +4236,11 @@
       "path": "scratch/run_compressed_p2_search.py",
       "bytes": 15526,
       "sha256": "1cb2ee59287a6b9f21a19c03dc179893486c0e921c2c116eeb321bccea03eaf5"
+    },
+    {
+      "path": "scratch/run_craft_v2.py",
+      "bytes": 23811,
+      "sha256": "214c27e06257749fe1b87aad16532091d80dcdd9324c782c6e4a21d45622bc1c"
     },
     {
       "path": "scratch/run_deterministic_core_scenarios.py",
@@ -5404,8 +5414,8 @@
     },
     {
       "path": "web_v1/audits/factory46_operation_schedule_v1/run_factory_test.py",
-      "bytes": 45343,
-      "sha256": "6be8a1f000be21aac15ce5fe0ae1361371ae8bc418c1d7cac72bd2cfddd18e95"
+      "bytes": 105633,
+      "sha256": "0a7fd98e95ca92bd246cb5a9e7f704f6e9d4604858dfa0e8473e5d2d685343c4"
     },
     {
       "path": "web_v1/audits/factory_cycles_v1/factory_wide_gate_20261013.md",
@@ -6279,8 +6289,8 @@
     },
     {
       "path": "web_v1/backend/integrations/craft/tests/test_calendar_cache_safety.py",
-      "bytes": 4573,
-      "sha256": "096777172e83a94239f5c57c7cb28433d1e9877d3697db3c4cc73fa3509ea9b3"
+      "bytes": 5722,
+      "sha256": "4731cbeb7d9a1a37c3375f671e275f7513fdbaa31f55c3b67729aba1923f6937"
     },
     {
       "path": "web_v1/backend/integrations/craft/tests/test_evidence_intake.py",
@@ -6568,8 +6578,8 @@
       "sha256": "842358eba975f500e0399b3d9921847e4b4c74f86be1caaad7cc92a030d18eba"
     }
   ],
-  "refreshed_from_local_commit": "2645fc0",
-  "refreshed_on": "2026-10-17",
+  "refreshed_from_local_commit": "d48876e",
+  "refreshed_on": "2026-10-22",
   "reviewed_false_positive_findings": [
     {
       "path": "crafter/baselines/fifo_v1.py",

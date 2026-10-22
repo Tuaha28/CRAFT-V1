@@ -6,13 +6,14 @@ explicit TEST assumptions; this is not a production admission adapter.
 """
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_CEILING
 import hashlib
 import json
 import math
 import os
+import pickle
 from pathlib import Path
 import sys
 import time
@@ -86,6 +87,20 @@ DOMAIN_EXPANSION_ROUNDS = 4
 # operation may start (earlier is always free) -- a bounded neighbourhood.
 MOVE_CONFIGS = int(os.environ.get("CRAFT_MOVE_CONFIGS", "6"))
 MOVE_WINDOW_DAYS = float(os.environ.get("CRAFT_MOVE_WINDOW_DAYS", "3"))
+# Opt-in for full-domain dispatch windows: search the first N days after an
+# operation's earliest start (every resource option kept), and the whole
+# horizon only if nothing fits there. Bounds calendar-regime generation,
+# which otherwise spans the whole horizon for every single-operation solve.
+DISPATCH_WINDOW_DAYS = float(os.environ.get("CRAFT_DISPATCH_WINDOW_DAYS", "0"))
+# CRAFT V2 Expand: region sizes (operations) of the successive levels around
+# one seed order. A level grows only after a proven result at the previous one.
+EXPAND_SIZES = tuple(int(x) for x in os.environ.get("CRAFT_EXPAND_SIZES", "20,40,60").split(","))
+# CRAFT V2 rolling horizon: work starting inside the frozen zone (hours from
+# the reference time) is committed and never moved; with ACTIVE_DAYS > 0 the
+# moves work through half-overlapping active windows, each window freezing
+# everything that starts before it. 0 = one pass over the whole horizon.
+V2_FROZEN_HOURS = float(os.environ.get("CRAFT_V2_FROZEN_HOURS", "0"))
+V2_ACTIVE_DAYS = float(os.environ.get("CRAFT_V2_ACTIVE_DAYS", "0"))
 
 
 def _split_failed_window(keys, halving=False):
@@ -176,7 +191,21 @@ def _hash(value):
                                  default=str).encode("utf-8")).hexdigest()
 
 
+_SOURCE_CACHE = {}
+
+
 def _source(factory_id):
+    """The pinned capture, verified and normalized once per process; every
+    caller gets its own copy, so no caller can change another's view."""
+    source_path = CAPTURE / f"factory{factory_id}_source.json"
+    stat = source_path.stat()
+    key = (str(source_path), stat.st_size, stat.st_mtime_ns)
+    if key not in _SOURCE_CACHE:
+        _SOURCE_CACHE[key] = pickle.dumps(_load_source(factory_id), protocol=pickle.HIGHEST_PROTOCOL)
+    return pickle.loads(_SOURCE_CACHE[key])
+
+
+def _load_source(factory_id):
     source_path = CAPTURE / f"factory{factory_id}_source.json"
     readiness_path = CAPTURE / f"factory{factory_id}_readiness.json"
     raw = source_path.read_bytes()
@@ -462,6 +491,13 @@ def _prepare(factory_id, source, readiness, snapshot, source_hash, selected_rout
     max_due = max(order.deadline_seconds or 0 for order in order_specs.values())
     max_release = max(order.release_seconds for order in order_specs.values())
     horizon = max(max_due, max_release) + 30 * 86400
+    # Holds of in-flight lots with an unknown end stay quarantined to this
+    # base horizon, so extra planning room never changes captured capacity.
+    quarantine_end = horizon
+    # Opt-in planning room past the last due date (default 30 days, as
+    # before): long enough and every order can finish, so no policy is
+    # compared on a half-scheduled order.
+    horizon = max(max_due, max_release) + int(float(os.environ.get("CRAFT_HORIZON_EXTRA_DAYS", "30")) * 86400)
     problem = SchedulingProblem(
         f"F{factory_id}-PINNED-CAPTURE-TEST", origin, int(horizon),
         tuple(LineSpec(line, factory_id, str(line)) for line in sorted(resource_lines)),
@@ -502,9 +538,9 @@ def _prepare(factory_id, source, readiness, snapshot, source_hash, selected_rout
         lots = {str(lot.get("lot_id")): lot for lot in operation.get("lots", ())}
         for item in operation.get("resource_holds", ()):
             lot = lots.get(str(item["lot_id"]), {})
-            end = offset(lot["projected_end"]) if RESIDUAL_ROUTES and lot.get("projected_end") else horizon
+            end = offset(lot["projected_end"]) if RESIDUAL_ROUTES and lot.get("projected_end") else quarantine_end
             hold(operation, item["lot_id"], int(item["machine_id"]), str(item["worker_id"]), 0, end,
-                 "PROJECTED_LOT_END_TEST" if end != horizon else "UNKNOWN_QUARANTINED_TO_TEST_HORIZON")
+                 "PROJECTED_LOT_END_TEST" if end != quarantine_end else "UNKNOWN_QUARANTINED_TO_TEST_HORIZON")
         if RESIDUAL_ROUTES:
             for lot in operation.get("lots", ()):
                 if lot.get("state") == "NOT_STARTED" and lot.get("projected_start") and lot.get("projected_end"):
@@ -643,7 +679,8 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
          window_size=None, attempt_time_budget_seconds=None, window_sequence=None,
          lane_policy=None, window_order=None, crew_policy=None,
          dispatch_guard=False, lookahead=0, lns_seconds=0, lns_neighbourhood=20,
-         start_candidates=None, improve=None, full_domain_windows=False):
+         start_candidates=None, improve=None, full_domain_windows=False,
+         time_windows=None, start_policy="BEST"):
     # Reuse the already validated additive probes; no Factory 1 data is loaded.
     from web_v1.audits.factory1_realistic_neighborhood_v1.run_bounded import route_ready_probes
     started = time.perf_counter()
@@ -734,6 +771,10 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
         # rule takes the earliest-finishing qualified worker/machine (as a
         # real dispatcher would) instead of the first-stage single anchor.
         identity['full_domain_windows'] = True
+    if time_windows:
+        identity['time_windows'] = dict(time_windows)
+    if start_policy != "BEST":
+        identity['start_policy'] = start_policy
     if dispatch_guard or lookahead:
         identity.update(dispatch_guard=bool(dispatch_guard), lookahead=int(lookahead))
     if lns_seconds:
@@ -756,24 +797,42 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
                 tardy.append(max(0, int(by_key[final]["end_seconds"]) - int(deadlines[order_id])))
         return (len(keys) - len(by_key), sum(t > 0 for t in tardy), sum(tardy),
                 max(tardy, default=0), sum(int(r["end_seconds"]) for r in rows))
+    ops_by_key = state["problem"].operation_by_key
+    order_keys = defaultdict(list)
+    for op in state["problem"].operations:
+        order_keys[str(op.order_id)].append(op.operation_key)
+    horizon_seconds = int(state["problem"].horizon_seconds)
+    widest_crew = int((crew_policy or {}).get("max_crew") or 1)
     pace = os.environ.get("CRAFT_OBJECTIVE_MODE", "ECONOMY").upper()
     jit_buffer = int(float(os.environ.get("CRAFT_JIT_BUFFER_DAYS", "2")) * 86400)
     all_keys_set = set(all_keys)
 
     def v2_score(rows_by_key):
         """Whole-schedule goals in CRAFT's own order (lower is better):
-        unplaced operations, late orders, total and maximum tardiness, then
+        late orders, total and maximum tardiness (unfinished orders count
+        with an estimated finish), unplaced operations, then
         the manager's pace goal (FAST: finish early; SLOW: finish close to
         due minus buffer; ECONOMY: fewest distinct workers)."""
         mine = {k: r for k, r in rows_by_key.items() if k in all_keys_set}
         tardy, early = [], 0
         for order_id, final in final_ops.items():
-            if final in mine and deadlines.get(order_id) is not None:
-                end, due = int(mine[final]["end_seconds"]), int(deadlines[order_id])
-                tardy.append(max(0, end - due))
+            if deadlines.get(order_id) is None or not any(k in all_keys_set for k in order_keys[order_id]):
+                continue
+            due = int(deadlines[order_id])
+            if final in mine:
+                end = int(mine[final]["end_seconds"])
                 early += max(0, due - jit_buffer - end)
-        delivery = (len(all_keys_set) - len(mine), sum(t > 0 for t in tardy), sum(tardy),
-                    max(tardy, default=0))
+            else:
+                # An unfinished order is late too: it ends no earlier than the
+                # horizon plus its unplaced work at the widest crew. Without
+                # this a half-placed order was invisible to the delivery goals.
+                placed = [int(mine[k]["end_seconds"]) for k in order_keys[order_id] if k in mine]
+                end = max([horizon_seconds, *placed]) + sum(
+                    int(ops_by_key[k].serial_productive_seconds) // widest_crew
+                    for k in order_keys[order_id] if k in all_keys_set and k not in mine)
+            tardy.append(max(0, end - due))
+        delivery = (sum(t > 0 for t in tardy), sum(tardy), max(tardy, default=0),
+                    len(all_keys_set) - len(mine))
         workers = len({str(w) for r in mine.values() for w in r["resource_configuration"]["worker_ids"]})
         crew = sum(int(r["resource_configuration"].get("k", 1)) for r in mine.values())
         ends = [int(r["end_seconds"]) for r in mine.values()]
@@ -788,14 +847,15 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
     if start_candidates:
         # CRAFT V2 starts from the best valid dispatch schedule (e.g. plain
         # EDD and EDD with greedy crews): the floor CRAFT can only improve.
-        start_report, best = [], None
+        start_report, best, floors = [], None, []
         for name, rows in start_candidates:
             rows = [r for r in rows if r["operation_key"] in all_keys_set]
             check = _validate_assembled_trial(state, [*approved_rows, *rows], state["boundary_facts"])
             entry = {"start": name, "operations": len(rows), "validation": bool(check["accepted"])}
             if check["accepted"]:
                 entry["score"] = list(v2_score({r["operation_key"]: r for r in rows}))
-                if best is None or tuple(entry["score"]) < best[0]:
+                floors.append((tuple(entry["score"]), name, rows, check))
+                if best is None or (start_policy == "BEST" and tuple(entry["score"]) < best[0]):
                     best = (tuple(entry["score"]), name, rows, check)
             start_report.append(entry)
         if best is None:
@@ -806,6 +866,9 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
         assembled_validation = best[3]
         windows = []
         identity.update(improve=improve, starts=[name for name, _rows in start_candidates])
+        if improve == "V2":
+            identity.update(v2_expand_sizes=list(EXPAND_SIZES), v2_frozen_hours=V2_FROZEN_HOURS,
+                            v2_active_days=V2_ACTIVE_DAYS)
     if selected_keys is not None:
         identity.update(approval_fingerprint=approval_fingerprint,
                         approved_assignments_sha256=_hash(approved_rows))
@@ -838,14 +901,19 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
                         "remaining_selected_keys": sorted(set(all_keys) - set(completed)),
                         "pending_windows": windows, "live_activation": "DISABLED"})
     def solve(keys, done, res_m, res_w, facts, crew_economy, scale=1.0,
-              incumbent=None, full_domain=False, distinct=False, move_window_days=None):
+              incumbent=None, full_domain=False, distinct=False, move_window_days=None,
+              move_configs=None, op_due=None, bound_days=None):
         """One canonical window solve + independent assembled validation.
 
         ``incumbent`` rows (CRAFT V2 moves) are exposed and hinted so the
         solver starts from the current valid plan; ``full_domain`` solves
         one stage over the whole sampled domain; ``distinct`` adds the
-        worker-concentration goal (ECONOMY/SLOW pace).
+        worker-concentration goal (ECONOMY/SLOW pace). For moves,
+        ``move_window_days`` bounds how much later an operation may start
+        ("FULL": anywhere in the horizon) and ``move_configs`` how many
+        resource options each operation keeps.
         """
+        move_days = None if move_window_days == "FULL" else (move_window_days or MOVE_WINDOW_DAYS)
         window_state = {
             **state, "keys": keys,
             "crew_economy_objective": crew_economy,
@@ -859,6 +927,7 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
                                        row["resource_configuration"]["worker_ids"])
                 for row in (incumbent or ())},
             "_incumbent_starts": {row["operation_key"]: int(row["start_seconds"]) for row in (incumbent or ())},
+            "operation_due_seconds": {key: int(op_due[key]) for key in keys if op_due and key in op_due},
             "route_ready_committed": dict(done),
             "committed_routing_completion": {
                 key: {"authoritative_end_seconds": row["end_seconds"]}
@@ -889,9 +958,12 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
             objective_mode=route_ready_objective, objective_time_limit_seconds=OBJECTIVE_SECONDS * scale,
             regime_probe=route_ready_probes if route_ready_objective else None,
             canonical_kwargs=({"incumbent_selected_schedule": list(incumbent)} if incumbent else None),
-            canonical_plan_factory=((lambda m, w: ((min(m * w, MOVE_CONFIGS), move_window_days or MOVE_WINDOW_DAYS, stage[2]),))
+            canonical_plan_factory=((lambda m, w: ((min(m * w, move_configs or MOVE_CONFIGS), move_days, stage[2]),))
                                     if incumbent else
-                                    (lambda m, w: ((m * w, None, stage[2]),)) if full_domain else
+                                    ((lambda m, w: ((m * w, bound_days or DISPATCH_WINDOW_DAYS, stage[2]),
+                                                    (m * w, None, stage[2])))
+                                     if (bound_days or DISPATCH_WINDOW_DAYS) > 0 else
+                                     (lambda m, w: ((m * w, None, stage[2]),))) if full_domain else
                                     (lambda m, w: ((1, 7, stage[0]), (4, 14, stage[1]),
                                                    (m * w, None, stage[2])))))
         acceptance = adaptive.get("acceptance", {})
@@ -918,6 +990,126 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
         check = _validate_assembled_trial(state, [*completed.values(), *subset], state["boundary_facts"])
         return (subset if check["accepted"] else None), check
 
+    if time_windows and not start_candidates:
+        # CRAFT V3 construction: CP-SAT is the scheduler, window by window in
+        # time (the Factory-2 rolling design). Each window admits the READY
+        # operations -- release passed, route predecessor committed -- with
+        # the most urgent OPERATION due dates first, plus their next route
+        # steps as provisional lookahead. CP-SAT assigns every operation its
+        # machine(s), crew, workers and start; only operations starting in
+        # the first commit_hours are committed, the rest are re-optimised in
+        # the next window, which starts where the provisional plan begins.
+        tw_hours = float(time_windows.get("hours", 24)) * 3600
+        tw_commit = float(time_windows.get("commit_hours", 8)) * 3600
+        tw_cap = min(WINDOW_SIZE, int(time_windows.get("cap", 22)))
+        # Wall-clock days per productive day of one crew (one 8-hour shift a
+        # day); used only to rank operation due dates, never as physics.
+        tw_factor = float(time_windows.get("calendar_factor", 3))
+        tw_ops = state["problem"].operation_by_key
+        tw_pred = state["after_index"].route_predecessor
+        tw_routes = defaultdict(list)
+        for key in all_keys:
+            tw_routes[str(tw_ops[key].order_id)].append(key)
+        for route in tw_routes.values():
+            route.sort(key=lambda k: int(tw_ops[k].sequence))
+        tw_next = {route[i]: route[i + 1] for route in tw_routes.values() for i in range(len(route) - 1)}
+        widest = int((crew_policy or {}).get("max_crew") or 1)
+        op_due = {}
+        for order_id, route in tw_routes.items():
+            due = deadlines.get(order_id)
+            later = 0
+            for key in reversed(route):
+                if due is not None:
+                    op_due[key] = int(due) - later
+                later += int(tw_factor * int(tw_ops[key].serial_productive_seconds) / widest)
+        far = 10 ** 12
+
+        def urgency(key):
+            return (op_due.get(key, far), str(tw_ops[key].order_id), int(tw_ops[key].sequence))
+
+        tw_now, tw_number = 0, 0
+        while True:
+            open_keys = [k for k in all_keys if k not in completed and k not in deferred_operations]
+            if not open_keys:
+                break
+            heads = []
+            for order_id, route in tw_routes.items():
+                head = next((k for k in route if k not in completed), None)
+                if head is None or head in deferred_operations:
+                    continue
+                pred = tw_pred.get(head)
+                if pred is not None and pred not in completed:
+                    if pred in deferred_operations or pred in all_keys_set:
+                        continue
+                ready = int(state["problem"].order_by_id[tw_ops[head].order_id].release_seconds)
+                if pred in completed:
+                    ready = max(ready, int(completed[pred]["end_seconds"]))
+                heads.append((ready, head))
+            if not heads:
+                for key in open_keys:
+                    deferred_operations[key] = {"reason": "NO_READY_PREDECESSOR_FOR_TIME_WINDOW"}
+                break
+            if all(ready >= tw_now + tw_hours for ready, _k in heads):
+                tw_now = min(ready for ready, _k in heads)  # fast-forward to the next ready work
+            selection = sorted((k for ready, k in heads if ready < tw_now + tw_hours), key=urgency)[:tw_cap]
+            while len(selection) < tw_cap:
+                nexts = sorted({tw_next[k] for k in selection if k in tw_next
+                                and tw_next[k] not in completed and tw_next[k] not in deferred_operations
+                                and tw_next[k] not in selection}, key=urgency)
+                if not nexts:
+                    break
+                selection.extend(nexts[:tw_cap - len(selection)])
+            tw_number += 1
+            number += 1
+            attempts = [tuple(selection)]
+            heads_only = tuple(k for k in selection if tw_pred.get(k) not in selection)
+            if heads_only != attempts[0]:
+                attempts.append(heads_only)
+            attempts.append((min(heads_only, key=urgency),))
+            accepted, solved, acceptance = False, [], {}
+            for keys_try in attempts:
+                for scale in ((1.0, 2.0) if len(keys_try) == 1 else (1.0,)):
+                    accepted, solved, acceptance, adaptive, _diag = solve(
+                        keys_try, completed, commitments_m, commitments_w, boundary_facts,
+                        crew_economy=True, full_domain=full_domain_windows,
+                        distinct=pace in ("ECONOMY", "SLOW"), op_due=op_due,
+                        scale=scale, bound_days=(tw_hours / 86400) + 1)
+                    if accepted:
+                        break
+                if accepted:
+                    break
+            committed_keys, entry = [], {"window": number, "time_window": tw_number,
+                                         "start_seconds": tw_now, "solved_keys": list(selection),
+                                         "status": acceptance.get("status"),
+                                         "objective_stages": [(r.get("level"), r.get("status")) for r in
+                                                              ((acceptance.get("objective") or {}).get("stages") or ())]}
+            if accepted:
+                by_start = sorted(solved, key=lambda r: int(r["start_seconds"]))
+                commit = {r["operation_key"] for r in by_start if int(r["start_seconds"]) < tw_now + tw_commit}
+                commit = commit or {by_start[0]["operation_key"]}  # always make progress
+                subset, check = commit_subset(solved, commit)
+                if subset is None:
+                    subset, check = commit_subset(solved, {by_start[0]["operation_key"]})
+                if subset is not None:
+                    _carry_rows(state, subset, completed, commitments_m, commitments_w, boundary_facts)
+                    assembled_validation = check
+                    committed_keys = [r["operation_key"] for r in subset]
+                    provisional = [int(r["start_seconds"]) for r in solved if r["operation_key"] not in completed]
+                    tw_now = max(tw_now + tw_commit, min(provisional, default=tw_now + tw_commit))
+            if not committed_keys:
+                # Nothing valid even for the single most urgent operation:
+                # defer it and its later route steps, reported, and go on.
+                stuck = min(heads_only, key=urgency)
+                chain, key = [], stuck
+                while key is not None and key not in completed:
+                    chain.append(key)
+                    key = tw_next.get(key)
+                for key in chain:
+                    deferred_operations[key] = {"reason": "NO_VALID_CANDIDATE_IN_TIME_WINDOW",
+                                                "window": number, "canonical_status": acceptance.get("status")}
+            entry.update(accepted=bool(committed_keys), committed_keys=committed_keys)
+            window_rows.append(entry)
+        windows = []
     while windows:
         if max_new_attempts is not None and new_attempts >= max_new_attempts:
             break
@@ -1222,17 +1414,32 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
             _carry_rows(state, rows, done, res_m, res_w, facts)
             return done, res_m, res_w, facts
 
+        frozen_until = int(V2_FROZEN_HOURS * 3600)
+        bound = {"lo": frozen_until, "hi": None}  # the active window [lo, hi)
+
+        def movable(key, current):
+            """Placed, not approved, and starting at or after the frozen
+            boundary: work before it is committed and never moves."""
+            return (key in current and key not in approved_keys
+                    and int(current[key]["start_seconds"]) >= bound["lo"])
+
+        def in_window(key, current):
+            begin = int(current[key]["start_seconds"])
+            return begin >= bound["lo"] and (bound["hi"] is None or begin < bound["hi"])
+
         def tail(order_id, from_key, placed=None):
             """An operation and all later route steps. With ``placed`` (time and
-            graph moves) only steps already in the plan: an unplaced step may
-            not fit at all and would make the whole move infeasible; placing
-            it is the repair moves' job. Unplaced steps impose no constraint."""
+            graph moves) only movable steps already in the plan: an unplaced
+            step may not fit at all and would make the whole move infeasible;
+            placing it is the repair moves' job. Unplaced steps impose no
+            constraint, and the later steps of a movable step are movable."""
             route = route_of[order_id]
             return [k for k in route[route.index(from_key):] if k not in approved_keys
-                    and (placed is None or k in placed)]
+                    and (placed is None or movable(k, placed))]
 
         def time_move(current, pointer):
-            ordered = sorted((int(r["start_seconds"]), k) for k, r in current.items() if k in all_keys_set)
+            ordered = sorted((int(r["start_seconds"]), k) for k, r in current.items()
+                             if k in all_keys_set and movable(k, current) and in_window(k, current))
             chosen, seen, scanned = [], set(), 0
             for _start, key in ordered[pointer:]:
                 scanned += 1
@@ -1249,29 +1456,53 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
             # Step by half the window: consecutive windows overlap by half.
             return chosen, pointer + max(1, scanned, len(chosen) // 2), len(ordered)
 
-        def graph_move(current, kind):
-            late = sorted(((int(current[f]["end_seconds"]) - int(deadlines[o]), o)
-                           for o, f in final_ops.items()
-                           if o in route_of and f in current and deadlines.get(o) is not None),
-                          reverse=True)
-            # Seed: a late order that can still be saved first (due date not
-            # yet passed, least late -- late-order count is the first goal),
-            # then the remaining late orders, most tardy first.
-            origin_due = int(state["reference_seconds"]) if "reference_seconds" in state else 0
+        origin_due = int(state["reference_seconds"]) if "reference_seconds" in state else 0
+
+        def lateness(current):
+            """(tardiness, order) for every order with movable work in the
+            active window; an unfinished order counts past the horizon."""
+            rows = []
+            for o, f in final_ops.items():
+                if o not in route_of or deadlines.get(o) is None:
+                    continue
+                steps = [k for k in route_of[o] if k in current]
+                if not any(movable(k, current) and in_window(k, current) for k in steps):
+                    continue
+                end = max(int(current[k]["end_seconds"]) for k in steps) + (0 if f in current else horizon_seconds)
+                rows.append((end - int(deadlines[o]), o))
+            return sorted(rows, reverse=True)
+
+        def pick_seed(current):
+            # A late order that can still be saved first (due date not yet
+            # passed, least late -- late-order count is the first goal), then
+            # the remaining late orders, most tardy first; else any order.
+            late = lateness(current)
             saveable = sorted((t, o) for t, o in late if t > 0 and o not in tabu
                               and int(deadlines[o]) > origin_due)
             late_pool = [o for _t, o in saveable] + [o for t, o in late if t > 0 and o not in tabu
                                                      and int(deadlines[o]) <= origin_due]
-            pool = late_pool or [o for o in sorted(route_of) if o not in tabu] or sorted(route_of)
+            pool = late_pool or [o for _t, o in late if o not in tabu] or [o for _t, o in late]
+            if not pool:
+                return None
             seed = late_pool[0] if late_pool else rng.choice(pool)
             tabu.append(seed)
             del tabu[:-max(3, len(route_of) // 3)]
-            chosen = [k for k in route_of[seed] if k in current][-max(2, cap // 4):]
+            return seed, seed in late_pool
+
+        def graph_move(current, kind, seed, is_late, level=0):
+            """The seed order plus the orders competing with it for the same
+            machines (machine), workers (crew) or busiest skill (bottleneck).
+            Level 0: the seed's last steps and competitors' tails from their
+            first overlap; level 1: the seed's whole movable route; level 2:
+            competitors' whole movable routes too."""
+            size = EXPAND_SIZES[min(level, len(EXPAND_SIZES) - 1)]
+            steps = [k for k in route_of[seed] if movable(k, current)]
+            chosen = steps[-size:] if level else steps[-max(2, size // 4):]
             if not chosen:
                 return []
             seed_rows = [current[k] for k in chosen]
             lo = min(int(r["start_seconds"]) for r in seed_rows) - 86400
-            if seed in late_pool:
+            if is_late:
                 # A late order competes for resources from its release on.
                 lo = min(lo, max(0, int(state["problem"].order_by_id[ops[chosen[0]].order_id].release_seconds)))
             hi = max(int(r["end_seconds"]) for r in seed_rows)
@@ -1283,39 +1514,44 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
                         load[str(ops[key].required_capability)] += int(row["end_seconds"]) - int(row["start_seconds"])
                 busiest = max({str(ops[k].required_capability) for k in chosen}, key=lambda c: load.get(c, 0))
                 for key, row in current.items():
-                    if (key in all_keys_set and str(ops[key].required_capability) == busiest
+                    if (key in all_keys_set and movable(key, current)
+                            and str(ops[key].required_capability) == busiest
                             and int(row["start_seconds"]) < hi and int(row["end_seconds"]) > lo):
                         contention[str(ops[key].order_id)] += 1
             else:
                 field = "machine_ids" if kind == "machine" else "worker_ids"
                 held = {str(m) for r in seed_rows for m in r["resource_configuration"][field]}
                 for key, row in current.items():
-                    if (key in all_keys_set and int(row["start_seconds"]) < hi and int(row["end_seconds"]) > lo
+                    if (key in all_keys_set and movable(key, current)
+                            and int(row["start_seconds"]) < hi and int(row["end_seconds"]) > lo
                             and held & {str(m) for m in row["resource_configuration"][field]}):
                         contention[str(ops[key].order_id)] += 1
             contention.pop(seed, None)
             for order_id, _count in sorted(contention.items(), key=lambda kv: (-kv[1], kv[0])):
-                first = next((k for k in route_of[order_id]
-                              if k in current and int(current[k]["end_seconds"]) > lo), None)
-                if first is None:
-                    continue
-                extra = [k for k in tail(order_id, first, current) if k not in chosen]
-                if len(chosen) + len(extra) <= cap:
+                theirs = [k for k in route_of[order_id] if movable(k, current)]
+                if level < 2:
+                    first = next((k for k in theirs if int(current[k]["end_seconds"]) > lo), None)
+                    theirs = tail(order_id, first, current) if first is not None else []
+                extra = [k for k in theirs if k not in chosen]
+                if extra and len(chosen) + len(extra) <= size:
                     chosen.extend(extra)
             return chosen
 
-        def attempt(kind, chosen, current):
+        def attempt(kind, chosen, current, level=0, scale=1.0):
             before = v2_score(current)
             kept = [r for k, r in current.items() if k not in chosen]
             done, res_m, res_w, facts = rebuild_v2(kept)
             incumbent = [current[k] for k in chosen if k in current]
+            # Time sweeps and repairs stay local; resource moves may push
+            # competing work further back, more at each Expand level.
+            days = (None if kind in ("time", "repair")
+                    else (2 * MOVE_WINDOW_DAYS + 1, 4 * MOVE_WINDOW_DAYS + 2, "FULL")[min(level, 2)])
             ok, rows, acc, adaptive, _diag = solve(
                 tuple(chosen), done, res_m, res_w, facts, crew_economy=True,
                 incumbent=incumbent, full_domain=True, distinct=pace in ("ECONOMY", "SLOW"),
-                # Resource moves may push competing work further back to make
-                # room for a late order; time sweeps stay local.
-                move_window_days=None if kind in ("time", "repair") else 2 * MOVE_WINDOW_DAYS + 1)
-            move = {"kind": kind, "operations": len(chosen), "keys": list(chosen),
+                scale=scale, move_window_days=days, move_configs=MOVE_CONFIGS * 2 ** min(level, 2))
+            move = {"kind": kind, "level": level, "operations": len(chosen), "keys": list(chosen),
+                    "window_days": days, "scale": scale,
                     "before": list(before), "solved": bool(ok),
                     "status": acc.get("status"), "reason": acc.get("reason"),
                     "cp_stages": [{f: st.get(f) for f in ("status", "hint_count", "incumbent_hints", "incumbent_end_reproduced", "incumbent_missing", "incumbent_core", "regimes", "resource_configurations", "solve_seconds")}
@@ -1337,53 +1573,137 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
                         return trial, check, move
             return None, None, move
 
+        def verdict(move):
+            """What a move proved. Only a proven result may grow the region:
+            a timeout proves nothing, and an infeasible region while the
+            complete incumbent was offered means the incumbent was not
+            reachable in the model -- a defect, never a fact about the plant."""
+            if move.get("improved"):
+                return "ACCEPT_IMPROVED"
+            last = move["cp_stages"][-1]["status"] if move["cp_stages"] else None
+            if move["solved"]:
+                if any(status in ("FEASIBLE", "UNKNOWN") for _level, status in move["objective_stages"]):
+                    return "TIMEOUT_UNPROVEN"
+                if move.get("validation") is False:
+                    return "VALIDATION_FAILED"
+                return "PROVEN_NO_GAIN"
+            if last == "UNKNOWN":
+                return "TIMEOUT_UNPROVEN"
+            if last == "INFEASIBLE":
+                return "INFEASIBLE_PROVEN" if move["kind"] == "repair" else "INCUMBENT_NOT_REACHABLE"
+            return "REJECTED_" + str(move.get("reason") or move.get("replay") or last)
+
+        def single(kind, chosen, current):
+            mark = time.perf_counter()
+            trial, check, move = attempt(kind, chosen, current)
+            move.update(seconds=round(time.perf_counter() - mark, 1), decision=verdict(move))
+            return [(trial, check, move)]
+
+        def expand_move(kind, current):
+            """Accept / Expand / Roll back around one seed order: solve the
+            bounded region; keep a verified improvement; after a PROVEN no-gain
+            grow the region (more competing work, more time freedom, more
+            resource options); retry a timeout once with double time; roll
+            back (keep the incumbent) on anything else or at the last level."""
+            picked = pick_seed(current)
+            if picked is None:
+                return []
+            seed, is_late = picked
+            results, level, retried = [], 0, False
+            while True:
+                chosen = graph_move(current, kind, seed, is_late, level)
+                if not chosen:
+                    break
+                mark = time.perf_counter()
+                trial, check, move = attempt(kind, chosen, current, level, 2.0 if retried else 1.0)
+                decision = verdict(move)
+                move.update(seed=seed, seconds=round(time.perf_counter() - mark, 1), decision=decision)
+                results.append((trial, check, move))
+                if trial is not None:
+                    current = trial  # an equal-score validated plan is adopted too
+                if decision == "ACCEPT_IMPROVED":
+                    break
+                if decision == "TIMEOUT_UNPROVEN" and not retried:
+                    retried = True
+                    continue
+                if decision == "PROVEN_NO_GAIN" and level + 1 < len(EXPAND_SIZES):
+                    level, retried = level + 1, False
+                    continue
+                move["decision"] = decision + "_ROLLBACK"
+                break
+            return results
+
+        def late_count(current):
+            return sum(1 for t, _o in lateness(current) if t > 0)
+
+        windows_v2 = [(frozen_until, None)]
+        if V2_ACTIVE_DAYS > 0:
+            span = max(int(r["end_seconds"]) for k, r in completed.items() if k in all_keys_set)
+            width = int(V2_ACTIVE_DAYS * 86400)
+            windows_v2 = [(lo, lo + width)
+                          for lo in range(frozen_until, max(frozen_until + 1, span), max(1, width // 2))]
         queue = []
         for order_id, route in sorted(route_of.items()):
             missing = [k for k in route if k not in completed]
             if missing and len(tail(order_id, missing[0])) <= cap:
                 queue.append(("repair", tail(order_id, missing[0])))
-        pointer, sweeps, sweep_moves, stall = 0, 0, 0, 0
-        while time.perf_counter() - v2_started < float(lns_seconds):
-            current = dict(completed)
-            if queue:
-                kind, chosen = queue.pop(0)
-            elif sweeps == 0:
-                kind = "time"
-                chosen, pointer, total = time_move(current, pointer)
-                sweep_moves += 1
-                if pointer >= total:
-                    sweeps, pointer = 1, 0
-            else:
-                draw, kind = rng.random() * sum(weights.values()), "time"
-                for name, weight in weights.items():
-                    draw -= weight
-                    if draw <= 0:
-                        kind = name
-                        break
-                if kind == "time":
-                    size = sum(1 for k in current if k in all_keys_set)
-                    chosen, _p, _t = time_move(current, rng.randrange(max(1, size)))
+        sweeps = 0
+        for window_number, (w_lo, w_hi) in enumerate(windows_v2):
+            remaining = float(lns_seconds) - (time.perf_counter() - v2_started)
+            if remaining <= 0:
+                break
+            bound.update(lo=w_lo, hi=w_hi)
+            w_started, budget = time.perf_counter(), remaining / (len(windows_v2) - window_number)
+            # Late-order moves first, then the time sweep, then the adaptive mix.
+            focus = ["crew", "bottleneck", "machine"] * max(1, late_count(completed))
+            pointer, sweeps, sweep_moves, stall = 0, 0, 0, 0
+            while time.perf_counter() - w_started < budget:
+                current = dict(completed)
+                if queue:
+                    kind, chosen = queue.pop(0)
+                    results = single(kind, chosen, current)
+                elif focus:
+                    kind = focus.pop(0)
+                    results = expand_move(kind, current)
+                elif sweeps == 0:
+                    kind = "time"
+                    chosen, pointer, total = time_move(current, pointer)
+                    sweep_moves += 1
+                    if pointer >= total:
+                        sweeps, pointer = 1, 0
+                    results = single(kind, chosen, current) if chosen else []
                 else:
-                    chosen = graph_move(current, kind)
-            if not chosen:
-                stall += 1
+                    draw, kind = rng.random() * sum(weights.values()), "time"
+                    for name, weight in weights.items():
+                        draw -= weight
+                        if draw <= 0:
+                            kind = name
+                            break
+                    if kind == "time":
+                        size = sum(1 for k in current if k in all_keys_set)
+                        chosen, _p, _t = time_move(current, rng.randrange(max(1, size)))
+                        results = single(kind, chosen, current) if chosen else []
+                    else:
+                        results = expand_move(kind, current)
+                if not results:
+                    stall += 1
+                    if sweeps and stall >= max(8, 2 * sweep_moves):
+                        break
+                    continue
+                for trial, check, move in results:
+                    move.update(iteration=len(log) + 1, window=window_number)
+                    if trial is not None:
+                        completed.clear()
+                        completed.update(trial)
+                        assembled_validation = check
+                    log.append(move)
+                improved = any(move.get("improved") for _t, _c, move in results)
+                if sweeps:
+                    weights[kind] = max(0.2, 0.8 * weights[kind] + (1.0 if improved else 0.0))
+                stall = 0 if improved else stall + 1
+                # Stop the window once the search has stalled for two sweeps' worth.
                 if sweeps and stall >= max(8, 2 * sweep_moves):
                     break
-                continue
-            mark = time.perf_counter()
-            trial, check, move = attempt(kind, chosen, current)
-            move.update(iteration=len(log) + 1, seconds=round(time.perf_counter() - mark, 1))
-            if trial is not None:
-                completed.clear()
-                completed.update(trial)
-                assembled_validation = check
-            if sweeps:
-                weights[kind] = max(0.2, 0.8 * weights[kind] + (1.0 if move.get("improved") else 0.0))
-            stall = 0 if move.get("improved") else stall + 1
-            log.append(move)
-            # Stop early once the search has stalled for two sweeps' worth.
-            if sweeps and stall >= max(8, 2 * sweep_moves):
-                break
         for key in list(deferred_operations):
             if key in completed:
                 del deferred_operations[key]
@@ -1394,7 +1714,23 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
               "moves": log, "accepted_moves": sum(bool(m.get("accepted")) for m in log),
               "improving_moves": sum(bool(m.get("improved")) for m in log),
               "first_sweep_complete": bool(sweeps), "weights": weights,
+              "expand_sizes": list(EXPAND_SIZES), "frozen_hours": V2_FROZEN_HOURS,
+              "active_days": V2_ACTIVE_DAYS, "windows": len(windows_v2),
+              "decisions": dict(Counter(m.get("decision") for m in log)),
               "final_score": list(v2_score(completed))}
+        # Safety floor: never return a plan worse than a validated start the
+        # manager could have had; say so openly when it happens.
+        v2["floor_used"] = None
+        better = [f for f in floors if f[1] != best[1] and f[0] < tuple(v2["final_score"])]
+        if start_policy != "BEST" and better:
+            floor = min(better, key=lambda f: f[0])
+            completed.clear()
+            completed.update({r["operation_key"]: r for r in floor[2]})
+            assembled_validation = floor[3]
+            for key in list(deferred_operations):
+                if key in completed:
+                    del deferred_operations[key]
+            v2.update(floor_used=floor[1], final_score=list(floor[0]))
 
     elapsed = time.perf_counter() - started
     peak = psutil.Process().memory_info().rss / 1024**2
