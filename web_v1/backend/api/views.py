@@ -1,14 +1,22 @@
 from django.utils.dateparse import parse_datetime
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+
+class PublicDemoView(APIView):
+    """The mock API is a public demo with no real data; say so explicitly so it never
+    inherits whatever authentication the hosting settings default to."""
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
 from . import services
 from .serializers import (FactorySerializer, LineSerializer, OrderSerializer, MachineSerializer, WorkerSerializer,
     OperationSerializer, DisruptionSerializer, CraftRunSerializer)
 
-class FilteredList(APIView):
+class FilteredList(PublicDemoView):
     serializer_class = None
     data_attr = None
 
@@ -36,7 +44,7 @@ class LineList(FilteredList):
 class OrderList(FilteredList):
     serializer_class, data_attr = OrderSerializer, "ORDERS"
 
-class OrderDetail(APIView):
+class OrderDetail(PublicDemoView):
     def get(self, request, pk):
         order = next((row for row in services.ORDERS if row["id"] == pk), None)
         if not order:
@@ -74,7 +82,7 @@ class DisruptionList(FilteredList):
 class CraftRunList(FilteredList):
     serializer_class, data_attr = CraftRunSerializer, "CRAFT_RUNS"
 
-class CraftRunDetail(APIView):
+class CraftRunDetail(PublicDemoView):
     def get(self, request, pk):
         run = next((row for row in services.CRAFT_RUNS if row["id"] == pk), None)
         if not run:
@@ -82,26 +90,34 @@ class CraftRunDetail(APIView):
         return Response(CraftRunSerializer(run).data)
 
 @api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def health(request):
     return Response({"status": "ok", "service": "CRAFT Demo API", "mode": "DEMO / MOCK DATA", "database": "not connected", "scheduler": "not connected"})
 
 @api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def dashboard(request):
     return Response(services.dashboard_summary(request.query_params.get("factory_id")))
 
 @api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def analytics(request):
     factory = request.query_params.get("factory_id")
     return Response({"factory_id": int(factory) if factory and factory.isdigit() else None, "period": request.query_params.get("period", "7d"), "delivery": [{"period": "W-5", "on_time": 84, "tardiness": 410}, {"period": "W-4", "on_time": 87, "tardiness": 365}, {"period": "W-3", "on_time": 82, "tardiness": 452}, {"period": "W-2", "on_time": 89, "tardiness": 311}, {"period": "W-1", "on_time": 91, "tardiness": 264}, {"period": "Current", "on_time": 88, "tardiness": 298}], "utilization": [{"name": "Machine", "value": 76}, {"name": "Workforce", "value": 83}], "stability": [{"week": "W-5", "accepted": 92, "escalated": 8}, {"week": "W-4", "accepted": 94, "escalated": 6}, {"week": "W-3", "accepted": 90, "escalated": 10}, {"week": "W-2", "accepted": 96, "escalated": 4}, {"week": "W-1", "accepted": 93, "escalated": 7}, {"week": "Current", "accepted": 91, "escalated": 9}], "summary": {"on_time_delivery": 88.4, "mean_tardiness_hours": 6.3, "schedule_stability": 93.1, "repairs_accepted": 27, "repairs_escalated": 3}})
 
 @api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def audit(request):
     rows = services.filtered_rows(services.snapshot(services.AUDIT), request.query_params, keys=("factory_id", "accepted"))
     from .pagination import StandardPagination
     pager = StandardPagination(); page = pager.paginate_queryset(rows, request)
     return pager.get_paginated_response(page) if page is not None else Response(rows)
 
-class DemoDisruption(APIView):
+class DemoDisruption(PublicDemoView):
     def post(self, request):
         from rest_framework import serializers
         class Input(serializers.Serializer):
@@ -115,7 +131,7 @@ class DemoDisruption(APIView):
         form = Input(data=request.data); form.is_valid(raise_exception=True)
         return Response({"demo": True, "notice": "Simulation only. No live factory state or schedule changed.", "event": DisruptionSerializer(services.add_demo_disruption(form.validated_data)).data}, status=status.HTTP_201_CREATED)
 
-class DemoPriority(APIView):
+class DemoPriority(PublicDemoView):
     def post(self, request, pk):
         from rest_framework import serializers
         class Input(serializers.Serializer):
@@ -126,7 +142,7 @@ class DemoPriority(APIView):
             return Response({"error": {"code": "not_found", "message": "Order not found.", "details": {"id": pk}}}, status=404)
         return Response({"demo": True, "notice": "Priority changed in in-memory demo fixtures only.", "order": OrderSerializer(order).data})
 
-class DemoCraftRun(APIView):
+class DemoCraftRun(PublicDemoView):
     def post(self, request):
         from rest_framework import serializers
         class Input(serializers.Serializer):

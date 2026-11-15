@@ -109,14 +109,38 @@ class CrewCalendar:
         current = ready
         segments = []
         idle = 0
-        available = self.available
+        # Hot path (millions of walks per window): available(), _on_shift(),
+        # _reserved() and _next_change() are inlined here with identical
+        # semantics; tests/test_fast_calendar.py checks against the original.
+        slots, crews = self._slots, self._crews
+        starts, ends, edges = self._starts, self._ends, self._edges
+        edge_count = len(edges)
+
+        def available(t):
+            value = slots.get(t // _HOUR)
+            if value is None:
+                when = _EPOCH + timedelta(seconds=(t // _HOUR) * _HOUR)
+                value = all(batch_available_at(rotation, rest, when) for rotation, rest in crews)
+                slots[t // _HOUR] = value
+            if not value:
+                return False
+            index = bisect_right(starts, t) - 1
+            return not (index >= 0 and t < ends[index])
+
         while remaining:
-            midnight = current - current % _DAY
-            boundary = next(midnight + offset for offset in _BOUNDARY_OFFSETS
-                            if midnight + offset > current)
-            change = self._next_change(current)
-            if change is not None:
-                boundary = min(boundary, change)
+            time_of_day = current % _DAY
+            # First of the 06/14/22/24 boundaries strictly after current.
+            if time_of_day < 6 * _HOUR:
+                boundary = current - time_of_day + 6 * _HOUR
+            elif time_of_day < 14 * _HOUR:
+                boundary = current - time_of_day + 14 * _HOUR
+            elif time_of_day < 22 * _HOUR:
+                boundary = current - time_of_day + 22 * _HOUR
+            else:
+                boundary = current - time_of_day + _DAY
+            index = bisect_right(edges, current)
+            if index < edge_count and edges[index] < boundary:
+                boundary = edges[index]
             if available(current):
                 seconds = min(remaining, boundary - current)
                 end = current + seconds

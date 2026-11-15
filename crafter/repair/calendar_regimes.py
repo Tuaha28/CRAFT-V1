@@ -14,6 +14,8 @@ from crafter.lns_probe.joint_modes import _fixed_crew_execution
 from crafter.lns_probe.transaction import _machine_accepts
 from crafter.repair.fast_calendar import fast_execution
 
+_MISSING = object()  # cache-miss sentinel (False is a cached value)
+
 
 def _freeze_worker_reservations(state):
     return tuple(sorted((str(worker), tuple((str(a), str(b)) for a, b in rows))
@@ -33,6 +35,8 @@ class CalendarRegimeCache:
     machine_acceptance: dict = field(default_factory=dict)
     crew_availability: dict = field(default_factory=dict)
     crew_availability_signature: object = None
+    # CRAFT_FAST_CALENDAR, read once per cache instead of on every miss.
+    fast_calendar_mode: object = None
     # Exact signature -> small integer, so per-sample cache keys hash an int
     # instead of re-hashing the full frozen reservation map each lookup.
     signature_tokens: dict = field(default_factory=dict)
@@ -150,11 +154,22 @@ def _sec(problem, value):
     return int(round((value-problem.origin).total_seconds()))
 
 
-def _execution(state, config, start, cache=None, worker_signature=None):
+def _execution_key_prefix(config, worker_signature):
+    """Everything in the _execution cache key except the start second."""
+    return (worker_signature, tuple(config.worker_ids),
+            int(config.setup_seconds), float(getattr(config, 'productive_minutes', 0.0) or 0.0),
+            int(config.productive_seconds))
+
+
+def _execution(state, config, start, cache=None, worker_signature=None, key_prefix=None):
     # Uncached replay needs no factory-wide cache signature. Exact execution
     # still receives the complete authoritative reservation map below.
     cache_key = None
-    if cache is not None:
+    if cache is not None and key_prefix is not None:
+        # Same key as below, with the per-configuration part built once.
+        cache_key = key_prefix + (int(start),)
+        worker_signature = key_prefix[0]
+    elif cache is not None:
         worker_signature = worker_signature if worker_signature is not None else _worker_calendar_signature(state)
         cache_key=(worker_signature, tuple(config.worker_ids),
                    int(config.setup_seconds), float(getattr(config, 'productive_minutes', 0.0) or 0.0),
@@ -175,7 +190,11 @@ def _execution(state, config, start, cache=None, worker_signature=None):
             cache.crew_availability_signature = worker_signature
         availability_cache = cache.crew_availability
     value = None
-    mode = str(os.environ.get('CRAFT_FAST_CALENDAR', '1')).strip().lower()
+    mode = cache.fast_calendar_mode if cache is not None else None
+    if mode is None:
+        mode = str(os.environ.get('CRAFT_FAST_CALENDAR', '1')).strip().lower()
+        if cache is not None:
+            cache.fast_calendar_mode = mode
     if availability_cache is not None and mode not in {'0', 'false', 'no', 'off'}:
         # Exact integer-second walk (fast_calendar) for cached regime
         # generation only. Uncached callers -- replay and scoped validation --
@@ -210,6 +229,27 @@ def _affine(samples):
         if abs(slope-round(slope))>1e-9 or int(round(slope)) not in (0,1): return None
         s=int(round(slope)); out.append((s,int(a-s*x0)))
     if any(any(s*x+c != int(y) for (s,c),y in zip(out,v)) for x,v in samples[2:]): return None
+    return tuple(out)
+
+
+def _affine_int(samples):
+    """_affine for integer samples (all regime-generation values are integer
+    seconds): with integers below 2**53 the float slope test there accepts
+    exactly the differences 0 and d. Anything else falls back to _affine."""
+    x0,v0=samples[0]; x1,v1=samples[1]
+    if type(x0) is not int or type(x1) is not int or x1 <= x0: return _affine(samples)
+    width=len(v0)
+    for _x,v in samples:
+        if len(v) != width: return None
+    d=x1-x0; out=[]
+    for a,b in zip(v0,v1):
+        if type(a) is not int or type(b) is not int: return _affine(samples)
+        if b == a: out.append((0,a))
+        elif b-a == d: out.append((1,a-x0))
+        else: return None
+    for x,v in samples[2:]:
+        for (s,c),y in zip(out,v):
+            if s*x+c != int(y): return None
     return tuple(out)
 
 
@@ -307,6 +347,12 @@ def generate_calendar_regimes(state, configurations, *, cache=None,
     # check. No cross-state cache or resource-domain filtering is introduced.
     operations = state['problem'].operation_by_key
     orders = state['problem'].order_by_id
+    # Hot-loop locals. Bound after cache.token(), the only call that can
+    # replace the cache dictionaries.
+    horizon_seconds = state['problem'].horizon_seconds
+    machine_reservations = state['_machine_res']
+    acceptance = cache.machine_acceptance
+    statistics = cache.statistics
     for key in keys:
         operation_started=time.perf_counter()
         operation_stats=cache.snapshot()
@@ -322,22 +368,41 @@ def generate_calendar_regimes(state, configurations, *, cache=None,
             # the current valid plan stays representable (a slice is dropped
             # whole if any sampled point in it fails).
             extra = tuple(extra) + (int(incumbent_start), int(incumbent_start) + 1)
+        order_text = str(order_id)
         for config in configurations.get(key,()):
             bp=_breakpoints(state,key,config,lower,cache,calendar_signature,
                             additional_breakpoints=extra)
+            # Per-configuration constants of the sample loop, built once:
+            # the _execution cache-key prefix and, per machine, its
+            # reservations and acceptance-cache key prefix (the same keys and
+            # statistics as _machine_accepts_cached).
+            key_prefix = _execution_key_prefix(config, worker_signature)
+            machines = tuple((int(mid), machine_reservations.get(int(mid), ()))
+                             for mid in config.machine_ids)
             for a,b in zip(bp,bp[1:]):
                 if b<a: continue
                 xs=sorted(set((a,b,(a+b)//2,a+1 if a<b else a,b-1 if b>a else b)))
                 vals=[]; exact=[]
                 try:
                     for x in xs:
-                        end,segs=_execution(state,config,x,cache,worker_signature)
-                        if end>state['problem'].horizon_seconds: raise ValueError('horizon')
-                        if not all(_machine_accepts_cached(state,mid,x,end,order_id,cache,calendar_signature) for mid in config.machine_ids): raise ValueError('machine boundary')
+                        end,segs=_execution(state,config,x,cache,key_prefix=key_prefix)
+                        if end>horizon_seconds: raise ValueError('horizon')
+                        for mid, reservations in machines:
+                            acceptance_key=(calendar_signature, mid, int(x), int(end), order_text)
+                            accepted=acceptance.get(acceptance_key, _MISSING)
+                            if accepted is _MISSING:
+                                statistics['machine_acceptance_misses'] += 1
+                                mark=time.perf_counter()
+                                accepted=_machine_accepts(reservations, x, end, order_id)
+                                statistics['machine_acceptance_seconds'] += time.perf_counter()-mark
+                                acceptance[acceptance_key]=accepted
+                            else:
+                                statistics['machine_acceptance_hits'] += 1
+                            if not accepted: raise ValueError('machine boundary')
                         vector=(end,)+tuple(v for pair in segs for v in pair); vals.append((x,vector)); exact.append((x,end,segs))
                 except Exception:
                     continue
-                formula=_affine(vals)
+                formula=_affine_int(vals)
                 if formula is None:
                     # Before the shape guard, only transitions whose common
                     # vector prefix was affine could enter the CP domain.

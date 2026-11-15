@@ -1,0 +1,247 @@
+{
+ "cases": [
+  {
+   "label": "30%-S1",
+   "setting": "A",
+   "minutes": 87.4,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 148.545
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 114.721
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 8,
+     "tard": 110.874
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "tard": 110.874
+    }
+   }
+  },
+  {
+   "label": "30%-S1",
+   "setting": "B",
+   "minutes": 78.2,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 148.545
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 114.721
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 8,
+     "tard": 114.275
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "tard": 113.427
+    }
+   }
+  },
+  {
+   "label": "30%-S1",
+   "setting": "C",
+   "minutes": 110.6,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 148.545
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 114.721
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 8,
+     "tard": 111.913
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "tard": 111.913
+    }
+   }
+  },
+  {
+   "label": "60%-S1",
+   "setting": "A",
+   "minutes": 98.6,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 7,
+     "tard": 64.689
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 7,
+     "tard": 75.525
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 7,
+     "tard": 77.735
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 7,
+     "tard": 61.361
+    }
+   }
+  },
+  {
+   "label": "60%-S1",
+   "setting": "B",
+   "minutes": 93.7,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 7,
+     "tard": 64.689
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 7,
+     "tard": 75.525
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 7,
+     "tard": 76.623
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 7,
+     "tard": 61.164
+    }
+   }
+  },
+  {
+   "label": "60%-S1",
+   "setting": "C",
+   "minutes": 149.0,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 7,
+     "tard": 64.689
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 7,
+     "tard": 75.525
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 7,
+     "tard": 80.354
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 7,
+     "tard": 61.249
+    }
+   }
+  },
+  {
+   "label": "90%-S1",
+   "setting": "A",
+   "minutes": 119.8,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 9,
+     "tard": 105.562
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 105.207
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "tard": 109.68
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "tard": 104.364
+    }
+   }
+  },
+  {
+   "label": "90%-S1",
+   "setting": "B",
+   "minutes": 108.8,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 9,
+     "tard": 105.562
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 105.116
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "tard": 112.426
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "tard": 103.335
+    }
+   }
+  },
+  {
+   "label": "90%-S1",
+   "setting": "C",
+   "minutes": 161.5,
+   "methods": {
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 9,
+     "tard": 105.562
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "tard": 105.116
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "tard": 113.416
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "tard": 102.335
+    }
+   }
+  }
+ ]
+}

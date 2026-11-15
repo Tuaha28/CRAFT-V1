@@ -189,6 +189,11 @@ def main():
     p.add_argument("--orders", type=int)
     p.add_argument("--order-offset", type=int, default=0,
                    help="skip this many eligible orders (by release) before taking --orders: another order set")
+    p.add_argument("--order-ids", help="comma-separated order ids to plan exactly (opt-in; replaces --orders/--order-offset)")
+    p.add_argument("--max-crew", type=int, choices=range(1, 9),
+                   help="opt-in: largest crew per operation (default: the pace's, 4 for NORMAL)")
+    p.add_argument("--crew-cap", choices=["line", "shift"], default="line",
+                   help="opt-in 'shift': a crew is no larger than the skilled workers of one rotating crew on the line")
     p.add_argument("--release-days", type=int)
     p.add_argument("--pace", default="NORMAL", choices=["NORMAL", "FAST", "SLOW"])
     p.add_argument("--seconds", type=float, default=1800, help="CRAFT improvement budget")
@@ -226,6 +231,10 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     settings = pace_settings(a.pace)
     crew = {"max_crew": settings["max_crew"], "bundle_pieces": 20}
+    if a.max_crew:  # opt-in: larger crews than the pace allows (CRAFT checks 1..8)
+        crew["max_crew"] = a.max_crew
+    if a.crew_cap == "shift":  # opt-in: crew size bounded by one rotating crew's skilled workers
+        crew["crew_cap"] = "SHIFT_CREW"
 
     source, _r, snapshot, _h = runner._source(a.factory)
     eligible = runner._eligible_order_routes(source, snapshot)
@@ -234,10 +243,19 @@ def main():
         cutoff = (datetime.fromisoformat(source["reference_time"]) + timedelta(days=a.release_days)).date().isoformat()
         eligible = [r for r in eligible if r[0][:10] <= cutoff]
     chosen = [oid for _rel, oid, _rows, _o in eligible]
-    chosen = chosen[a.order_offset:]
-    chosen = set(chosen[:a.orders] if a.orders else chosen)
+    if a.order_ids:
+        # Explicit order set (what-if scenarios): exactly these orders, which
+        # must all be eligible; --orders/--order-offset are not used.
+        wanted = [str(o) for o in a.order_ids.split(",") if o]
+        missing = sorted(set(wanted) - set(chosen))
+        if missing:
+            raise SystemExit(f"ORDER_IDS_NOT_ELIGIBLE:{','.join(missing)}")
+        chosen = set(wanted)
+    else:
+        chosen = chosen[a.order_offset:]
+        chosen = set(chosen[:a.orders] if a.orders else chosen)
     keys = [row["operation_key"] for _rel, oid, rows, _o in eligible if oid in chosen for row in rows]
-    report = {"factory": a.factory, "pace": a.pace, "settings": settings, "orders": len(chosen),
+    report = {"factory": a.factory, "pace": a.pace, "settings": settings, "crew_policy": crew, "orders": len(chosen),
               "operations": len(keys), "improve_seconds": a.seconds,
               "order_offset": a.order_offset, "horizon_extra_days": a.horizon_extra_days,
               "dispatch_window_days": float(os.environ.get("CRAFT_DISPATCH_WINDOW_DAYS", "0")),

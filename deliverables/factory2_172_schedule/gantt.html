@@ -1,0 +1,362 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Factory 2 Schedule</title><style>
+:root{--bg:#f7f7f5;--panel:#fff;--text:#1d2125;--muted:#5f6670;--line:#dde0e4;--bar:#2f6f9f}
+@media (prefers-color-scheme:dark){:root{--bg:#15181b;--panel:#1d2125;--text:#e8eaed;--muted:#9aa1aa;--line:#30353b;--bar:#5b9bd0}}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,sans-serif}
+main{max-width:1400px;margin:0 auto;padding:24px 16px}h1{font-size:22px;margin:0 0 4px}p{color:var(--muted);margin:0 0 16px}
+.kpis{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.kpi b{display:block;font-size:18px}.chart{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto}
+.axis,.lane{display:grid;grid-template-columns:140px minmax(700px,1fr)}.axis div{position:relative;height:22px}
+.tick{position:absolute;font-size:11px;color:var(--muted);white-space:nowrap}.lane{border-top:1px solid var(--line)}
+.label{padding:6px 8px 6px 0;font-weight:600}.label small{display:block;font-weight:400;color:var(--muted)}
+.track{position:relative;height:38px}.bar{position:absolute;top:9px;height:20px;background:var(--bar);border-radius:3px;opacity:.9}
+.bar:hover{opacity:1;outline:2px solid var(--text)}</style></head><body><main>
+<h1>Factory 2 — validated CRAFT schedule</h1>
+<p>172 operations, 20 orders, frozen benchmark from <code>garment_fyp_db</code>. Exact replay PASS, physical VALID, scope VALID. Times from 16 Sep 2026 19:00. Hover a bar for details.</p>
+<div class="kpis"><div class="kpi"><b>14.2 days</b>schedule span</div><div class="kpi"><b>1 / 20</b>orders on time</div>
+<div class="kpi"><b>19 / 20</b>orders already past due at start</div><div class="kpi"><b>172</b>operations</div></div>
+<div class="chart"><div class="axis"><div></div><div><span class="tick" style="left:0.000%">16 Sep</span><span class="tick" style="left:7.037%">17 Sep</span><span class="tick" style="left:14.075%">18 Sep</span><span class="tick" style="left:21.112%">19 Sep</span><span class="tick" style="left:28.150%">20 Sep</span><span class="tick" style="left:35.187%">21 Sep</span><span class="tick" style="left:42.225%">22 Sep</span><span class="tick" style="left:49.262%">23 Sep</span><span class="tick" style="left:56.299%">24 Sep</span><span class="tick" style="left:63.337%">25 Sep</span><span class="tick" style="left:70.374%">26 Sep</span><span class="tick" style="left:77.412%">27 Sep</span><span class="tick" style="left:84.449%">28 Sep</span><span class="tick" style="left:91.487%">29 Sep</span><span class="tick" style="left:98.524%">30 Sep</span></div></div><div class="lane"><div class="label">Order 796<small>37.26 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:0.881%" title="796_2040 · step 1 · seam edge overlock
+16 Sep 19:00 → 16 Sep 22:00
+line 30 · 5 machines · 5 workers"></div><div class="bar" style="left:0.881%;width:2.345%" title="796_2041 · step 2 · seam edge overlock
+16 Sep 22:00 → 17 Sep 06:00
+line 28 · 7 machines · 7 workers"></div><div class="bar" style="left:3.226%;width:0.150%" title="796_2042 · step 3 · body assembly
+17 Sep 06:00 → 17 Sep 06:15
+line 30 · 5 machines · 5 workers"></div><div class="bar" style="left:3.301%;width:0.150%" title="796_2043 · step 4 · seam edge overlock
+17 Sep 06:15 → 17 Sep 06:31
+line 129 · 4 machines · 4 workers"></div><div class="bar" style="left:3.377%;width:0.150%" title="796_2044 · step 5 · body assembly
+17 Sep 06:31 → 17 Sep 06:46
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:3.600%;width:0.150%" title="796_2045 · step 6 · seam edge overlock
+17 Sep 07:16 → 17 Sep 07:32
+line 27 · 11 machines · 11 workers"></div><div class="bar" style="left:3.675%;width:4.242%" title="796_2046 · step 7 · tubular sleeve join
+17 Sep 07:32 → 17 Sep 22:00
+line 20 · 9 machines · 9 workers"></div><div class="bar" style="left:7.917%;width:0.587%" title="796_2047 · step 8 · flatlock hemming
+17 Sep 22:00 → 18 Sep 00:00
+line 23 · 8 machines · 8 workers"></div><div class="bar" style="left:8.504%;width:0.150%" title="796_2048 · step 9 · flatlock hemming
+18 Sep 00:00 → 18 Sep 00:15
+line 32 · 5 machines · 5 workers"></div><div class="bar" style="left:10.188%;width:0.150%" title="796_2049 · step 10 · bar-tack pocketing
+18 Sep 05:45 → 18 Sep 06:15
+line 27 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 1029<small>48.38 d late</small></div><div class="track"><div class="bar" style="left:1.657%;width:1.568%" title="1029_292 · step 1 · seam edge overlock
+17 Sep 00:39 → 17 Sep 06:00
+line 19 · 12 machines · 12 workers"></div><div class="bar" style="left:3.225%;width:0.150%" title="1029_293 · step 2 · seam edge overlock
+17 Sep 06:00 → 17 Sep 06:15
+line 25 · 8 machines · 8 workers"></div><div class="bar" style="left:3.301%;width:0.150%" title="1029_294 · step 3 · body assembly
+17 Sep 06:15 → 17 Sep 06:31
+line 29 · 8 machines · 8 workers"></div><div class="bar" style="left:3.376%;width:0.150%" title="1029_295 · step 4 · seam edge overlock
+17 Sep 06:31 → 17 Sep 06:46
+line 29 · 7 machines · 7 workers"></div><div class="bar" style="left:3.452%;width:0.150%" title="1029_296 · step 5 · body assembly
+17 Sep 06:46 → 17 Sep 07:01
+line 19 · 8 machines · 8 workers"></div><div class="bar" style="left:3.527%;width:0.150%" title="1029_297 · step 6 · seam edge overlock
+17 Sep 07:01 → 17 Sep 07:17
+line 130 · 9 machines · 9 workers"></div><div class="bar" style="left:3.602%;width:0.229%" title="1029_298 · step 7 · tubular sleeve join
+17 Sep 07:17 → 17 Sep 08:04
+line 23 · 2 machines · 2 workers"></div><div class="bar" style="left:3.831%;width:4.920%" title="1029_299 · step 8 · flatlock hemming
+17 Sep 08:04 → 18 Sep 00:50
+line 25 · 5 machines · 5 workers"></div><div class="bar" style="left:8.751%;width:2.598%" title="1029_300 · step 9 · flatlock hemming
+18 Sep 00:50 → 18 Sep 09:42
+line 19 · 2 machines · 2 workers"></div><div class="bar" style="left:11.348%;width:6.882%" title="1029_301 · step 10 · bar-tack pocketing
+18 Sep 09:42 → 19 Sep 09:10
+line 29 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 128<small>43.37 d late</small></div><div class="track"><div class="bar" style="left:3.151%;width:5.714%" title="128_1831 · step 1 · seam edge overlock
+17 Sep 05:44 → 18 Sep 01:14
+line 134 · 11 machines · 11 workers"></div><div class="bar" style="left:8.865%;width:1.436%" title="128_1832 · step 2 · body assembly
+18 Sep 01:14 → 18 Sep 06:07
+line 20 · 8 machines · 8 workers"></div><div class="bar" style="left:10.300%;width:0.906%" title="128_1833 · step 3 · body assembly
+18 Sep 06:07 → 18 Sep 09:13
+line 25 · 6 machines · 6 workers"></div><div class="bar" style="left:11.206%;width:0.383%" title="128_1834 · step 4 · tubular sleeve join
+18 Sep 09:13 → 18 Sep 10:31
+line 130 · 3 machines · 3 workers"></div><div class="bar" style="left:11.589%;width:3.550%" title="128_1835 · step 5 · seam edge overlock
+18 Sep 10:31 → 18 Sep 22:38
+line 20 · 5 machines · 5 workers"></div><div class="bar" style="left:15.139%;width:2.244%" title="128_1836 · step 6 · body assembly
+18 Sep 22:38 → 19 Sep 06:17
+line 130 · 11 machines · 11 workers"></div><div class="bar" style="left:17.383%;width:7.262%" title="128_1837 · step 7 · bar-tack pocketing
+19 Sep 06:17 → 20 Sep 07:03
+line 134 · 4 machines · 4 workers"></div><div class="bar" style="left:24.646%;width:0.280%" title="128_1838 · step 8 · flatlock hemming
+20 Sep 07:03 → 20 Sep 08:00
+line 31 · 6 machines · 6 workers"></div><div class="bar" style="left:24.926%;width:0.280%" title="128_1839 · step 9 · bar-tack pocketing
+20 Sep 08:00 → 20 Sep 08:57
+line 23 · 6 machines · 6 workers"></div></div></div><div class="lane"><div class="label">Order 61<small>47.4 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:0.879%" title="61_1368 · step 1 · seam edge overlock
+16 Sep 19:00 → 16 Sep 22:00
+line 19 · 7 machines · 7 workers"></div><div class="bar" style="left:0.879%;width:2.362%" title="61_1369 · step 2 · seam edge overlock
+16 Sep 22:00 → 17 Sep 06:03
+line 23 · 10 machines · 10 workers"></div><div class="bar" style="left:3.313%;width:0.150%" title="61_1370 · step 3 · body assembly
+17 Sep 06:18 → 17 Sep 06:36
+line 134 · 9 machines · 9 workers"></div><div class="bar" style="left:3.402%;width:14.095%" title="61_1371 · step 4 · seam edge overlock
+17 Sep 06:36 → 19 Sep 06:40
+line 32 · 5 machines · 5 workers"></div><div class="bar" style="left:17.497%;width:5.297%" title="61_1372 · step 5 · tubular sleeve join
+19 Sep 06:40 → 20 Sep 00:44
+line 20 · 9 machines · 9 workers"></div><div class="bar" style="left:22.795%;width:1.825%" title="61_1373 · step 6 · flatlock hemming
+20 Sep 00:44 → 20 Sep 06:57
+line 26 · 9 machines · 9 workers"></div><div class="bar" style="left:24.620%;width:0.782%" title="61_1374 · step 7 · flatlock hemming
+20 Sep 06:57 → 20 Sep 09:37
+line 134 · 5 machines · 5 workers"></div></div></div><div class="lane"><div class="label">Order 595<small>49.4 d late</small></div><div class="track"><div class="bar" style="left:3.600%;width:0.674%" title="595_3811 · step 1 · seam edge overlock
+17 Sep 07:16 → 17 Sep 09:34
+line 25 · 8 machines · 8 workers"></div><div class="bar" style="left:4.274%;width:1.053%" title="595_3812 · step 2 · seam edge overlock
+17 Sep 09:34 → 17 Sep 13:10
+line 30 · 5 machines · 5 workers"></div><div class="bar" style="left:5.327%;width:3.607%" title="595_3813 · step 3 · body assembly
+17 Sep 13:10 → 18 Sep 01:28
+line 23 · 6 machines · 6 workers"></div><div class="bar" style="left:8.933%;width:2.015%" title="595_3814 · step 4 · seam edge overlock
+18 Sep 01:28 → 18 Sep 08:20
+line 29 · 7 machines · 7 workers"></div><div class="bar" style="left:11.206%;width:1.280%" title="595_3815 · step 5 · tubular sleeve join
+18 Sep 09:13 → 18 Sep 13:35
+line 28 · 5 machines · 5 workers"></div><div class="bar" style="left:12.486%;width:5.675%" title="595_3816 · step 6 · flatlock hemming
+18 Sep 13:35 → 19 Sep 08:56
+line 27 · 3 machines · 3 workers"></div><div class="bar" style="left:18.161%;width:7.258%" title="595_3817 · step 7 · flatlock hemming
+19 Sep 08:56 → 20 Sep 09:41
+line 28 · 2 machines · 2 workers"></div></div></div><div class="lane"><div class="label">Order 545<small>56.46 d late</small></div><div class="track"><div class="bar" style="left:3.348%;width:6.974%" title="545_1361 · step 1 · seam edge overlock
+17 Sep 06:25 → 18 Sep 06:12
+line 19 · 12 machines · 12 workers"></div><div class="bar" style="left:10.321%;width:0.258%" title="545_1362 · step 2 · seam edge overlock
+18 Sep 06:12 → 18 Sep 07:04
+line 28 · 7 machines · 7 workers"></div><div class="bar" style="left:10.579%;width:0.422%" title="545_1363 · step 3 · body assembly
+18 Sep 07:04 → 18 Sep 08:31
+line 27 · 7 machines · 7 workers"></div><div class="bar" style="left:11.001%;width:6.569%" title="545_1364 · step 4 · seam edge overlock
+18 Sep 08:31 → 19 Sep 06:55
+line 130 · 9 machines · 9 workers"></div><div class="bar" style="left:17.571%;width:5.066%" title="545_1365 · step 5 · tubular sleeve join
+19 Sep 06:55 → 20 Sep 00:12
+line 25 · 4 machines · 4 workers"></div><div class="bar" style="left:22.637%;width:2.217%" title="545_1366 · step 6 · flatlock hemming
+20 Sep 00:12 → 20 Sep 07:45
+line 29 · 5 machines · 5 workers"></div><div class="bar" style="left:24.854%;width:0.935%" title="545_1367 · step 7 · flatlock hemming
+20 Sep 07:45 → 20 Sep 10:57
+line 130 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 797<small>63.66 d late</small></div><div class="track"><div class="bar" style="left:3.601%;width:0.799%" title="797_3136 · step 1 · seam edge overlock
+17 Sep 07:17 → 17 Sep 10:00
+line 129 · 4 machines · 4 workers"></div><div class="bar" style="left:4.400%;width:4.436%" title="797_3137 · step 2 · seam edge overlock
+17 Sep 10:00 → 18 Sep 01:08
+line 23 · 10 machines · 10 workers"></div><div class="bar" style="left:8.836%;width:0.575%" title="797_3138 · step 3 · body assembly
+18 Sep 01:08 → 18 Sep 03:05
+line 24 · 8 machines · 8 workers"></div><div class="bar" style="left:10.188%;width:0.438%" title="797_3139 · step 4 · seam edge overlock
+18 Sep 05:45 → 18 Sep 07:14
+line 134 · 11 machines · 11 workers"></div><div class="bar" style="left:10.626%;width:0.519%" title="797_3140 · step 5 · body assembly
+18 Sep 07:14 → 18 Sep 09:00
+line 28 · 9 machines · 9 workers"></div><div class="bar" style="left:11.145%;width:0.408%" title="797_3141 · step 6 · seam edge overlock
+18 Sep 09:00 → 18 Sep 10:24
+line 19 · 12 machines · 12 workers"></div><div class="bar" style="left:11.553%;width:6.102%" title="797_3142 · step 7 · tubular sleeve join
+18 Sep 10:24 → 19 Sep 07:12
+line 24 · 3 machines · 3 workers"></div><div class="bar" style="left:17.655%;width:0.876%" title="797_3143 · step 8 · flatlock hemming
+19 Sep 07:12 → 19 Sep 10:12
+line 21 · 5 machines · 5 workers"></div><div class="bar" style="left:24.263%;width:2.079%" title="797_3144 · step 9 · flatlock hemming
+20 Sep 05:45 → 20 Sep 12:50
+line 129 · 2 machines · 2 workers"></div><div class="bar" style="left:26.342%;width:7.913%" title="797_3145 · step 10 · bar-tack pocketing
+20 Sep 12:50 → 21 Sep 15:49
+line 26 · 5 machines · 5 workers"></div></div></div><div class="lane"><div class="label">Order 251<small>40.64 d late</small></div><div class="track"><div class="bar" style="left:0.805%;width:0.150%" title="251_2059 · step 1 · seam edge overlock
+16 Sep 21:44 → 16 Sep 22:00
+line 31 · 10 machines · 10 workers"></div><div class="bar" style="left:0.880%;width:0.476%" title="251_2060 · step 2 · body assembly
+16 Sep 22:00 → 16 Sep 23:37
+line 26 · 3 machines · 3 workers"></div><div class="bar" style="left:4.726%;width:0.508%" title="251_2061 · step 3 · body assembly
+17 Sep 11:07 → 17 Sep 12:51
+line 129 · 5 machines · 5 workers"></div><div class="bar" style="left:5.234%;width:6.599%" title="251_2062 · step 4 · body assembly
+17 Sep 12:51 → 18 Sep 11:21
+line 31 · 2 machines · 2 workers"></div><div class="bar" style="left:17.226%;width:0.949%" title="251_2063 · step 5 · seam edge overlock
+19 Sep 05:44 → 19 Sep 08:59
+line 20 · 5 machines · 5 workers"></div><div class="bar" style="left:19.572%;width:7.061%" title="251_2064 · step 6 · tubular sleeve join
+19 Sep 13:45 → 20 Sep 13:49
+line 27 · 2 machines · 2 workers"></div><div class="bar" style="left:34.703%;width:1.824%" title="251_2065 · step 7 · body assembly
+21 Sep 17:21 → 21 Sep 23:34
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:36.527%;width:11.701%" title="251_2066 · step 8 · bar-tack pocketing
+21 Sep 23:34 → 23 Sep 15:28
+line 31 · 2 machines · 2 workers"></div></div></div><div class="lane"><div class="label">Order 83<small>58.74 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:3.884%" title="83_93 · step 1 · seam edge overlock
+16 Sep 19:00 → 17 Sep 08:15
+line 26 · 3 machines · 3 workers"></div><div class="bar" style="left:3.884%;width:0.249%" title="83_94 · step 2 · seam edge overlock
+17 Sep 08:15 → 17 Sep 09:06
+line 27 · 11 machines · 11 workers"></div><div class="bar" style="left:5.497%;width:4.941%" title="83_95 · step 3 · body assembly
+17 Sep 13:45 → 18 Sep 06:35
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:10.626%;width:0.902%" title="83_96 · step 4 · seam edge overlock
+18 Sep 07:14 → 18 Sep 10:19
+line 24 · 6 machines · 6 workers"></div><div class="bar" style="left:18.316%;width:1.317%" title="83_97 · step 5 · tubular sleeve join
+19 Sep 09:28 → 19 Sep 13:57
+line 19 · 3 machines · 3 workers"></div><div class="bar" style="left:24.263%;width:0.977%" title="83_98 · step 6 · flatlock hemming
+20 Sep 05:45 → 20 Sep 09:04
+line 24 · 5 machines · 5 workers"></div><div class="bar" style="left:25.240%;width:23.647%" title="83_99 · step 7 · flatlock hemming
+20 Sep 09:04 → 23 Sep 17:43
+line 22 · 5 machines · 5 workers"></div></div></div><div class="lane"><div class="label">Order 839<small>13.89 d late</small></div><div class="track"><div class="bar" style="left:12.534%;width:11.971%" title="839_2573 · step 1 · seam edge overlock
+18 Sep 13:45 → 20 Sep 06:34
+line 19 · 12 machines · 12 workers"></div><div class="bar" style="left:34.419%;width:0.284%" title="839_2574 · step 2 · body assembly
+21 Sep 16:22 → 21 Sep 17:21
+line 130 · 11 machines · 11 workers"></div><div class="bar" style="left:34.703%;width:0.405%" title="839_2575 · step 3 · body assembly
+21 Sep 17:21 → 21 Sep 18:43
+line 27 · 7 machines · 7 workers"></div><div class="bar" style="left:35.108%;width:5.624%" title="839_2576 · step 4 · tubular sleeve join
+21 Sep 18:43 → 22 Sep 13:54
+line 21 · 1 machines · 1 workers"></div><div class="bar" style="left:40.732%;width:0.537%" title="839_2577 · step 5 · seam edge overlock
+22 Sep 13:54 → 22 Sep 15:44
+line 30 · 5 machines · 5 workers"></div><div class="bar" style="left:41.269%;width:0.363%" title="839_2578 · step 6 · body assembly
+22 Sep 15:44 → 22 Sep 16:59
+line 19 · 8 machines · 8 workers"></div><div class="bar" style="left:41.633%;width:6.982%" title="839_2579 · step 7 · bar-tack pocketing
+22 Sep 16:59 → 23 Sep 16:47
+line 23 · 6 machines · 6 workers"></div><div class="bar" style="left:48.615%;width:0.653%" title="839_2580 · step 8 · flatlock hemming
+23 Sep 16:47 → 23 Sep 19:01
+line 30 · 4 machines · 4 workers"></div><div class="bar" style="left:49.268%;width:0.653%" title="839_2581 · step 9 · bar-tack pocketing
+23 Sep 19:01 → 23 Sep 21:15
+line 134 · 4 machines · 4 workers"></div></div></div><div class="lane"><div class="label">Order 95<small>54.6 d late</small></div><div class="track"><div class="bar" style="left:3.151%;width:6.132%" title="95_2121 · step 1 · seam edge overlock
+17 Sep 05:44 → 18 Sep 02:39
+line 31 · 10 machines · 10 workers"></div><div class="bar" style="left:11.179%;width:0.790%" title="95_2122 · step 2 · seam edge overlock
+18 Sep 09:07 → 18 Sep 11:49
+line 27 · 11 machines · 11 workers"></div><div class="bar" style="left:11.969%;width:0.454%" title="95_2123 · step 3 · body assembly
+18 Sep 11:49 → 18 Sep 13:22
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:17.958%;width:0.671%" title="95_2124 · step 4 · seam edge overlock
+19 Sep 08:14 → 19 Sep 10:32
+line 28 · 7 machines · 7 workers"></div><div class="bar" style="left:18.628%;width:0.748%" title="95_2125 · step 5 · body assembly
+19 Sep 10:32 → 19 Sep 13:05
+line 20 · 8 machines · 8 workers"></div><div class="bar" style="left:19.377%;width:5.652%" title="95_2126 · step 6 · seam edge overlock
+19 Sep 13:05 → 20 Sep 08:21
+line 21 · 8 machines · 8 workers"></div><div class="bar" style="left:25.501%;width:9.202%" title="95_2127 · step 7 · tubular sleeve join
+20 Sep 09:58 → 21 Sep 17:21
+line 26 · 2 machines · 2 workers"></div><div class="bar" style="left:34.703%;width:6.891%" title="95_2128 · step 8 · flatlock hemming
+21 Sep 17:21 → 22 Sep 16:51
+line 32 · 5 machines · 5 workers"></div><div class="bar" style="left:42.605%;width:6.555%" title="95_2129 · step 9 · flatlock hemming
+22 Sep 20:18 → 23 Sep 18:39
+line 31 · 6 machines · 6 workers"></div><div class="bar" style="left:49.159%;width:5.811%" title="95_2130 · step 10 · bar-tack pocketing
+23 Sep 18:39 → 24 Sep 14:28
+line 25 · 4 machines · 4 workers"></div></div></div><div class="lane"><div class="label">Order 563<small>49.65 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:1.296%" title="563_1583 · step 1 · seam edge overlock
+16 Sep 19:00 → 16 Sep 23:25
+line 134 · 11 machines · 11 workers"></div><div class="bar" style="left:3.151%;width:1.575%" title="563_1584 · step 2 · body assembly
+17 Sep 05:44 → 17 Sep 11:07
+line 28 · 9 machines · 9 workers"></div><div class="bar" style="left:4.726%;width:6.429%" title="563_1585 · step 3 · body assembly
+17 Sep 11:07 → 18 Sep 09:02
+line 29 · 8 machines · 8 workers"></div><div class="bar" style="left:12.534%;width:6.094%" title="563_1586 · step 4 · body assembly
+18 Sep 13:45 → 19 Sep 10:32
+line 24 · 8 machines · 8 workers"></div><div class="bar" style="left:18.628%;width:6.578%" title="563_1587 · step 5 · seam edge overlock
+19 Sep 10:32 → 20 Sep 08:57
+line 24 · 6 machines · 6 workers"></div><div class="bar" style="left:25.206%;width:10.736%" title="563_1588 · step 6 · tubular sleeve join
+20 Sep 08:57 → 21 Sep 21:34
+line 22 · 3 machines · 3 workers"></div><div class="bar" style="left:38.338%;width:3.911%" title="563_1589 · step 7 · body assembly
+22 Sep 05:44 → 22 Sep 19:05
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:42.249%;width:13.082%" title="563_1590 · step 8 · bar-tack pocketing
+22 Sep 19:05 → 24 Sep 15:42
+line 27 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 254<small>62.67 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:3.227%" title="254_2147 · step 1 · seam edge overlock
+16 Sep 19:00 → 17 Sep 06:00
+line 21 · 8 machines · 8 workers"></div><div class="bar" style="left:3.525%;width:0.466%" title="254_2148 · step 2 · body assembly
+17 Sep 07:01 → 17 Sep 08:36
+line 29 · 8 machines · 8 workers"></div><div class="bar" style="left:11.268%;width:4.235%" title="254_2149 · step 3 · body assembly
+18 Sep 09:25 → 18 Sep 23:52
+line 19 · 8 machines · 8 workers"></div><div class="bar" style="left:17.848%;width:1.141%" title="254_2150 · step 4 · tubular sleeve join
+19 Sep 07:52 → 19 Sep 11:45
+line 32 · 5 machines · 5 workers"></div><div class="bar" style="left:18.989%;width:5.832%" title="254_2151 · step 5 · seam edge overlock
+19 Sep 11:45 → 20 Sep 07:39
+line 32 · 5 machines · 5 workers"></div><div class="bar" style="left:25.186%;width:1.203%" title="254_2152 · step 6 · body assembly
+20 Sep 08:53 → 20 Sep 12:59
+line 30 · 5 machines · 5 workers"></div><div class="bar" style="left:26.389%;width:14.626%" title="254_2153 · step 7 · bar-tack pocketing
+20 Sep 12:59 → 22 Sep 14:52
+line 30 · 2 machines · 2 workers"></div><div class="bar" style="left:41.014%;width:7.486%" title="254_2154 · step 8 · flatlock hemming
+22 Sep 14:52 → 23 Sep 16:24
+line 23 · 8 machines · 8 workers"></div><div class="bar" style="left:48.500%;width:13.952%" title="254_2155 · step 9 · bar-tack pocketing
+23 Sep 16:24 → 25 Sep 15:59
+line 32 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 635<small>9.79 d late</small></div><div class="track"><div class="bar" style="left:10.188%;width:1.015%" title="635_516 · step 1 · seam edge overlock
+18 Sep 05:44 → 18 Sep 09:12
+line 31 · 10 machines · 10 workers"></div><div class="bar" style="left:11.204%;width:13.417%" title="635_517 · step 2 · body assembly
+18 Sep 09:12 → 20 Sep 06:58
+line 134 · 9 machines · 9 workers"></div><div class="bar" style="left:24.620%;width:1.447%" title="635_518 · step 3 · body assembly
+20 Sep 06:58 → 20 Sep 11:54
+line 19 · 8 machines · 8 workers"></div><div class="bar" style="left:28.892%;width:6.105%" title="635_519 · step 4 · tubular sleeve join
+20 Sep 21:32 → 21 Sep 18:21
+line 23 · 2 machines · 2 workers"></div><div class="bar" style="left:34.996%;width:0.329%" title="635_520 · step 5 · seam edge overlock
+21 Sep 18:21 → 21 Sep 19:28
+line 23 · 10 machines · 10 workers"></div><div class="bar" style="left:35.992%;width:5.130%" title="635_521 · step 6 · body assembly
+21 Sep 21:44 → 22 Sep 15:14
+line 27 · 7 machines · 7 workers"></div><div class="bar" style="left:41.122%;width:1.638%" title="635_522 · step 7 · bar-tack pocketing
+22 Sep 15:14 → 22 Sep 20:49
+line 26 · 5 machines · 5 workers"></div><div class="bar" style="left:42.760%;width:6.910%" title="635_523 · step 8 · flatlock hemming
+22 Sep 20:49 → 23 Sep 20:23
+line 24 · 5 machines · 5 workers"></div><div class="bar" style="left:50.067%;width:13.236%" title="635_524 · step 9 · bar-tack pocketing
+23 Sep 21:45 → 25 Sep 18:53
+line 29 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 991<small>57.64 d late</small></div><div class="track"><div class="bar" style="left:3.386%;width:1.423%" title="991_1567 · step 1 · seam edge overlock
+17 Sep 06:33 → 17 Sep 11:24
+line 21 · 8 machines · 8 workers"></div><div class="bar" style="left:24.330%;width:1.224%" title="991_1568 · step 2 · seam edge overlock
+20 Sep 05:58 → 20 Sep 10:09
+line 31 · 10 machines · 10 workers"></div><div class="bar" style="left:40.684%;width:0.226%" title="991_1569 · step 3 · body assembly
+22 Sep 13:45 → 22 Sep 14:31
+line 32 · 10 machines · 10 workers"></div><div class="bar" style="left:50.067%;width:5.146%" title="991_1570 · step 4 · seam edge overlock
+23 Sep 21:44 → 24 Sep 15:17
+line 22 · 4 machines · 4 workers"></div><div class="bar" style="left:57.105%;width:5.273%" title="991_1571 · step 5 · tubular sleeve join
+24 Sep 21:45 → 25 Sep 15:43
+line 134 · 3 machines · 3 workers"></div><div class="bar" style="left:64.142%;width:2.800%" title="991_1572 · step 6 · flatlock hemming
+25 Sep 21:45 → 26 Sep 07:17
+line 20 · 4 machines · 4 workers"></div><div class="bar" style="left:66.942%;width:2.346%" title="991_1573 · step 7 · flatlock hemming
+26 Sep 07:17 → 26 Sep 15:17
+line 30 · 4 machines · 4 workers"></div></div></div><div class="lane"><div class="label">Order 749<small>41.73 d late</small></div><div class="track"><div class="bar" style="left:3.451%;width:0.324%" title="749_273 · step 1 · seam edge overlock
+17 Sep 06:46 → 17 Sep 07:52
+line 23 · 10 machines · 10 workers"></div><div class="bar" style="left:3.775%;width:7.828%" title="749_274 · step 2 · body assembly
+17 Sep 07:52 → 18 Sep 10:34
+line 26 · 3 machines · 3 workers"></div><div class="bar" style="left:11.818%;width:7.035%" title="749_275 · step 3 · body assembly
+18 Sep 11:18 → 19 Sep 11:18
+line 23 · 6 machines · 6 workers"></div><div class="bar" style="left:18.854%;width:6.647%" title="749_276 · step 4 · tubular sleeve join
+19 Sep 11:18 → 20 Sep 09:58
+line 29 · 3 machines · 3 workers"></div><div class="bar" style="left:25.501%;width:0.880%" title="749_277 · step 5 · seam edge overlock
+20 Sep 09:58 → 20 Sep 12:58
+line 29 · 7 machines · 7 workers"></div><div class="bar" style="left:33.647%;width:1.203%" title="749_278 · step 6 · body assembly
+21 Sep 13:45 → 21 Sep 17:51
+line 129 · 5 machines · 5 workers"></div><div class="bar" style="left:41.253%;width:14.626%" title="749_279 · step 7 · bar-tack pocketing
+22 Sep 15:41 → 24 Sep 17:34
+line 130 · 2 machines · 2 workers"></div><div class="bar" style="left:57.105%;width:6.177%" title="749_280 · step 8 · flatlock hemming
+24 Sep 21:45 → 25 Sep 18:48
+line 20 · 4 machines · 4 workers"></div><div class="bar" style="left:69.374%;width:7.588%" title="749_281 · step 9 · bar-tack pocketing
+26 Sep 15:35 → 27 Sep 17:28
+line 21 · 2 machines · 2 workers"></div></div></div><div class="lane"><div class="label">Order 463<small>62.85 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:1.923%" title="463_1180 · step 1 · seam edge overlock
+16 Sep 19:00 → 17 Sep 01:33
+line 130 · 9 machines · 9 workers"></div><div class="bar" style="left:3.151%;width:6.293%" title="463_1181 · step 2 · body assembly
+17 Sep 05:44 → 18 Sep 03:12
+line 25 · 6 machines · 6 workers"></div><div class="bar" style="left:19.163%;width:3.928%" title="463_1182 · step 3 · body assembly
+19 Sep 12:21 → 20 Sep 01:45
+line 130 · 11 machines · 11 workers"></div><div class="bar" style="left:23.090%;width:2.658%" title="463_1183 · step 4 · tubular sleeve join
+20 Sep 01:45 → 20 Sep 10:48
+line 31 · 4 machines · 4 workers"></div><div class="bar" style="left:25.748%;width:23.458%" title="463_1184 · step 5 · seam edge overlock
+20 Sep 10:48 → 23 Sep 18:48
+line 22 · 4 machines · 4 workers"></div><div class="bar" style="left:49.206%;width:6.190%" title="463_1185 · step 6 · body assembly
+23 Sep 18:48 → 24 Sep 15:55
+line 32 · 10 machines · 10 workers"></div><div class="bar" style="left:55.397%;width:8.467%" title="463_1186 · step 7 · bar-tack pocketing
+24 Sep 15:55 → 25 Sep 20:48
+line 22 · 4 machines · 4 workers"></div><div class="bar" style="left:63.864%;width:10.864%" title="463_1187 · step 8 · flatlock hemming
+25 Sep 20:48 → 27 Sep 09:51
+line 25 · 5 machines · 5 workers"></div><div class="bar" style="left:74.728%;width:3.099%" title="463_1188 · step 9 · bar-tack pocketing
+27 Sep 09:51 → 27 Sep 20:25
+line 24 · 3 machines · 3 workers"></div></div></div><div class="lane"><div class="label">Order 114<small>31.12 d late</small></div><div class="track"><div class="bar" style="left:3.151%;width:0.501%" title="114_3249 · step 1 · seam edge overlock
+17 Sep 05:44 → 17 Sep 07:27
+line 24 · 6 machines · 6 workers"></div><div class="bar" style="left:24.909%;width:0.161%" title="114_3250 · step 2 · body assembly
+20 Sep 07:57 → 20 Sep 08:29
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:25.069%;width:0.189%" title="114_3251 · step 3 · body assembly
+20 Sep 08:29 → 20 Sep 09:08
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:26.609%;width:9.338%" title="114_3252 · step 4 · tubular sleeve join
+20 Sep 13:45 → 21 Sep 21:35
+line 30 · 1 machines · 1 workers"></div><div class="bar" style="left:35.992%;width:5.084%" title="114_3253 · step 5 · seam edge overlock
+21 Sep 21:45 → 22 Sep 15:05
+line 25 · 8 machines · 8 workers"></div><div class="bar" style="left:41.076%;width:0.425%" title="114_3254 · step 6 · body assembly
+22 Sep 15:05 → 22 Sep 16:32
+line 22 · 10 machines · 10 workers"></div><div class="bar" style="left:41.501%;width:1.244%" title="114_3255 · step 7 · bar-tack pocketing
+22 Sep 16:32 → 22 Sep 20:46
+line 28 · 3 machines · 3 workers"></div><div class="bar" style="left:42.745%;width:19.656%" title="114_3256 · step 8 · flatlock hemming
+22 Sep 20:46 → 25 Sep 15:48
+line 26 · 9 machines · 9 workers"></div><div class="bar" style="left:76.475%;width:3.212%" title="114_3257 · step 9 · bar-tack pocketing
+27 Sep 15:48 → 28 Sep 02:45
+line 20 · 2 machines · 2 workers"></div></div></div><div class="lane"><div class="label">Order 666<small>39.17 d late</small></div><div class="track"><div class="bar" style="left:0.000%;width:8.893%" title="666_2059 · step 1 · seam edge overlock
+16 Sep 19:00 → 18 Sep 01:19
+line 20 · 4 machines · 4 workers"></div><div class="bar" style="left:14.880%;width:4.310%" title="666_2060 · step 2 · body assembly
+18 Sep 21:44 → 19 Sep 12:26
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:24.263%;width:2.411%" title="666_2061 · step 3 · body assembly
+20 Sep 05:44 → 20 Sep 13:58
+line 130 · 11 machines · 11 workers"></div><div class="bar" style="left:29.618%;width:5.973%" title="666_2062 · step 4 · body assembly
+21 Sep 00:00 → 21 Sep 20:23
+line 22 · 10 machines · 10 workers"></div><div class="bar" style="left:35.992%;width:26.051%" title="666_2063 · step 5 · seam edge overlock
+21 Sep 21:45 → 25 Sep 14:35
+line 19 · 12 machines · 12 workers"></div><div class="bar" style="left:62.043%;width:1.550%" title="666_2064 · step 6 · tubular sleeve join
+25 Sep 14:35 → 25 Sep 19:52
+line 20 · 9 machines · 9 workers"></div><div class="bar" style="left:78.154%;width:1.868%" title="666_2065 · step 7 · body assembly
+27 Sep 21:32 → 28 Sep 03:54
+line 21 · 11 machines · 11 workers"></div><div class="bar" style="left:80.144%;width:6.980%" title="666_2066 · step 8 · bar-tack pocketing
+28 Sep 04:19 → 29 Sep 04:07
+line 23 · 6 machines · 6 workers"></div></div></div><div class="lane"><div class="label">Order 903<small>on time</small></div><div class="track"><div class="bar" style="left:25.028%;width:0.500%" title="903_3914 · step 1 · seam edge overlock
+20 Sep 08:21 → 20 Sep 10:03
+line 19 · 12 machines · 12 workers"></div><div class="bar" style="left:25.529%;width:0.714%" title="903_3915 · step 2 · seam edge overlock
+20 Sep 10:03 → 20 Sep 12:29
+line 25 · 8 machines · 8 workers"></div><div class="bar" style="left:33.647%;width:0.927%" title="903_3916 · step 3 · body assembly
+21 Sep 13:45 → 21 Sep 16:54
+line 25 · 6 machines · 6 workers"></div><div class="bar" style="left:34.703%;width:8.022%" title="903_3917 · step 4 · seam edge overlock
+21 Sep 17:21 → 22 Sep 20:42
+line 129 · 4 machines · 4 workers"></div><div class="bar" style="left:47.721%;width:1.098%" title="903_3918 · step 5 · body assembly
+23 Sep 13:45 → 23 Sep 17:29
+line 30 · 5 machines · 5 workers"></div><div class="bar" style="left:48.819%;width:0.714%" title="903_3919 · step 6 · seam edge overlock
+23 Sep 17:29 → 23 Sep 19:55
+line 21 · 8 machines · 8 workers"></div><div class="bar" style="left:54.759%;width:0.642%" title="903_3920 · step 7 · tubular sleeve join
+24 Sep 13:45 → 24 Sep 15:56
+line 20 · 9 machines · 9 workers"></div><div class="bar" style="left:55.401%;width:1.098%" title="903_3921 · step 8 · flatlock hemming
+24 Sep 15:56 → 24 Sep 19:41
+line 22 · 5 machines · 5 workers"></div><div class="bar" style="left:61.796%;width:1.098%" title="903_3922 · step 9 · flatlock hemming
+25 Sep 13:45 → 25 Sep 17:29
+line 29 · 5 machines · 5 workers"></div><div class="bar" style="left:79.880%;width:20.120%" title="903_3923 · step 10 · bar-tack pocketing
+28 Sep 03:25 → 01 Oct 00:02
+line 134 · 4 machines · 4 workers"></div></div></div></div></main></body></html>

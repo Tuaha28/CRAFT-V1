@@ -1,5 +1,10 @@
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
+
+# The mock demo API is only mounted by the base URL config (config.urls), not by the
+# integration URL config the app runs on, so pin it for these tests.
+@override_settings(ROOT_URLCONF='config.urls')
 class MockApiTests(APITestCase):
     def test_health_discloses_mock_boundary(self):
         response = self.client.get("/api/v1/health")

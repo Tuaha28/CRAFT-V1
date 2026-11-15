@@ -3,12 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#101b2a" />
-    <meta name="description" content="CRAFT factory operations and production control demo." />
-    <title>CRAFT | Factory Operations</title>
+    <meta name="theme-color" content="#0a0c0f" />
+    <meta name="description" content="CRAFT plans garment sewing floors: which order, on which line, with which crew, and when." />
+    <title>CRAFT Planner</title>
+    <!-- Sets the saved or system theme before the first paint, so no page flashes the wrong one. -->
+    <script>
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem("craft-theme"); } catch (e) { /* private window */ }
+        var light = saved ? saved === "light" : window.matchMedia("(prefers-color-scheme: light)").matches;
+        document.documentElement.dataset.theme = light ? "light" : "dark";
+        if (light) document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f4f7f7");
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

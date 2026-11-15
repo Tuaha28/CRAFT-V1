@@ -428,6 +428,12 @@ def _prepare(factory_id, source, readiness, snapshot, source_hash, selected_rout
                     pair_lines[int(machines[mid]["line_id"])][0].add(wid)
                     pair_lines[int(machines[mid]["line_id"])][1].add(mid)
                 widest = max(min(len(w), len(m)) for w, m in pair_lines.values())
+                if crew_policy.get("crew_cap") == "SHIFT_CREW":
+                    # Opt-in (V3.2 experiments): a crew works only while all its
+                    # members are on shift, so its size is bounded by the skilled
+                    # workers of ONE rotating crew on the line, not of all three.
+                    widest = max(min(len(m), max(Counter(membership[int(w)] for w in ws).values()))
+                                 for ws, m in pair_lines.values())
                 top = min(crew_policy["max_crew"], quantity // crew_policy["bundle_pieces"], widest)
                 crew_sizes = tuple(range(1, max(1, top) + 1))
             smv = Decimal(str(raw_op["standard_allowed_minutes"]))
@@ -809,10 +815,12 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
 
     def v2_score(rows_by_key):
         """Whole-schedule goals in CRAFT's own order (lower is better):
-        late orders, total and maximum tardiness (unfinished orders count
-        with an estimated finish), unplaced operations, then
+        unplaced operations, late orders, total and maximum tardiness
+        (unfinished orders count with an estimated finish), then
         the manager's pace goal (FAST: finish early; SLOW: finish close to
-        due minus buffer; ECONOMY: fewest distinct workers)."""
+        due minus buffer; ECONOMY: fewest distinct workers). Unplaced work
+        comes first (V3.1): a plan that leaves an order unfinished must
+        never beat a complete plan by having fewer late orders."""
         mine = {k: r for k, r in rows_by_key.items() if k in all_keys_set}
         tardy, early = [], 0
         for order_id, final in final_ops.items():
@@ -831,8 +839,8 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
                     int(ops_by_key[k].serial_productive_seconds) // widest_crew
                     for k in order_keys[order_id] if k in all_keys_set and k not in mine)
             tardy.append(max(0, end - due))
-        delivery = (sum(t > 0 for t in tardy), sum(tardy), max(tardy, default=0),
-                    len(all_keys_set) - len(mine))
+        delivery = (len(all_keys_set) - len(mine),
+                    sum(t > 0 for t in tardy), sum(tardy), max(tardy, default=0))
         workers = len({str(w) for r in mine.values() for w in r["resource_configuration"]["worker_ids"]})
         crew = sum(int(r["resource_configuration"].get("k", 1)) for r in mine.values())
         ends = [int(r["end_seconds"]) for r in mine.values()]
@@ -1021,7 +1029,11 @@ def _run(factory_id, target, *, complete_captured_test_domain=False, checkpoint=
             for key in reversed(route):
                 if due is not None:
                     op_due[key] = int(due) - later
-                later += int(tw_factor * int(tw_ops[key].serial_productive_seconds) / widest)
+                # Opt-in SHIFT_CREW: divide by this operation's own largest crew
+                # (machines, lot pieces, one shift crew) instead of the global cap.
+                k_op = (min(widest, int(tw_ops[key].max_machine_count))
+                        if (crew_policy or {}).get("crew_cap") == "SHIFT_CREW" else widest)
+                later += int(tw_factor * int(tw_ops[key].serial_productive_seconds) / max(1, k_op))
         far = 10 ** 12
 
         def urgency(key):

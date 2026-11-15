@@ -80,3 +80,6 @@ web_v1/audits/**/pytest_temp/
 *.pt
 *.pkl
 *.parquet
+
+# Handout contains a live DB password -- never commit
+handout.md

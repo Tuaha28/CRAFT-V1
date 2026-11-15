@@ -1,0 +1,156 @@
+{
+ "load90_set3_v31": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 85.445,
+    "tardiness_d": 187.259,
+    "on_time": 2,
+    "flow_d": 22.487,
+    "workers": 20,
+    "util_pct": 17.23
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 83.445,
+    "tardiness_d": 189.664,
+    "on_time": 2,
+    "flow_d": 22.61,
+    "workers": 22,
+    "util_pct": 16.05
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 88.807,
+    "tardiness_d": 191.574,
+    "on_time": 2,
+    "flow_d": 22.822,
+    "workers": 21,
+    "util_pct": 15.81
+   },
+   "EDD_CREW": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.679,
+    "tardiness_d": 120.443,
+    "on_time": 1,
+    "flow_d": 15.608,
+    "workers": 31,
+    "util_pct": 19.31
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 96.679,
+    "tardiness_d": 94.4,
+    "on_time": 2,
+    "flow_d": 11.628,
+    "workers": 28,
+    "util_pct": 17.74
+   },
+   "CRAFT_TW": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.679,
+    "tardiness_d": 118.113,
+    "on_time": 2,
+    "flow_d": 15.588,
+    "workers": 29,
+    "util_pct": 20.72
+   },
+   "CRAFT_V3": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 96.679,
+    "tardiness_d": 94.4,
+    "on_time": 2,
+    "flow_d": 11.628,
+    "workers": 28,
+    "util_pct": 17.75
+   }
+  },
+  "notebook": "load90-set3-v31",
+  "exit": 0,
+  "seconds": 10246.7,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 83,
+    "validation": true,
+    "score": [
+     1,
+     8,
+     19148828,
+     8943840,
+     29,
+     189,
+     6884293,
+     94772014
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 83,
+    "validation": true,
+    "score": [
+     1,
+     9,
+     19350121,
+     8943840,
+     31,
+     203,
+     6884293,
+     101006205
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 83,
+    "validation": true,
+    "score": [
+     1,
+     8,
+     17100038,
+     8943840,
+     28,
+     207,
+     8353093,
+     98087298
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 77,
+    "validation": true,
+    "score": [
+     7,
+     8,
+     26260668,
+     9873720,
+     22,
+     77,
+     7209650,
+     94023681
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   1,
+   8,
+   17100038,
+   8943840,
+   28,
+   203,
+   8353093,
+   98197066
+  ],
+  "improve_seconds": 2011.2
+ }
+}

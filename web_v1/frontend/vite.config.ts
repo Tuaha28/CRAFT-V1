@@ -1,8 +1,11 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
+declare const process: { env: Record<string, string | undefined> };  // Node, without @types/node
+
 export default defineConfig({
   plugins: [react()],
-  server: { proxy: { "/api/v1/governance": "http://127.0.0.1:8001", "/api": "http://127.0.0.1:8000" } },
-  test: { environment: "jsdom", setupFiles: "./src/test-setup.ts", exclude: ["e2e/**", "node_modules/**"] },
+  // CRAFT_API points the dev proxy at another backend (e.g. a test copy); default is the local API server.
+  server: { proxy: { "/api": process.env.CRAFT_API ?? "http://127.0.0.1:8001" } },
+  test: { environment: "jsdom", setupFiles: "./src/test-setup.ts", exclude: ["e2e/**", "node_modules/**", "legacy_demo/**"] },
 });

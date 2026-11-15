@@ -1,0 +1,866 @@
+{
+ "cases": [
+  {
+   "key": "load30_set1",
+   "label": "30%-S1",
+   "ops": 61,
+   "seconds": 5958.6,
+   "start": "CP-SAT plan",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 7.13,
+     "makespan": 103.511,
+     "flow": 10.925,
+     "workers": 22,
+     "util": 8.93
+    },
+    "EDD": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 7.11,
+     "makespan": 103.511,
+     "flow": 11.203,
+     "workers": 21,
+     "util": 9.34
+    },
+    "SPT": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 6.99,
+     "makespan": 110.885,
+     "flow": 10.924,
+     "workers": 20,
+     "util": 9.32
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 14.85,
+     "makespan": 71.425,
+     "flow": 18.156,
+     "workers": 24,
+     "util": 17.4
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 11.47,
+     "makespan": 79.82,
+     "flow": 13.826,
+     "workers": 29,
+     "util": 13.02
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 11.09,
+     "makespan": 70.204,
+     "flow": 14.997,
+     "workers": 24,
+     "util": 17.79
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 11.09,
+     "makespan": 70.204,
+     "flow": 14.993,
+     "workers": 24,
+     "util": 17.82
+    }
+   },
+   "overdue": 5
+  },
+  {
+   "key": "load30_set2",
+   "label": "30%-S2",
+   "ops": 87,
+   "seconds": 7696.8,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 8.32,
+     "makespan": 51.309,
+     "flow": 11.731,
+     "workers": 22,
+     "util": 11.13
+    },
+    "EDD": {
+     "complete": 10,
+     "late": 6,
+     "mean_tard": 7.83,
+     "makespan": 51.309,
+     "flow": 11.611,
+     "workers": 24,
+     "util": 10.22
+    },
+    "SPT": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 8.56,
+     "makespan": 51.309,
+     "flow": 11.932,
+     "workers": 24,
+     "util": 10.27
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 4.66,
+     "makespan": 23.343,
+     "flow": 9.314,
+     "workers": 30,
+     "util": 18.24
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 5,
+     "mean_tard": 5.74,
+     "makespan": 28.463,
+     "flow": 8.474,
+     "workers": 29,
+     "util": 15.41
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 5.73,
+     "makespan": 23.343,
+     "flow": 10.734,
+     "workers": 32,
+     "util": 17.25
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 5,
+     "mean_tard": 5.23,
+     "makespan": 26.196,
+     "flow": 10.076,
+     "workers": 31,
+     "util": 16.08
+    }
+   },
+   "overdue": 3
+  },
+  {
+   "key": "load30_set3",
+   "label": "30%-S3",
+   "ops": 89,
+   "seconds": 11542.8,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 9,
+     "late": 7,
+     "mean_tard": 19.25,
+     "makespan": 112.517,
+     "flow": 38.548,
+     "workers": 23,
+     "util": 17.79
+    },
+    "EDD": {
+     "complete": 9,
+     "late": 7,
+     "mean_tard": 20.84,
+     "makespan": 112.517,
+     "flow": 40.525,
+     "workers": 21,
+     "util": 19.4
+    },
+    "SPT": {
+     "complete": 9,
+     "late": 7,
+     "mean_tard": 20.36,
+     "makespan": 111.445,
+     "flow": 39.905,
+     "workers": 22,
+     "util": 18.7
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 6,
+     "mean_tard": 28.22,
+     "makespan": 104.559,
+     "flow": 44.374,
+     "workers": 27,
+     "util": 21.94
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 5,
+     "mean_tard": 18.83,
+     "makespan": 125.996,
+     "flow": 33.645,
+     "workers": 30,
+     "util": 16.5
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 22.63,
+     "makespan": 104.08,
+     "flow": 40.831,
+     "workers": 26,
+     "util": 22.87
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 5,
+     "mean_tard": 18.33,
+     "makespan": 125.996,
+     "flow": 33.329,
+     "workers": 29,
+     "util": 17.07
+    }
+   },
+   "overdue": 1
+  },
+  {
+   "key": "load60_set1",
+   "label": "60%-S1",
+   "ops": 67,
+   "seconds": 6229.3,
+   "start": "EDD-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 11.22,
+     "makespan": 61.453,
+     "flow": 13.316,
+     "workers": 25,
+     "util": 8.5
+    },
+    "EDD": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 10.51,
+     "makespan": 61.453,
+     "flow": 12.414,
+     "workers": 21,
+     "util": 10.07
+    },
+    "SPT": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 10.7,
+     "makespan": 61.453,
+     "flow": 12.61,
+     "workers": 22,
+     "util": 9.7
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 6.47,
+     "makespan": 27.127,
+     "flow": 8.912,
+     "workers": 28,
+     "util": 17.6
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 7.55,
+     "makespan": 33.377,
+     "flow": 8.798,
+     "workers": 27,
+     "util": 15.25
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 8.12,
+     "makespan": 25.211,
+     "flow": 10.291,
+     "workers": 29,
+     "util": 18.67
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 6.14,
+     "makespan": 27.127,
+     "flow": 8.662,
+     "workers": 28,
+     "util": 17.62
+    }
+   },
+   "overdue": 6
+  },
+  {
+   "key": "load60_set2",
+   "label": "60%-S2",
+   "ops": 86,
+   "seconds": 10965.0,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 8.97,
+     "makespan": 102.258,
+     "flow": 12.61,
+     "workers": 24,
+     "util": 9.35
+    },
+    "EDD": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 9.11,
+     "makespan": 99.008,
+     "flow": 13.138,
+     "workers": 24,
+     "util": 9.72
+    },
+    "SPT": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 9.56,
+     "makespan": 109.748,
+     "flow": 13.237,
+     "workers": 25,
+     "util": 8.48
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 21.3,
+     "makespan": 131.418,
+     "flow": 24.683,
+     "workers": 30,
+     "util": 13.46
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 6,
+     "mean_tard": 21.45,
+     "makespan": 147.085,
+     "flow": 23.486,
+     "workers": 24,
+     "util": 15.04
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 22.19,
+     "makespan": 136.418,
+     "flow": 26.134,
+     "workers": 31,
+     "util": 12.54
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 6,
+     "mean_tard": 21.45,
+     "makespan": 147.085,
+     "flow": 23.554,
+     "workers": 24,
+     "util": 15.04
+    }
+   },
+   "overdue": 6
+  },
+  {
+   "key": "load60_set3",
+   "label": "60%-S3",
+   "ops": 87,
+   "seconds": 9686.7,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 8.32,
+     "makespan": 103.483,
+     "flow": 10.904,
+     "workers": 26,
+     "util": 7.82
+    },
+    "EDD": {
+     "complete": 9,
+     "late": 9,
+     "mean_tard": 8.05,
+     "makespan": 100.046,
+     "flow": 11.229,
+     "workers": 23,
+     "util": 9.05
+    },
+    "SPT": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 8.33,
+     "makespan": 105.51,
+     "flow": 10.845,
+     "workers": 21,
+     "util": 9.61
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 17.23,
+     "makespan": 102.149,
+     "flow": 19.234,
+     "workers": 28,
+     "util": 13.31
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 17.46,
+     "makespan": 104.157,
+     "flow": 18.401,
+     "workers": 26,
+     "util": 13.99
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 17.08,
+     "makespan": 91.399,
+     "flow": 19.249,
+     "workers": 28,
+     "util": 14.95
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 17.46,
+     "makespan": 104.157,
+     "flow": 19.268,
+     "workers": 26,
+     "util": 14.03
+    }
+   },
+   "overdue": 7
+  },
+  {
+   "key": "load90_set1",
+   "label": "90%-S1",
+   "ops": 73,
+   "seconds": 6718.8,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 9,
+     "late": 9,
+     "mean_tard": 5.07,
+     "makespan": 79.2,
+     "flow": 6.556,
+     "workers": 24,
+     "util": 7.51
+    },
+    "EDD": {
+     "complete": 9,
+     "late": 9,
+     "mean_tard": 4.8,
+     "makespan": 78.117,
+     "flow": 6.4,
+     "workers": 24,
+     "util": 7.58
+    },
+    "SPT": {
+     "complete": 9,
+     "late": 9,
+     "mean_tard": 4.88,
+     "makespan": 79.224,
+     "flow": 6.262,
+     "workers": 21,
+     "util": 8.61
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 10.56,
+     "makespan": 67.176,
+     "flow": 11.163,
+     "workers": 30,
+     "util": 12.91
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 10.52,
+     "makespan": 68.176,
+     "flow": 11.077,
+     "workers": 28,
+     "util": 13.59
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 11.32,
+     "makespan": 62.225,
+     "flow": 12.421,
+     "workers": 29,
+     "util": 14.31
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 10.44,
+     "makespan": 68.176,
+     "flow": 11.508,
+     "workers": 27,
+     "util": 14.13
+    }
+   },
+   "overdue": 8
+  },
+  {
+   "key": "load90_set2",
+   "label": "90%-S2",
+   "ops": 78,
+   "seconds": 7465.7,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 15.6,
+     "makespan": 81.534,
+     "flow": 16.947,
+     "workers": 21,
+     "util": 10.81
+    },
+    "EDD": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 15.49,
+     "makespan": 80.95,
+     "flow": 17.276,
+     "workers": 21,
+     "util": 10.89
+    },
+    "SPT": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 16.15,
+     "makespan": 83.626,
+     "flow": 17.586,
+     "workers": 18,
+     "util": 12.41
+    },
+    "EDD-Crew": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 7.92,
+     "makespan": 34.856,
+     "flow": 10.343,
+     "workers": 31,
+     "util": 18.13
+    },
+    "Savable-First-Crew": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 7.75,
+     "makespan": 37.808,
+     "flow": 8.441,
+     "workers": 31,
+     "util": 16.6
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 8,
+     "mean_tard": 8.48,
+     "makespan": 31.617,
+     "flow": 11.389,
+     "workers": 27,
+     "util": 22.8
+    },
+    "CRAFT V3": {
+     "complete": 10,
+     "late": 7,
+     "mean_tard": 7.51,
+     "makespan": 37.808,
+     "flow": 10.087,
+     "workers": 27,
+     "util": 19.09
+    }
+   },
+   "overdue": 7
+  },
+  {
+   "key": "load90_set3",
+   "label": "90%-S3",
+   "ops": 84,
+   "seconds": 9717.0,
+   "start": "Savable-First-Crew",
+   "v31": false,
+   "methods": {
+    "FIFO": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 18.73,
+     "makespan": 85.445,
+     "flow": 22.487,
+     "workers": 20,
+     "util": 17.23
+    },
+    "EDD": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 18.97,
+     "makespan": 83.445,
+     "flow": 22.61,
+     "workers": 22,
+     "util": 16.05
+    },
+    "SPT": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 19.16,
+     "makespan": 88.807,
+     "flow": 22.822,
+     "workers": 21,
+     "util": 15.81
+    },
+    "EDD-Crew": {
+     "complete": 9,
+     "late": 9,
+     "mean_tard": 12.04,
+     "makespan": 79.679,
+     "flow": 15.608,
+     "workers": 31,
+     "util": 19.31
+    },
+    "Savable-First-Crew": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 9.44,
+     "makespan": 96.679,
+     "flow": 11.628,
+     "workers": 29,
+     "util": 17.13
+    },
+    "CP-SAT plan": {
+     "complete": 10,
+     "late": 9,
+     "mean_tard": 23.42,
+     "makespan": 95.711,
+     "flow": 25.749,
+     "workers": 27,
+     "util": 19.44
+    },
+    "CRAFT V3": {
+     "complete": 9,
+     "late": 8,
+     "mean_tard": 9.44,
+     "makespan": 96.679,
+     "flow": 11.628,
+     "workers": 28,
+     "util": 17.75
+    }
+   },
+   "overdue": 7
+  }
+ ],
+ "comparisons": {
+  "FIFO": {
+   "late": {
+    "n": 8,
+    "win": 5,
+    "tie": 3,
+    "loss": 0,
+    "p": 0.0625,
+    "mean_craft": 6.625,
+    "mean_other": 7.625
+   },
+   "mean_tard": {
+    "n": 3,
+    "win": 3,
+    "tie": 0,
+    "loss": 0,
+    "p": 0.25,
+    "mean_craft": 6.293333333333333,
+    "mean_other": 11.713333333333333
+   }
+  },
+  "EDD": {
+   "late": {
+    "n": 8,
+    "win": 5,
+    "tie": 3,
+    "loss": 0,
+    "p": 0.0625,
+    "mean_craft": 6.625,
+    "mean_other": 7.625
+   },
+   "mean_tard": {
+    "n": 3,
+    "win": 3,
+    "tie": 0,
+    "loss": 0,
+    "p": 0.25,
+    "mean_craft": 6.293333333333333,
+    "mean_other": 11.276666666666666
+   }
+  },
+  "SPT": {
+   "late": {
+    "n": 8,
+    "win": 5,
+    "tie": 3,
+    "loss": 0,
+    "p": 0.0625,
+    "mean_craft": 6.625,
+    "mean_other": 7.625
+   },
+   "mean_tard": {
+    "n": 3,
+    "win": 3,
+    "tie": 0,
+    "loss": 0,
+    "p": 0.25,
+    "mean_craft": 6.293333333333333,
+    "mean_other": 11.803333333333333
+   }
+  },
+  "EDD-Crew": {
+   "late": {
+    "n": 8,
+    "win": 6,
+    "tie": 2,
+    "loss": 0,
+    "p": 0.03125,
+    "mean_craft": 6.625,
+    "mean_other": 7.75
+   },
+   "mean_tard": {
+    "n": 8,
+    "win": 5,
+    "tie": 0,
+    "loss": 3,
+    "p": 0.3828125,
+    "mean_craft": 12.206249999999999,
+    "mean_other": 13.90125
+   }
+  },
+  "Savable-First-Crew": {
+   "late": {
+    "n": 8,
+    "win": 0,
+    "tie": 8,
+    "loss": 0,
+    "p": null,
+    "mean_craft": 6.625,
+    "mean_other": 6.625
+   },
+   "mean_tard": {
+    "n": 8,
+    "win": 6,
+    "tie": 2,
+    "loss": 0,
+    "p": 0.03125,
+    "mean_craft": 12.206249999999999,
+    "mean_other": 12.59625
+   }
+  },
+  "CP-SAT plan": {
+   "late": {
+    "n": 8,
+    "win": 6,
+    "tie": 2,
+    "loss": 0,
+    "p": 0.03125,
+    "mean_craft": 6.625,
+    "mean_other": 8.25
+   },
+   "mean_tard": {
+    "n": 8,
+    "win": 6,
+    "tie": 1,
+    "loss": 1,
+    "p": 0.03125,
+    "mean_craft": 12.206249999999999,
+    "mean_other": 13.33
+   }
+  }
+ },
+ "repeats": [
+  {
+   "label": "30%-S1",
+   "tard": [
+    110.877,
+    110.877,
+    110.874
+   ],
+   "late": [
+    8,
+    8,
+    8
+   ],
+   "workers": [
+    24,
+    24,
+    23
+   ]
+  },
+  {
+   "label": "60%-S1",
+   "tard": [
+    61.361,
+    61.361,
+    61.365
+   ],
+   "late": [
+    7,
+    7,
+    7
+   ],
+   "workers": [
+    28,
+    28,
+    28
+   ]
+  },
+  {
+   "label": "90%-S1",
+   "tard": [
+    104.364,
+    104.364,
+    104.364
+   ],
+   "late": [
+    8,
+    8,
+    8
+   ],
+   "workers": [
+    27,
+    27,
+    27
+   ]
+  }
+ ],
+ "seconds": [
+  7696.8,
+  7002.1,
+  11542.8,
+  6397.6,
+  9686.7,
+  7437.9,
+  9717.0,
+  6196.4,
+  7040.4,
+  5180.6,
+  5958.6,
+  6229.3,
+  10965.0,
+  6718.8,
+  7465.7
+ ],
+ "v31_done": false
+}

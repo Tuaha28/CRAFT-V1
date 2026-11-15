@@ -6,7 +6,8 @@ Usage:
 <run_dir> is a scratch/run_craft_v2.py output directory (report.json plus
 *_schedule.json). Set CRAFT_CAPTURE_DIR (and CRAFT_RESIDUAL_ROUTES etc.) as
 for the run. Sheets:
-  Summary       - every policy in the run side by side (KPIs, utilization)
+  Summary       - every policy in the run side by side (KPIs, utilization);
+                  with client=True only the exported plan, named CRAFT
   Order status  - due vs planned finish per order, with the main late reason
   Line plan     - one row per operation, by line, day and start
   Worker jobs   - each worker's job list in time order (printable)
@@ -83,7 +84,7 @@ def late_reason(order_rows, release, due, holders, earlier_on_floor):
     return f"Waits {gap / DAY:.1f} days for shift hours or a qualified resource to become free"
 
 
-def build(factory_id, run_dir, schedule_name, out, compare=()):
+def build(factory_id, run_dir, schedule_name, out, compare=(), client=False):
     run_dir = Path(run_dir)
     report = json.loads((run_dir / "report.json").read_text(encoding="utf-8"))
     rows = json.loads((run_dir / f"{schedule_name.lower()}_schedule.json").read_text(encoding="utf-8"))
@@ -131,24 +132,27 @@ def build(factory_id, run_dir, schedule_name, out, compare=()):
     wb = Workbook()
     wb.remove(wb.active)
 
-    # Summary: every policy of the run side by side.
+    # Summary: every policy of the run side by side (client: the exported plan only).
     summary = []
     for r in report["results"]:
+        if client and r["policy"] != schedule_name.upper():
+            continue
         k, u = r.get("kpis") or {}, r.get("utilization") or {}
         w = u.get("workers", {})
-        summary.append([r["policy"], r["scheduled"], r["deferred"], k.get("orders_complete"),
+        summary.append(["CRAFT" if client else r["policy"], r["scheduled"], r["deferred"], k.get("orders_complete"),
                         k.get("orders_partially_scheduled"), k.get("on_time_orders"), k.get("on_time_pct"),
                         k.get("total_tardiness_days"), k.get("max_tardiness_days"), k.get("mean_flow_days"),
                         k.get("makespan_days"), w.get("used"), w.get("pool"), w.get("util_used_pct"),
                         w.get("util_pool_pct"), r.get("wall_seconds")])
-    ws = _sheet(wb, "Summary", ["Policy", "Steps placed", "Steps not placed", "Orders complete",
+    ws = _sheet(wb, "Summary", ["Plan" if client else "Policy", "Steps placed", "Steps not placed", "Orders complete",
                                 "Orders partial", "On time", "On time %", "Total lateness (days)",
                                 "Worst lateness (days)", "Mean flow (days)", "Last finish (day)",
                                 "Workers used", "Worker pool", "Util. of used workers %",
                                 "Util. of whole pool %", "Runtime (s)"], summary,
                 [20] + [12] * 15)
     ws.append([])
-    ws.append([f"Factory {factory_id}; plan starts {source['reference_time']}; pace {report.get('pace')}; "
+    ws.append([f"Factory {factory_id}; plan starts {source['reference_time']}" if client else
+               f"Factory {factory_id}; plan starts {source['reference_time']}; pace {report.get('pace')}; "
                f"schedule exported: {schedule_name}; capture {report.get('capture')}"])
     ws.append(["Lateness and on-time figures count complete orders only; 'Orders partial' are not in them."])
 

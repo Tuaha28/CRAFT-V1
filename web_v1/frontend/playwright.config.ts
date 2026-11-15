@@ -9,7 +9,7 @@ export default defineConfig({
   outputDir: process.env.CRAFT_BROWSER_ARTIFACT_DIR ? `${process.env.CRAFT_BROWSER_ARTIFACT_DIR}/playwright` : "test-results",
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: process.env.CRAFT_E2E_BASE ?? "http://localhost:5173",
     browserName: "chromium",
     channel: "msedge",
     headless: true,

@@ -1,0 +1,2312 @@
+{
+ "load30_set2": {
+  "methods": {
+   "FIFO": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 51.309,
+    "tardiness_d": 83.194,
+    "on_time": 3,
+    "flow_d": 11.731,
+    "workers": 22,
+    "util_pct": 11.13
+   },
+   "EDD": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 51.309,
+    "tardiness_d": 78.335,
+    "on_time": 4,
+    "flow_d": 11.611,
+    "workers": 24,
+    "util_pct": 10.22
+   },
+   "SPT": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 51.309,
+    "tardiness_d": 85.646,
+    "on_time": 3,
+    "flow_d": 11.932,
+    "workers": 24,
+    "util_pct": 10.27
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 23.343,
+    "tardiness_d": 46.552,
+    "on_time": 3,
+    "flow_d": 9.314,
+    "workers": 30,
+    "util_pct": 18.24
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 28.463,
+    "tardiness_d": 57.368,
+    "on_time": 5,
+    "flow_d": 8.474,
+    "workers": 29,
+    "util_pct": 15.41
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 23.343,
+    "tardiness_d": 57.297,
+    "on_time": 3,
+    "flow_d": 10.734,
+    "workers": 32,
+    "util_pct": 17.25
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 26.196,
+    "tardiness_d": 52.303,
+    "on_time": 5,
+    "flow_d": 10.076,
+    "workers": 31,
+    "util_pct": 16.08
+   }
+  },
+  "notebook": "batch1",
+  "exit": 0,
+  "seconds": 7696.8,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     7,
+     4950433,
+     2016803,
+     0,
+     32,
+     147,
+     2016803,
+     58774540
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     7,
+     4022074,
+     2016803,
+     0,
+     30,
+     156,
+     2016803,
+     54927790
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     5,
+     4956556,
+     2459176,
+     0,
+     29,
+     178,
+     2459176,
+     50424748
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     6,
+     6768108,
+     4433101,
+     0,
+     24,
+     87,
+     4433101,
+     67459967
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   5,
+   4518965,
+   2263299,
+   0,
+   31,
+   144,
+   2263299,
+   55270134
+  ],
+  "improve_seconds": 1875.5
+ },
+ "load90_set1_rep2": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.2,
+    "tardiness_d": 50.728,
+    "on_time": 1,
+    "flow_d": 6.556,
+    "workers": 24,
+    "util_pct": 7.51
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 78.117,
+    "tardiness_d": 47.954,
+    "on_time": 1,
+    "flow_d": 6.4,
+    "workers": 24,
+    "util_pct": 7.58
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.224,
+    "tardiness_d": 48.776,
+    "on_time": 1,
+    "flow_d": 6.262,
+    "workers": 21,
+    "util_pct": 8.61
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 67.176,
+    "tardiness_d": 105.562,
+    "on_time": 1,
+    "flow_d": 11.163,
+    "workers": 30,
+    "util_pct": 12.91
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 68.176,
+    "tardiness_d": 105.207,
+    "on_time": 2,
+    "flow_d": 11.077,
+    "workers": 29,
+    "util_pct": 13.12
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 62.225,
+    "tardiness_d": 109.12,
+    "on_time": 1,
+    "flow_d": 11.565,
+    "workers": 30,
+    "util_pct": 13.85
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 68.176,
+    "tardiness_d": 104.364,
+    "on_time": 2,
+    "flow_d": 11.416,
+    "workers": 27,
+    "util_pct": 14.15
+   }
+  },
+  "notebook": "batch1",
+  "exit": 0,
+  "seconds": 7002.1,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     9,
+     9427979,
+     5376209,
+     0,
+     30,
+     136,
+     5376209,
+     54656483
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     9,
+     9120597,
+     5803967,
+     0,
+     30,
+     152,
+     5803967,
+     55898113
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     8,
+     9089866,
+     5890367,
+     0,
+     29,
+     164,
+     5890367,
+     56681069
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 66,
+    "validation": true,
+    "score": [
+     9,
+     13265562,
+     9122355,
+     7,
+     24,
+     66,
+     6749281,
+     35077266
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   9017019,
+   5890367,
+   0,
+   27,
+   142,
+   5890367,
+   57106670
+  ],
+  "improve_seconds": 2036.8
+ },
+ "load30_set3": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 112.517,
+    "tardiness_d": 192.506,
+    "on_time": 3,
+    "flow_d": 38.548,
+    "workers": 23,
+    "util_pct": 17.79
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 112.517,
+    "tardiness_d": 208.376,
+    "on_time": 3,
+    "flow_d": 40.525,
+    "workers": 21,
+    "util_pct": 19.4
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 111.445,
+    "tardiness_d": 203.616,
+    "on_time": 3,
+    "flow_d": 39.905,
+    "workers": 22,
+    "util_pct": 18.7
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 104.559,
+    "tardiness_d": 282.229,
+    "on_time": 4,
+    "flow_d": 44.374,
+    "workers": 27,
+    "util_pct": 21.94
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 125.996,
+    "tardiness_d": 188.305,
+    "on_time": 5,
+    "flow_d": 33.645,
+    "workers": 30,
+    "util_pct": 16.5
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 104.08,
+    "tardiness_d": 226.319,
+    "on_time": 1,
+    "flow_d": 40.831,
+    "workers": 26,
+    "util_pct": 22.87
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 125.996,
+    "tardiness_d": 183.296,
+    "on_time": 5,
+    "flow_d": 33.329,
+    "workers": 29,
+    "util_pct": 17.07
+   }
+  },
+  "notebook": "batch2",
+  "exit": 0,
+  "seconds": 11542.8,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 89,
+    "validation": true,
+    "score": [
+     9,
+     19553959,
+     8214881,
+     0,
+     26,
+     167,
+     8992481,
+     212790675
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 89,
+    "validation": true,
+    "score": [
+     6,
+     24384591,
+     6875681,
+     0,
+     27,
+     208,
+     9033856,
+     205865532
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 89,
+    "validation": true,
+    "score": [
+     5,
+     16269554,
+     10108481,
+     0,
+     30,
+     209,
+     10886081,
+     178936486
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 82,
+    "validation": true,
+    "score": [
+     7,
+     29111198,
+     11107530,
+     7,
+     21,
+     82,
+     9721427,
+     194179335
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   5,
+   15836754,
+   10108481,
+   0,
+   29,
+   200,
+   10886081,
+   179356533
+  ],
+  "improve_seconds": 2116.1
+ },
+ "load60_set1_rep2": {
+  "methods": {
+   "FIFO": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 112.234,
+    "on_time": 3,
+    "flow_d": 13.316,
+    "workers": 25,
+    "util_pct": 8.5
+   },
+   "EDD": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 105.067,
+    "on_time": 3,
+    "flow_d": 12.414,
+    "workers": 21,
+    "util_pct": 10.07
+   },
+   "SPT": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 106.03,
+    "on_time": 3,
+    "flow_d": 12.51,
+    "workers": 23,
+    "util_pct": 9.16
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 27.127,
+    "tardiness_d": 64.689,
+    "on_time": 3,
+    "flow_d": 8.912,
+    "workers": 28,
+    "util_pct": 17.6
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 33.377,
+    "tardiness_d": 75.525,
+    "on_time": 3,
+    "flow_d": 8.798,
+    "workers": 27,
+    "util_pct": 15.24
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 22.229,
+    "tardiness_d": 72.481,
+    "on_time": 3,
+    "flow_d": 9.33,
+    "workers": 26,
+    "util_pct": 22.34
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 27.127,
+    "tardiness_d": 61.361,
+    "on_time": 3,
+    "flow_d": 8.681,
+    "workers": 28,
+    "util_pct": 17.65
+   }
+  },
+  "notebook": "batch2",
+  "exit": 0,
+  "seconds": 6397.6,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     6262318,
+     1920600,
+     0,
+     26,
+     129,
+     1920600,
+     41849670
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     5589137,
+     2343798,
+     0,
+     28,
+     145,
+     2343798,
+     38323180
+    ],
+    "chosen": true
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     6525324,
+     2883798,
+     0,
+     27,
+     154,
+     2883798,
+     42894947
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     9077767,
+     5309582,
+     0,
+     21,
+     67,
+     5309582,
+     62535697
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   7,
+   5301628,
+   2343798,
+   0,
+   28,
+   128,
+   2343798,
+   38924916
+  ],
+  "improve_seconds": 1814.5
+ },
+ "load60_set3": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.483,
+    "tardiness_d": 83.181,
+    "on_time": 2,
+    "flow_d": 10.904,
+    "workers": 26,
+    "util_pct": 7.82
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 100.046,
+    "tardiness_d": 80.489,
+    "on_time": 1,
+    "flow_d": 11.229,
+    "workers": 23,
+    "util_pct": 9.05
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 105.51,
+    "tardiness_d": 83.281,
+    "on_time": 2,
+    "flow_d": 10.845,
+    "workers": 21,
+    "util_pct": 9.61
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 102.149,
+    "tardiness_d": 172.281,
+    "on_time": 1,
+    "flow_d": 19.234,
+    "workers": 28,
+    "util_pct": 13.31
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 104.157,
+    "tardiness_d": 174.65,
+    "on_time": 3,
+    "flow_d": 18.401,
+    "workers": 26,
+    "util_pct": 13.99
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 91.399,
+    "tardiness_d": 170.845,
+    "on_time": 1,
+    "flow_d": 19.249,
+    "workers": 28,
+    "util_pct": 14.95
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 104.157,
+    "tardiness_d": 174.608,
+    "on_time": 3,
+    "flow_d": 19.268,
+    "workers": 26,
+    "util_pct": 14.03
+   }
+  },
+  "notebook": "batch3",
+  "exit": 0,
+  "seconds": 9686.7,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     9,
+     14761033,
+     7896870,
+     0,
+     28,
+     177,
+     7896870,
+     93196342
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     9,
+     14885113,
+     8825670,
+     0,
+     28,
+     196,
+     8825670,
+     98470966
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 87,
+    "validation": true,
+    "score": [
+     7,
+     15089789,
+     8999206,
+     0,
+     26,
+     213,
+     8999206,
+     95935920
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 81,
+    "validation": true,
+    "score": [
+     9,
+     18216723,
+     11262465,
+     6,
+     23,
+     81,
+     8643935,
+     78758735
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   7,
+   15086146,
+   8999206,
+   0,
+   26,
+   193,
+   8999206,
+   98098268
+  ],
+  "improve_seconds": 2248.6
+ },
+ "load30_set1_rep2": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.511,
+    "tardiness_d": 71.293,
+    "on_time": 2,
+    "flow_d": 10.925,
+    "workers": 22,
+    "util_pct": 8.93
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.511,
+    "tardiness_d": 71.062,
+    "on_time": 2,
+    "flow_d": 11.203,
+    "workers": 21,
+    "util_pct": 9.34
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 110.885,
+    "tardiness_d": 69.93,
+    "on_time": 2,
+    "flow_d": 10.924,
+    "workers": 20,
+    "util_pct": 9.32
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 71.425,
+    "tardiness_d": 148.545,
+    "on_time": 2,
+    "flow_d": 18.156,
+    "workers": 24,
+    "util_pct": 17.4
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 79.82,
+    "tardiness_d": 114.721,
+    "on_time": 2,
+    "flow_d": 13.826,
+    "workers": 29,
+    "util_pct": 13.02
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 70.204,
+    "tardiness_d": 111.558,
+    "on_time": 1,
+    "flow_d": 15.009,
+    "workers": 24,
+    "util_pct": 17.78
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 70.204,
+    "tardiness_d": 110.877,
+    "on_time": 2,
+    "flow_d": 15.013,
+    "workers": 24,
+    "util_pct": 17.81
+   }
+  },
+  "notebook": "batch3",
+  "exit": 0,
+  "seconds": 7437.9,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     9,
+     9638605,
+     5892819,
+     0,
+     24,
+     129,
+     6065619,
+     72139107
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     12834253,
+     5633619,
+     0,
+     24,
+     145,
+     6171143,
+     85637180
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     9911854,
+     6723623,
+     0,
+     29,
+     140,
+     6896423,
+     67535870
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD",
+    "operations": 55,
+    "validation": true,
+    "score": [
+     8,
+     16267357,
+     10127640,
+     6,
+     21,
+     55,
+     8943328,
+     66140268
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   9579777,
+   5892819,
+   0,
+   24,
+   120,
+   6065619,
+   72323320
+  ],
+  "improve_seconds": 1802.0
+ },
+ "load90_set3": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 85.445,
+    "tardiness_d": 187.259,
+    "on_time": 2,
+    "flow_d": 22.487,
+    "workers": 20,
+    "util_pct": 17.23
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 83.445,
+    "tardiness_d": 189.664,
+    "on_time": 2,
+    "flow_d": 22.61,
+    "workers": 22,
+    "util_pct": 16.05
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 88.807,
+    "tardiness_d": 191.574,
+    "on_time": 2,
+    "flow_d": 22.822,
+    "workers": 21,
+    "util_pct": 15.81
+   },
+   "EDD_CREW": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.679,
+    "tardiness_d": 120.443,
+    "on_time": 1,
+    "flow_d": 15.608,
+    "workers": 31,
+    "util_pct": 19.31
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 96.679,
+    "tardiness_d": 94.4,
+    "on_time": 2,
+    "flow_d": 11.628,
+    "workers": 29,
+    "util_pct": 17.13
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 95.711,
+    "tardiness_d": 234.244,
+    "on_time": 1,
+    "flow_d": 25.749,
+    "workers": 27,
+    "util_pct": 19.44
+   },
+   "CRAFT_V3": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 96.679,
+    "tardiness_d": 94.4,
+    "on_time": 2,
+    "flow_d": 11.628,
+    "workers": 28,
+    "util_pct": 17.75
+   }
+  },
+  "notebook": "batch4",
+  "exit": 0,
+  "seconds": 9717.0,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 84,
+    "validation": true,
+    "score": [
+     9,
+     20238639,
+     8269453,
+     0,
+     27,
+     186,
+     8269453,
+     113354509
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 83,
+    "validation": true,
+    "score": [
+     9,
+     19350121,
+     8943840,
+     1,
+     31,
+     203,
+     6884293,
+     101006205
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 83,
+    "validation": true,
+    "score": [
+     8,
+     17100038,
+     8943840,
+     1,
+     29,
+     207,
+     8353093,
+     98087298
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 77,
+    "validation": true,
+    "score": [
+     8,
+     26260668,
+     9873720,
+     7,
+     22,
+     77,
+     7209650,
+     94023681
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   17100038,
+   8943840,
+   1,
+   28,
+   203,
+   8353093,
+   98197049
+  ],
+  "improve_seconds": 2259.7
+ },
+ "load60_set1_rep3": {
+  "methods": {
+   "FIFO": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 112.234,
+    "on_time": 3,
+    "flow_d": 13.316,
+    "workers": 25,
+    "util_pct": 8.5
+   },
+   "EDD": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 105.067,
+    "on_time": 3,
+    "flow_d": 12.414,
+    "workers": 22,
+    "util_pct": 9.62
+   },
+   "SPT": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 107.032,
+    "on_time": 3,
+    "flow_d": 12.61,
+    "workers": 22,
+    "util_pct": 9.7
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 27.127,
+    "tardiness_d": 64.689,
+    "on_time": 3,
+    "flow_d": 8.912,
+    "workers": 28,
+    "util_pct": 17.6
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 33.377,
+    "tardiness_d": 75.525,
+    "on_time": 3,
+    "flow_d": 8.798,
+    "workers": 27,
+    "util_pct": 15.25
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 24.794,
+    "tardiness_d": 73.263,
+    "on_time": 3,
+    "flow_d": 9.439,
+    "workers": 29,
+    "util_pct": 18.65
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 27.127,
+    "tardiness_d": 61.365,
+    "on_time": 3,
+    "flow_d": 8.673,
+    "workers": 28,
+    "util_pct": 17.64
+   }
+  },
+  "notebook": "batch4",
+  "exit": 0,
+  "seconds": 6196.4,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     6329953,
+     2142198,
+     0,
+     29,
+     114,
+     2142198,
+     40328592
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     5589137,
+     2343798,
+     0,
+     28,
+     145,
+     2343798,
+     38323180
+    ],
+    "chosen": true
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     6525324,
+     2883798,
+     0,
+     27,
+     154,
+     2883798,
+     42894947
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     9077767,
+     5309582,
+     0,
+     22,
+     67,
+     5309582,
+     62535697
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   7,
+   5301937,
+   2343798,
+   0,
+   28,
+   128,
+   2343798,
+   38837719
+  ],
+  "improve_seconds": 1930.4
+ },
+ "load90_set1_rep3": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.2,
+    "tardiness_d": 50.728,
+    "on_time": 1,
+    "flow_d": 6.556,
+    "workers": 24,
+    "util_pct": 7.51
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 78.117,
+    "tardiness_d": 47.954,
+    "on_time": 1,
+    "flow_d": 6.4,
+    "workers": 24,
+    "util_pct": 7.58
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.224,
+    "tardiness_d": 48.776,
+    "on_time": 1,
+    "flow_d": 6.262,
+    "workers": 21,
+    "util_pct": 8.61
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 67.176,
+    "tardiness_d": 105.562,
+    "on_time": 1,
+    "flow_d": 11.163,
+    "workers": 30,
+    "util_pct": 12.91
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 68.176,
+    "tardiness_d": 105.207,
+    "on_time": 2,
+    "flow_d": 11.077,
+    "workers": 28,
+    "util_pct": 13.59
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 62.225,
+    "tardiness_d": 104.91,
+    "on_time": 1,
+    "flow_d": 11.319,
+    "workers": 32,
+    "util_pct": 12.99
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 68.176,
+    "tardiness_d": 104.364,
+    "on_time": 2,
+    "flow_d": 11.408,
+    "workers": 27,
+    "util_pct": 14.13
+   }
+  },
+  "notebook": "batch5",
+  "exit": 0,
+  "seconds": 7040.4,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     9,
+     9064194,
+     5376209,
+     0,
+     32,
+     142,
+     5376209,
+     53016603
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     9,
+     9120597,
+     5803967,
+     0,
+     30,
+     152,
+     5803967,
+     55898113
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     8,
+     9089866,
+     5890367,
+     0,
+     28,
+     163,
+     5890367,
+     56681069
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 66,
+    "validation": true,
+    "score": [
+     9,
+     13265562,
+     9122355,
+     7,
+     24,
+     66,
+     6749281,
+     35077266
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   9017019,
+   5890367,
+   0,
+   27,
+   146,
+   5890367,
+   57230988
+  ],
+  "improve_seconds": 2038.3
+ },
+ "load30_set1_rep3": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.511,
+    "tardiness_d": 71.293,
+    "on_time": 2,
+    "flow_d": 10.925,
+    "workers": 22,
+    "util_pct": 8.93
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.511,
+    "tardiness_d": 71.062,
+    "on_time": 2,
+    "flow_d": 11.203,
+    "workers": 21,
+    "util_pct": 9.34
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 110.885,
+    "tardiness_d": 69.93,
+    "on_time": 2,
+    "flow_d": 10.924,
+    "workers": 20,
+    "util_pct": 9.32
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 71.425,
+    "tardiness_d": 148.545,
+    "on_time": 2,
+    "flow_d": 18.156,
+    "workers": 24,
+    "util_pct": 17.4
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 79.82,
+    "tardiness_d": 114.721,
+    "on_time": 2,
+    "flow_d": 13.826,
+    "workers": 29,
+    "util_pct": 13.02
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 70.204,
+    "tardiness_d": 110.874,
+    "on_time": 2,
+    "flow_d": 15.089,
+    "workers": 23,
+    "util_pct": 18.58
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 70.204,
+    "tardiness_d": 110.874,
+    "on_time": 2,
+    "flow_d": 15.098,
+    "workers": 23,
+    "util_pct": 18.61
+   }
+  },
+  "notebook": "batch5",
+  "exit": 0,
+  "seconds": 5180.6,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     9579513,
+     5892819,
+     0,
+     23,
+     124,
+     6065619,
+     72641088
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     12834253,
+     5633619,
+     0,
+     24,
+     145,
+     6171143,
+     85637180
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     9911854,
+     6723623,
+     0,
+     29,
+     140,
+     6896423,
+     67535870
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD",
+    "operations": 55,
+    "validation": true,
+    "score": [
+     8,
+     16267357,
+     10127640,
+     6,
+     21,
+     55,
+     8943328,
+     66140268
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   9579513,
+   5892819,
+   0,
+   23,
+   115,
+   6065619,
+   73106140
+  ],
+  "improve_seconds": 1813.1
+ },
+ "load30_set1": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.511,
+    "tardiness_d": 71.293,
+    "on_time": 2,
+    "flow_d": 10.925,
+    "workers": 22,
+    "util_pct": 8.93
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 103.511,
+    "tardiness_d": 71.062,
+    "on_time": 2,
+    "flow_d": 11.203,
+    "workers": 21,
+    "util_pct": 9.34
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 110.885,
+    "tardiness_d": 69.93,
+    "on_time": 2,
+    "flow_d": 10.924,
+    "workers": 20,
+    "util_pct": 9.32
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 71.425,
+    "tardiness_d": 148.545,
+    "on_time": 2,
+    "flow_d": 18.156,
+    "workers": 24,
+    "util_pct": 17.4
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 79.82,
+    "tardiness_d": 114.721,
+    "on_time": 2,
+    "flow_d": 13.826,
+    "workers": 29,
+    "util_pct": 13.02
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 70.204,
+    "tardiness_d": 110.877,
+    "on_time": 2,
+    "flow_d": 14.997,
+    "workers": 24,
+    "util_pct": 17.79
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 70.204,
+    "tardiness_d": 110.877,
+    "on_time": 2,
+    "flow_d": 14.993,
+    "workers": 24,
+    "util_pct": 17.82
+   }
+  },
+  "notebook": "load30-set1",
+  "exit": 0,
+  "seconds": 5958.6,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     9579777,
+     5892819,
+     0,
+     24,
+     123,
+     6065619,
+     71539083
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     12834253,
+     5633619,
+     0,
+     24,
+     145,
+     6171143,
+     85637180
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 61,
+    "validation": true,
+    "score": [
+     8,
+     9911854,
+     6723623,
+     0,
+     29,
+     140,
+     6896423,
+     67535870
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD",
+    "operations": 55,
+    "validation": true,
+    "score": [
+     8,
+     16267357,
+     10127640,
+     6,
+     21,
+     55,
+     8943328,
+     66140268
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   9579777,
+   5892819,
+   0,
+   24,
+   115,
+   6065619,
+   71967416
+  ],
+  "improve_seconds": 1810.7
+ },
+ "load60_set1": {
+  "methods": {
+   "FIFO": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 112.234,
+    "on_time": 3,
+    "flow_d": 13.316,
+    "workers": 25,
+    "util_pct": 8.5
+   },
+   "EDD": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 105.067,
+    "on_time": 3,
+    "flow_d": 12.414,
+    "workers": 21,
+    "util_pct": 10.07
+   },
+   "SPT": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 61.453,
+    "tardiness_d": 107.032,
+    "on_time": 3,
+    "flow_d": 12.61,
+    "workers": 22,
+    "util_pct": 9.7
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 27.127,
+    "tardiness_d": 64.689,
+    "on_time": 3,
+    "flow_d": 8.912,
+    "workers": 28,
+    "util_pct": 17.6
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 33.377,
+    "tardiness_d": 75.525,
+    "on_time": 3,
+    "flow_d": 8.798,
+    "workers": 27,
+    "util_pct": 15.25
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 25.211,
+    "tardiness_d": 81.24,
+    "on_time": 3,
+    "flow_d": 10.291,
+    "workers": 29,
+    "util_pct": 18.67
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 27.127,
+    "tardiness_d": 61.361,
+    "on_time": 3,
+    "flow_d": 8.662,
+    "workers": 28,
+    "util_pct": 17.62
+   }
+  },
+  "notebook": "load60-set1",
+  "exit": 0,
+  "seconds": 6229.3,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     7019134,
+     2178198,
+     0,
+     29,
+     123,
+     2178198,
+     43602273
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     5589137,
+     2343798,
+     0,
+     28,
+     145,
+     2343798,
+     38323180
+    ],
+    "chosen": true
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     6525324,
+     2883798,
+     0,
+     27,
+     154,
+     2883798,
+     42894947
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD",
+    "operations": 67,
+    "validation": true,
+    "score": [
+     7,
+     9077767,
+     5309582,
+     0,
+     21,
+     67,
+     5309582,
+     62535697
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   7,
+   5301628,
+   2343798,
+   0,
+   28,
+   126,
+   2343798,
+   38952054
+  ],
+  "improve_seconds": 1823.6
+ },
+ "load60_set2": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 102.258,
+    "tardiness_d": 89.727,
+    "on_time": 2,
+    "flow_d": 12.61,
+    "workers": 24,
+    "util_pct": 9.35
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 99.008,
+    "tardiness_d": 91.121,
+    "on_time": 2,
+    "flow_d": 13.138,
+    "workers": 24,
+    "util_pct": 9.72
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 109.748,
+    "tardiness_d": 95.58,
+    "on_time": 2,
+    "flow_d": 13.237,
+    "workers": 25,
+    "util_pct": 8.48
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 131.418,
+    "tardiness_d": 212.972,
+    "on_time": 2,
+    "flow_d": 24.683,
+    "workers": 30,
+    "util_pct": 13.46
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 147.085,
+    "tardiness_d": 214.498,
+    "on_time": 4,
+    "flow_d": 23.486,
+    "workers": 24,
+    "util_pct": 15.04
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 136.418,
+    "tardiness_d": 221.924,
+    "on_time": 1,
+    "flow_d": 26.134,
+    "workers": 31,
+    "util_pct": 12.54
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 147.085,
+    "tardiness_d": 214.498,
+    "on_time": 4,
+    "flow_d": 23.554,
+    "workers": 24,
+    "util_pct": 15.04
+   }
+  },
+  "notebook": "load60-set2",
+  "exit": 0,
+  "seconds": 10965.0,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 86,
+    "validation": true,
+    "score": [
+     9,
+     19174276,
+     11786554,
+     0,
+     31,
+     179,
+     11786554,
+     111427621
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 86,
+    "validation": true,
+    "score": [
+     8,
+     18400742,
+     11354554,
+     0,
+     30,
+     184,
+     11354554,
+     107972901
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 86,
+    "validation": true,
+    "score": [
+     6,
+     18532632,
+     12708154,
+     0,
+     24,
+     226,
+     12708154,
+     107856921
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 80,
+    "validation": true,
+    "score": [
+     8,
+     22782171,
+     14909280,
+     6,
+     24,
+     80,
+     8554330,
+     74013123
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   6,
+   18532632,
+   12708154,
+   0,
+   24,
+   217,
+   12708154,
+   108072435
+  ],
+  "improve_seconds": 2412.6
+ },
+ "load90_set1": {
+  "methods": {
+   "FIFO": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.2,
+    "tardiness_d": 50.728,
+    "on_time": 1,
+    "flow_d": 6.556,
+    "workers": 24,
+    "util_pct": 7.51
+   },
+   "EDD": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 78.117,
+    "tardiness_d": 47.954,
+    "on_time": 1,
+    "flow_d": 6.4,
+    "workers": 24,
+    "util_pct": 7.58
+   },
+   "SPT": {
+    "complete": 9,
+    "partial": 1,
+    "makespan_d": 79.224,
+    "tardiness_d": 48.776,
+    "on_time": 1,
+    "flow_d": 6.262,
+    "workers": 21,
+    "util_pct": 8.61
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 67.176,
+    "tardiness_d": 105.562,
+    "on_time": 1,
+    "flow_d": 11.163,
+    "workers": 30,
+    "util_pct": 12.91
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 68.176,
+    "tardiness_d": 105.207,
+    "on_time": 2,
+    "flow_d": 11.077,
+    "workers": 28,
+    "util_pct": 13.59
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 62.225,
+    "tardiness_d": 113.235,
+    "on_time": 1,
+    "flow_d": 12.421,
+    "workers": 29,
+    "util_pct": 14.31
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 68.176,
+    "tardiness_d": 104.364,
+    "on_time": 2,
+    "flow_d": 11.508,
+    "workers": 27,
+    "util_pct": 14.13
+   }
+  },
+  "notebook": "load90-set1",
+  "exit": 0,
+  "seconds": 6718.8,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     9,
+     9783505,
+     5376209,
+     0,
+     29,
+     137,
+     5376209,
+     56788498
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     9,
+     9120597,
+     5803967,
+     0,
+     30,
+     152,
+     5803967,
+     55898113
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 73,
+    "validation": true,
+    "score": [
+     8,
+     9089866,
+     5890367,
+     0,
+     28,
+     164,
+     5890367,
+     56681069
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 66,
+    "validation": true,
+    "score": [
+     9,
+     13265562,
+     9122355,
+     7,
+     24,
+     66,
+     6749281,
+     35077266
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   8,
+   9017019,
+   5890367,
+   0,
+   27,
+   146,
+   5890367,
+   57455410
+  ],
+  "improve_seconds": 2123.3
+ },
+ "load90_set2": {
+  "methods": {
+   "FIFO": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 81.534,
+    "tardiness_d": 156.025,
+    "on_time": 3,
+    "flow_d": 16.947,
+    "workers": 21,
+    "util_pct": 10.81
+   },
+   "EDD": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 80.95,
+    "tardiness_d": 154.932,
+    "on_time": 3,
+    "flow_d": 17.276,
+    "workers": 21,
+    "util_pct": 10.89
+   },
+   "SPT": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 83.626,
+    "tardiness_d": 161.503,
+    "on_time": 3,
+    "flow_d": 17.586,
+    "workers": 18,
+    "util_pct": 12.41
+   },
+   "EDD_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 34.856,
+    "tardiness_d": 79.155,
+    "on_time": 2,
+    "flow_d": 10.343,
+    "workers": 31,
+    "util_pct": 18.13
+   },
+   "SAVABLE_FIRST_CREW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 37.808,
+    "tardiness_d": 77.52,
+    "on_time": 3,
+    "flow_d": 8.441,
+    "workers": 31,
+    "util_pct": 16.6
+   },
+   "CRAFT_TW": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 31.617,
+    "tardiness_d": 84.751,
+    "on_time": 2,
+    "flow_d": 11.389,
+    "workers": 27,
+    "util_pct": 22.8
+   },
+   "CRAFT_V3": {
+    "complete": 10,
+    "partial": 0,
+    "makespan_d": 37.808,
+    "tardiness_d": 75.121,
+    "on_time": 3,
+    "flow_d": 10.087,
+    "workers": 27,
+    "util_pct": 19.09
+   }
+  },
+  "notebook": "load90-set2",
+  "exit": 0,
+  "seconds": 7465.7,
+  "starts": [
+   {
+    "start": "CRAFT_TW",
+    "operations": 78,
+    "validation": true,
+    "score": [
+     8,
+     7322488,
+     2731698,
+     0,
+     27,
+     151,
+     2731698,
+     53961969
+    ],
+    "chosen": false
+   },
+   {
+    "start": "EDD_CREW",
+    "operations": 78,
+    "validation": true,
+    "score": [
+     8,
+     6838992,
+     3011598,
+     0,
+     31,
+     153,
+     3011598,
+     48628643
+    ],
+    "chosen": false
+   },
+   {
+    "start": "SAVABLE_FIRST_CREW",
+    "operations": 78,
+    "validation": true,
+    "score": [
+     7,
+     6697727,
+     3266571,
+     0,
+     31,
+     168,
+     3266571,
+     41294634
+    ],
+    "chosen": true
+   },
+   {
+    "start": "EDD",
+    "operations": 78,
+    "validation": true,
+    "score": [
+     7,
+     13386146,
+     6994098,
+     0,
+     21,
+     78,
+     6994098,
+     82271434
+    ],
+    "chosen": false
+   }
+  ],
+  "final_score": [
+   7,
+   6490485,
+   3266571,
+   0,
+   27,
+   151,
+   3266571,
+   47604391
+  ],
+  "improve_seconds": 1845.0
+ }
+}

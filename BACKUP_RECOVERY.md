@@ -85,3 +85,11 @@ validated start, keeping the better plan. Also the calendar regime cache memory
 fix (LRU eviction of stale reservation signatures), rolling weekly mode, the Excel
 workbook export, and `--order-offset` for the Kaggle paper experiments. Still
 source-only: `handout.md`, `.env`, data captures, databases and outputs excluded.
+
+## Refresh 2026-11-16
+
+Refreshed from local commit `0d8ad01` (branch `craft-v1-consolidation`): CRAFT V3.1
+(unplaced orders placed first, calendar fixes), the paper deliverables (build script,
+figures, results), and the client web app (Ask CRAFT with optional Groq routing, floor
+view, dark teal redesign, all design pages, stuck-run fix). Still source-only:
+`handout.md`, `.env`, data captures and databases excluded.

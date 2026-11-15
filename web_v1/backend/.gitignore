@@ -1,0 +1,4 @@
+planning_runs/
+.planner_secret
+.planner_users.local
+.floor_users*.local
