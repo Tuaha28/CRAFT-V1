@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
-import { LogOut, Menu, Moon, Sparkles, Sun, X, Activity, AlertTriangle, ClipboardCheck, Boxes, ClipboardList, Database, Home, ListChecks, MonitorPlay, PlusCircle, Shirt, UserCog, Wrench } from "lucide-react";
+import { LogOut, Menu, Moon, Sparkles, Sun, X, Activity, AlertTriangle, ClipboardCheck, Boxes, ClipboardList, Database, Home, ListChecks, MonitorPlay, PlusCircle, Shirt, UserCog, Wrench, Handshake } from "lucide-react";
 import { api } from "../lib/api";
 import { can, useSession } from "../app/session";
 import { useScope } from "../app/scope";
@@ -31,6 +31,7 @@ const NAV: { group: string | null; items: NavItem[] }[] = [
     { to: "/workforce", label: "Resources", icon: Boxes, also: ["/machines", "/materials"] }] },
   { group: "Admin", items: [
     { to: "/users", label: "Users", icon: UserCog, perm: ["floor.manage_users"] },
+    { to: "/customers", label: "Customers", icon: Handshake, perm: ["portal.handle_request", "floor.manage_users"] },
     { to: "/data", label: "Data", icon: Database, perm: PLANNING },
     { to: "/activity", label: "Activity", icon: Activity, perm: ["planning.approve_plan", "floor.manage_users"] }] },
 ];

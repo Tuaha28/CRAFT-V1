@@ -1,0 +1,23 @@
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ports:
+      - "127.0.0.1:8001:8001"
+    env_file: .env
+    environment:
+      DATABASE_PATH: /state/runtime.sqlite3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - agent-state:/state
+volumes:
+  agent-state:
+

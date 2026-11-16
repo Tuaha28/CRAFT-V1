@@ -4,5 +4,6 @@ from planning.urls import urlpatterns as planning
 from erp.urls import urlpatterns as erp
 from floor.urls import urlpatterns as floor
 from assistant.urls import urlpatterns as assistant
+from portal.urls import urlpatterns as portal
 
-urlpatterns = [*governance, *planning, *erp, *floor, *assistant]
+urlpatterns = [*governance, *planning, *erp, *floor, *assistant, *portal]

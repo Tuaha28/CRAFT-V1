@@ -7,9 +7,10 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
 if not SECRET_KEY:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY is required for integration settings')
 DEBUG = os.environ.get('DJANGO_DEBUG') == '1'
-INSTALLED_APPS = [*INSTALLED_APPS, 'django.contrib.auth', 'django.contrib.sessions', 'governance', 'planning', 'erp', 'floor']
+INSTALLED_APPS = [*INSTALLED_APPS, 'django.contrib.auth', 'django.contrib.sessions', 'governance', 'planning', 'erp', 'floor', 'portal']
 MIDDLEWARE = [*MIDDLEWARE, 'django.contrib.sessions.middleware.SessionMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware',
+              'portal.middleware.CustomerGuard',
               'django.middleware.clickjacking.XFrameOptionsMiddleware']
 X_FRAME_OPTIONS = 'DENY'
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3',
@@ -84,3 +85,10 @@ FACTORY_TIME_ZONE = _local('FACTORY_TIME_ZONE', 'Asia/Karachi')
 # Write-back (erp/writer.py): approved plans and machine status go into the <database>_demo copies only,
 # through the craft_writer account the user creates (web_v1/docs/demo_copies.md). Off until switched on.
 CRAFT_WRITEBACK = _local('CRAFT_WRITEBACK') == '1'
+
+# Customer portal: the customer assistant service (web_v1/agent, started with manage.py run_agent).
+# Secrets live in backend/.env only: CRAFT_AGENT_JWT_SECRET (32+ characters) signs 10-minute customer tokens,
+# CRAFT_AGENT_SERVICE_KEY is what the assistant sends when it reads a customer's orders from /customer/*.
+CRAFT_AGENT_URL = _local('CRAFT_AGENT_URL', 'http://127.0.0.1:8003')
+CRAFT_AGENT_JWT_SECRET = _local('CRAFT_AGENT_JWT_SECRET')
+CRAFT_AGENT_SERVICE_KEY = _local('CRAFT_AGENT_SERVICE_KEY')

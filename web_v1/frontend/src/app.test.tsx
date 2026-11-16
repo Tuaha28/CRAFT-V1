@@ -17,6 +17,25 @@ describe("CRAFT planner", () => {
     expect(await screen.findByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
+  it("gives a customer sign-in the portal and none of the staff pages", async () => {
+    const session = { csrf_token: "t", authenticated: true, username: "acme_buyer", can_request: false, can_approve: false,
+      production_activation: false, role: "customer", role_label: "Customer", scope_factory: null, scope_line: null, perms: [],
+      customer: { customer_id: "CUST-1", client_name: "Acme" } };
+    const order = { order_id: "NC-0477", style_code: "1000208", quantity: 200, stage: "In production", progress_percent: 25,
+      estimated_ready_date: "2026-09-20", estimated_arrival_date: null, carrier: null, tracking_reference: null, customer_note: null,
+      po_number: "PO-1", product: "NeedleCraft Elite Pant", category: "Pant", ordered_on: "2026-08-01", due_date: "2026-09-25",
+      shipped_on: null, ready_from: "plan", late: false };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(JSON.stringify(
+      String(url).includes("/portal/orders") ? [order] : session))));
+    const App = await freshApp();
+    render(<App />);
+    expect(await screen.findByRole("link", { name: "NC-0477" }, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Customer portal" })).toBeInTheDocument();
+    for (const staff of ["New plan", "Plans", "Line board", "Users", "Resources"]) {
+      expect(screen.queryByRole("link", { name: staff })).not.toBeInTheDocument();
+    }
+  }, 15_000);
+
   it("reports an unreachable server plainly", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     const App = await freshApp();

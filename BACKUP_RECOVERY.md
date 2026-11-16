@@ -103,3 +103,11 @@ Priority orders, new-order check and nightly capture (captures refresh their dat
 in place), write-back of approved plans to the `_demo` database copies only, the
 whole-branch review fixes, and the administrator role without plan approval. Still
 source-only: `handout.md`, `.env`, data captures and databases excluded.
+
+## Refresh 2026-11-17 (customer portal)
+
+Refreshed from local commit `c370006` (branch `craft-v1-consolidation`): the customer portal
+(customers see only their own orders, catalogue, assistant and requests; staff answer requests),
+the Needle Craft customer assistant vendored as `web_v1/agent` with one Groq fix, and the
+`run_agent` launcher. Still source-only: `handout.md`, `.env`, virtual environments, data
+captures and databases excluded.

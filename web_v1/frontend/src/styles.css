@@ -1225,3 +1225,26 @@ table.against td, table.against th { padding: 7px 6px; }
 .review-card h2 { margin: 0; flex: 1 1 260px; }
 .review-card p { margin: 0; flex-basis: 100%; order: 3; }
 @media (prefers-reduced-motion: reduce) { .switch input, .switch input::after { transition: none; } }
+
+/* ---------- customer portal ---------- */
+.portal-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 12px; }
+.portal-card h2 { margin: 2px 0 10px; }
+.portal-card .btn { margin-top: 12px; }
+.portal-chat { display: flex; flex-direction: column; gap: 12px; }
+.portal-messages { display: flex; flex-direction: column; gap: 10px; min-height: 280px; max-height: 60vh; overflow-y: auto; padding: 4px 2px; }
+.portal-msg { max-width: min(680px, 92%); padding: 10px 14px; border-radius: var(--radius-m); background: var(--surface-2); border: 1px solid var(--rule); }
+.portal-msg p { margin: 0; white-space: pre-wrap; }
+.portal-msg.you { align-self: flex-end; background: var(--accent-wash); border-color: var(--accent); }
+.portal-msg.assistant { align-self: flex-start; }
+.portal-msg small { display: block; margin-top: 6px; }
+.portal-starters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.portal-starters p { width: 100%; margin: 0 0 4px; }
+.portal-ask { display: flex; gap: 8px; }
+.portal-ask input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: var(--radius-s); border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink); font: inherit; }
+.portal-action { margin-top: 10px; padding: 10px 12px; border-radius: var(--radius-s); border: 1px dashed var(--accent); background: var(--surface); }
+.portal-action .facts { margin: 8px 0; }
+.pick-list { list-style: none; margin: -4px 0 12px; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow-y: auto; }
+.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.decide-inline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.decide-inline input { flex: 1 1 160px; min-width: 0; padding: 8px 10px; border-radius: var(--radius-s); border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink); font: inherit; }
+@media (max-width: 640px) { .portal-ask { flex-direction: column; } .portal-msg { max-width: 100%; } }

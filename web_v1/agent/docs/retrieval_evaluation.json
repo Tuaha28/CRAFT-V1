@@ -1,0 +1,1448 @@
+{
+  "evaluation_type": "lexical retrieval on authored handbook questions, not unseen-query or LLM quality evaluation",
+  "questions": 240,
+  "top1_correct": 240,
+  "hit_at_5": 240,
+  "results": [
+    {
+      "question": "What can the customer assistant help me with?",
+      "expected": "KB-01",
+      "top1": "KB-01",
+      "hit_at_5": true
+    },
+    {
+      "question": "Do I need an account to ask a question?",
+      "expected": "KB-01",
+      "top1": "KB-01",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you show another customer's orders?",
+      "expected": "KB-01",
+      "top1": "KB-01",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I contact a person instead?",
+      "expected": "KB-01",
+      "top1": "KB-01",
+      "hit_at_5": true
+    },
+    {
+      "question": "What garments can I enquire about?",
+      "expected": "KB-02",
+      "top1": "KB-02",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which style is suitable for a lightweight sports top?",
+      "expected": "KB-02",
+      "top1": "KB-02",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are these products immediately available from stock?",
+      "expected": "KB-02",
+      "top1": "KB-02",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you manufacture a design outside the catalogue?",
+      "expected": "KB-02",
+      "top1": "KB-02",
+      "hit_at_5": true
+    },
+    {
+      "question": "What does GSM mean?",
+      "expected": "KB-03",
+      "top1": "KB-03",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the polo fabric composition?",
+      "expected": "KB-03",
+      "top1": "KB-03",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request recycled polyester or organic cotton?",
+      "expected": "KB-03",
+      "top1": "KB-03",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can fabric be changed after approval?",
+      "expected": "KB-03",
+      "top1": "KB-03",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the T shirt minimum order quantity?",
+      "expected": "KB-04",
+      "top1": "KB-04",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I combine sizes to reach the minimum?",
+      "expected": "KB-04",
+      "top1": "KB-04",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I order 200 hoodies?",
+      "expected": "KB-04",
+      "top1": "KB-04",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are quantity discounts guaranteed?",
+      "expected": "KB-04",
+      "top1": "KB-04",
+      "hit_at_5": true
+    },
+    {
+      "question": "What sizes are in the catalogue?",
+      "expected": "KB-05",
+      "top1": "KB-05",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are your sizes the same as every retail brand?",
+      "expected": "KB-05",
+      "top1": "KB-05",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change the size breakdown?",
+      "expected": "KB-05",
+      "top1": "KB-05",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you guarantee the fit from my height and weight?",
+      "expected": "KB-05",
+      "top1": "KB-05",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I order a custom Pantone colour?",
+      "expected": "KB-06",
+      "top1": "KB-06",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is a colour shown on my screen exact?",
+      "expected": "KB-06",
+      "top1": "KB-06",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can black and navy quantities be combined for the minimum?",
+      "expected": "KB-06",
+      "top1": "KB-06",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change colour once the order is cutting?",
+      "expected": "KB-06",
+      "top1": "KB-06",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I add a logo to a garment?",
+      "expected": "KB-07",
+      "top1": "KB-07",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is printing included in the base reference price?",
+      "expected": "KB-07",
+      "top1": "KB-07",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I use a logo found online?",
+      "expected": "KB-07",
+      "top1": "KB-07",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you design my care label wording?",
+      "expected": "KB-07",
+      "top1": "KB-07",
+      "hit_at_5": true
+    },
+    {
+      "question": "What should a technical pack contain?",
+      "expected": "KB-08",
+      "top1": "KB-08",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request a quote without a technical pack?",
+      "expected": "KB-08",
+      "top1": "KB-08",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which version controls my order?",
+      "expected": "KB-08",
+      "top1": "KB-08",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you share another buyer's technical pack?",
+      "expected": "KB-08",
+      "top1": "KB-08",
+      "hit_at_5": true
+    },
+    {
+      "question": "How long does a development sample take?",
+      "expected": "KB-09",
+      "top1": "KB-09",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are samples free?",
+      "expected": "KB-09",
+      "top1": "KB-09",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can production begin before sample approval?",
+      "expected": "KB-09",
+      "top1": "KB-09",
+      "hit_at_5": true
+    },
+    {
+      "question": "How should I approve a sample?",
+      "expected": "KB-09",
+      "top1": "KB-09",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the base price of a T shirt?",
+      "expected": "KB-10",
+      "top1": "KB-10",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the reference subtotal for 1000 T shirts?",
+      "expected": "KB-10",
+      "top1": "KB-10",
+      "hit_at_5": true
+    },
+    {
+      "question": "How long is a quotation valid?",
+      "expected": "KB-10",
+      "top1": "KB-10",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the assistant confirm my final price?",
+      "expected": "KB-10",
+      "top1": "KB-10",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does submitting a quotation request place an order?",
+      "expected": "KB-11",
+      "top1": "KB-11",
+      "hit_at_5": true
+    },
+    {
+      "question": "What do I need to confirm an order?",
+      "expected": "KB-11",
+      "top1": "KB-11",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is my requested delivery date guaranteed?",
+      "expected": "KB-11",
+      "top1": "KB-11",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the assistant sign a contract for me?",
+      "expected": "KB-11",
+      "top1": "KB-11",
+      "hit_at_5": true
+    },
+    {
+      "question": "What are the reference payment terms?",
+      "expected": "KB-12",
+      "top1": "KB-12",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you confirm that my payment arrived?",
+      "expected": "KB-12",
+      "top1": "KB-12",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you provide a bank account number?",
+      "expected": "KB-12",
+      "top1": "KB-12",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request extended payment terms?",
+      "expected": "KB-12",
+      "top1": "KB-12",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the bulk production lead time?",
+      "expected": "KB-13",
+      "top1": "KB-13",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does manufacturing lead time include shipping?",
+      "expected": "KB-13",
+      "top1": "KB-13",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you guarantee delivery next week?",
+      "expected": "KB-13",
+      "top1": "KB-13",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which calendar should determine my order estimate?",
+      "expected": "KB-13",
+      "top1": "KB-13",
+      "hit_at_5": true
+    },
+    {
+      "question": "Where is my order?",
+      "expected": "KB-14",
+      "top1": "KB-14",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does 50 percent complete mean half the remaining days?",
+      "expected": "KB-14",
+      "top1": "KB-14",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you show the machines working on my order?",
+      "expected": "KB-14",
+      "top1": "KB-14",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if order tracking is unavailable?",
+      "expected": "KB-14",
+      "top1": "KB-14",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change the colour of my order?",
+      "expected": "KB-15",
+      "top1": "KB-15",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does submitting a change update the production schedule?",
+      "expected": "KB-15",
+      "top1": "KB-15",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I cancel after cutting has started?",
+      "expected": "KB-15",
+      "top1": "KB-15",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request earlier delivery?",
+      "expected": "KB-15",
+      "top1": "KB-15",
+      "hit_at_5": true
+    },
+    {
+      "question": "What defines acceptable garment quality?",
+      "expected": "KB-16",
+      "top1": "KB-16",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the reference AQL discussion value?",
+      "expected": "KB-16",
+      "top1": "KB-16",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I arrange a third-party inspection?",
+      "expected": "KB-16",
+      "top1": "KB-16",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the assistant approve a failed inspection?",
+      "expected": "KB-16",
+      "top1": "KB-16",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the reference packing method?",
+      "expected": "KB-17",
+      "top1": "KB-17",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request custom barcodes and carton marks?",
+      "expected": "KB-17",
+      "top1": "KB-17",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you give my final carton count before packing?",
+      "expected": "KB-17",
+      "top1": "KB-17",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does garment GSM tell me the shipping weight?",
+      "expected": "KB-17",
+      "top1": "KB-17",
+      "hit_at_5": true
+    },
+    {
+      "question": "How can I track a shipment?",
+      "expected": "KB-18",
+      "top1": "KB-18",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is the production-ready date my delivery date?",
+      "expected": "KB-18",
+      "top1": "KB-18",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I split an order across destinations?",
+      "expected": "KB-18",
+      "top1": "KB-18",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you promise a specific carrier transit time?",
+      "expected": "KB-18",
+      "top1": "KB-18",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which export documents can be requested?",
+      "expected": "KB-19",
+      "top1": "KB-19",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are all orders automatically duty free?",
+      "expected": "KB-19",
+      "top1": "KB-19",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the assistant certify country of origin?",
+      "expected": "KB-19",
+      "top1": "KB-19",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you tell me the exact import duty for my shipment?",
+      "expected": "KB-19",
+      "top1": "KB-19",
+      "hit_at_5": true
+    },
+    {
+      "question": "How do I report defective garments?",
+      "expected": "KB-20",
+      "top1": "KB-20",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the visible-defect reporting window?",
+      "expected": "KB-20",
+      "top1": "KB-20",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I send goods back immediately?",
+      "expected": "KB-20",
+      "top1": "KB-20",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is a refund automatic when I create a complaint?",
+      "expected": "KB-20",
+      "top1": "KB-20",
+      "hit_at_5": true
+    },
+    {
+      "question": "How should I wash my garments?",
+      "expected": "KB-21",
+      "top1": "KB-21",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are all cotton garments shrink-proof?",
+      "expected": "KB-21",
+      "top1": "KB-21",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I iron directly over a printed logo?",
+      "expected": "KB-21",
+      "top1": "KB-21",
+      "hit_at_5": true
+    },
+    {
+      "question": "What information helps a washing-related complaint?",
+      "expected": "KB-21",
+      "top1": "KB-21",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which certifications are currently valid?",
+      "expected": "KB-22",
+      "top1": "KB-22",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does programme membership certify every product?",
+      "expected": "KB-22",
+      "top1": "KB-22",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request sustainability evidence?",
+      "expected": "KB-22",
+      "top1": "KB-22",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the assistant invent a certificate for my supplier form?",
+      "expected": "KB-22",
+      "top1": "KB-22",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I access an order by knowing its number?",
+      "expected": "KB-23",
+      "top1": "KB-23",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change my password through the agent?",
+      "expected": "KB-23",
+      "top1": "KB-23",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can customers see internal production data?",
+      "expected": "KB-23",
+      "top1": "KB-23",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request deletion of account information?",
+      "expected": "KB-23",
+      "top1": "KB-23",
+      "hit_at_5": true
+    },
+    {
+      "question": "How soon should support respond?",
+      "expected": "KB-24",
+      "top1": "KB-24",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens when the assistant has no answer?",
+      "expected": "KB-24",
+      "top1": "KB-24",
+      "hit_at_5": true
+    },
+    {
+      "question": "Will a submitted request be automatically approved?",
+      "expected": "KB-24",
+      "top1": "KB-24",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the agent perform any task I ask?",
+      "expected": "KB-24",
+      "top1": "KB-24",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the company called?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "Where is Needle Craft located?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the official website?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "In which year was the company established?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "Who owns or manages the company?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you give me the current sales phone and email?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "What are your customer service opening hours?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I visit the factory without an appointment?",
+      "expected": "KB-25",
+      "top1": "KB-25",
+      "hit_at_5": true
+    },
+    {
+      "question": "Do you sell individual garments to consumers?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can a new clothing startup become a customer?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can overseas buyers request production?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which countries can you ship to?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "Do you manufacture uniforms and workwear?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I use your garments for my own private label?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "Which famous brands are your current customers?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is your monthly production capacity?",
+      "expected": "KB-26",
+      "top1": "KB-26",
+      "hit_at_5": true
+    },
+    {
+      "question": "What details should I send in my first enquiry?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you help me choose a product before I request a quote?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "Do I need to register a company account first?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "I only have an idea and no final quantities. What happens next?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "What company documents are needed to onboard a buyer?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I ask questions before committing to an order?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can my colleague handle the order for our company?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can we sign a confidentiality agreement before sharing designs?",
+      "expected": "KB-27",
+      "top1": "KB-27",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you reproduce a garment from a photograph?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you create a pattern for a new design?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you make children's garments?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you make fire resistant protective garments?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request an exclusive design?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Who owns the pattern or artwork after development?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I supply my own trims and accessories?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change seams or garment construction?",
+      "expected": "KB-28",
+      "top1": "KB-28",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you source a fabric that is not in the catalogue?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is a heavier fabric always more durable?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are all training tops moisture wicking?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you guarantee that a fabric is allergy free?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Will the approved fabric ever be substituted automatically?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if a buyer supplied fabric is rejected?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you provide a fabric swatch before ordering?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can my order use more than one fabric composition?",
+      "expected": "KB-29",
+      "top1": "KB-29",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can all sizes have the same unit price?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I use a US or European size chart?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "Is chest width the same as chest circumference?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I combine men's and women's fits in one style minimum?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is grading in garment production?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if a sample fits but bulk garments do not?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the size labels use my brand's own names?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I add a new size after cutting begins?",
+      "expected": "KB-30",
+      "top1": "KB-30",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the same colour look different on cotton and polyester?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you guarantee a match to a digital logo colour?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can a very small logo be embroidered clearly?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I combine printing and embroidery on one garment?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you use copyrighted artwork if I send it?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the label text be in more than one language?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change packaging after the order is finishing?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "Who approves the final printed barcode?",
+      "expected": "KB-31",
+      "top1": "KB-31",
+      "hit_at_5": true
+    },
+    {
+      "question": "What is the difference between a fit sample and a pre production sample?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the sample charge be deducted from a bulk order?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "Who pays to courier the sample?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I approve only the colour but reject the fit?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "How many sample revisions are included?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I ask for a sample in every size?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if the approved sample is lost?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I approve a sample through the chat alone?",
+      "expected": "KB-32",
+      "top1": "KB-32",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you quote the cheapest option for my requirements?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does the displayed price include VAT or import duties?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Will larger quantities always lower the unit price?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I use a previous quote after its validity ends?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you convert a USD price into Jordanian dinars?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I negotiate the price with the assistant?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you give a final landed cost?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can a buyer requested rush fee be approved automatically?",
+      "expected": "KB-33",
+      "top1": "KB-33",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I use my own purchase order reference?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can one purchase order contain several styles?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if my purchase order differs from the quote?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you resend my approved quotation or order confirmation?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I upload my technical pack into the chat?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you generate an official invoice from my chat request?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if two specifications disagree?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you edit a signed agreement directly?",
+      "expected": "KB-34",
+      "top1": "KB-34",
+      "hit_at_5": true
+    },
+    {
+      "question": "Why did the delivery estimate change?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I see an exact production line or machine allocation?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you put my order ahead of another buyer's order?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Are weekends and holidays counted in lead time?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you give a live available slot before I submit a purchase order?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if a required material is delayed?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does a progress percentage guarantee the remaining duration?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you run a what if simulation for my order?",
+      "expected": "KB-35",
+      "top1": "KB-35",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I collect goods rather than arrange delivery?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can part of my order be shipped earlier?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if a tracking number has no carrier update?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you change the consignee after dispatch?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "Who is responsible for customs clearance?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you insure my shipment through the chat?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if goods arrive with damaged cartons?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you guarantee arrival before a public holiday?",
+      "expected": "KB-36",
+      "top1": "KB-36",
+      "hit_at_5": true
+    },
+    {
+      "question": "My bank says payment was sent. Is the order paid?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I pay by card inside the chat?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I change invoice currency after approval?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you change the company name on an invoice?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if I pay less than the invoice amount?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you promise the date of a refund?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "Someone sent new bank details by message. Should I use them?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can the assistant approve a credit limit?",
+      "expected": "KB-37",
+      "top1": "KB-37",
+      "hit_at_5": true
+    },
+    {
+      "question": "My shipment has fewer pieces than expected. What information is needed?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "What counts as a major or minor defect?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does an AQL value mean every shipment can contain that percentage of defects?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I request replacement instead of a refund?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if there is an urgent product safety issue?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I dispose of the affected goods before review?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you check the status of an existing support ticket?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if I disagree with the proposed resolution?",
+      "expected": "KB-38",
+      "top1": "KB-38",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I reorder the same style without a new sample?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "Will a reorder have exactly the same colour as an old batch?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I reserve material for future orders?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can we agree an annual supply programme?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I schedule repeat deliveries every month?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can my repeat order use last year's price?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I duplicate an order directly from chat?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if the previous style is discontinued or changed?",
+      "expected": "KB-39",
+      "top1": "KB-39",
+      "hit_at_5": true
+    },
+    {
+      "question": "I cannot sign in. Can you reset my password?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can a visitor track an order using only its reference?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Why does the assistant say no accessible order was found?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I ask for all information the company keeps about me?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you delete my orders immediately?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does changing my name in chat change my account identity?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "What should I do if a request appears twice after retrying?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I use the assistant in Arabic or Roman Urdu?",
+      "expected": "KB-40",
+      "top1": "KB-40",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you fill my supplier assessment questionnaire?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I receive a current certificate as a PDF?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Does a certificate cover every factory and every product?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you confirm ethical sourcing from a public directory entry?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you guarantee that all packaging is biodegradable?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you state the carbon footprint of my order?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "What if a certificate has expired?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can a web search replace an approved compliance document?",
+      "expected": "KB-41",
+      "top1": "KB-41",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you arrange a sales meeting?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you send an email to the sales team automatically?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you call me about my quotation?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you notify me each time my order stage changes?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you approve a machine repair to speed up my order?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "What happens if the order system is temporarily unavailable?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can you promise an answer to every company related question?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    },
+    {
+      "question": "Can I confirm several different requests at once?",
+      "expected": "KB-42",
+      "top1": "KB-42",
+      "hit_at_5": true
+    }
+  ]
+}

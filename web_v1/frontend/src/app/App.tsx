@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { MutationCache, QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
@@ -9,7 +9,7 @@ import { can, SessionContext, useSession } from "./session";
 import { ScopeProvider } from "./scope";
 import { homeOf } from "./home";
 
-import { Activity, Board, Compare, Dashboard, Data, Issues, LineToday, Machines, Materials, NewPlan, OrderPage, Orders, Quality, QualityChecks, RunPage, Runs, StylePage, Styles, Users, Workforce } from "./pages";
+import { Activity, Board, Compare, Dashboard, Data, Issues, LineToday, Machines, Materials, NewPlan, OrderPage, Orders, Quality, QualityChecks, RunPage, Runs, StylePage, Styles, Users, Workforce, Customers } from "./pages";
 import { toast } from "./toast";
 import { PageErrorBoundary } from "../components/PageErrorBoundary";
 
@@ -20,6 +20,7 @@ function Need({ perm, children }: { perm: string | string[]; children: ReactNode
   if (perms.some((p) => can(session, p))) return <>{children}</>;
   return <Notice>Your role ({session.role_label ?? "no role"}) cannot open this page. Ask an administrator if you need it.</Notice>;
 }
+const PortalApp = lazy(() => import("../portal/PortalApp"));
 const PLANNING = ["planning.request_plan", "planning.approve_plan"];
 const PLAN_VIEW = [...PLANNING, "floor.view_floor"];
 
@@ -44,6 +45,13 @@ function Gate() {
   if (session.isPending) return <Loading label="Connecting to the planning server" />;
   if (session.isError) return <div className="login"><Notice tone="error">{session.error.message}</Notice></div>;
   if (!session.data.authenticated) return <Login />;
+  if (session.data.role === "customer") {  // a customer company's sign-in: the portal, nothing of the staff app
+    return (
+      <SessionContext.Provider value={session.data}>
+        <Suspense fallback={<Loading />}><PortalApp /></Suspense>
+      </SessionContext.Provider>
+    );
+  }
   return (
     <SessionContext.Provider value={session.data}>
       <ScopeProvider>
@@ -71,6 +79,7 @@ function Gate() {
               <Route path="/floor/issues" element={<Need perm="floor.view_floor"><Issues /></Need>} />
               <Route path="/floor/quality" element={<Need perm="floor.view_floor"><QualityChecks /></Need>} />
               <Route path="/users" element={<Need perm="floor.manage_users"><Users /></Need>} />
+              <Route path="/customers" element={<Need perm={["portal.handle_request", "floor.manage_users"]}><Customers /></Need>} />
               <Route path="/data" element={<Need perm={PLANNING}><Data /></Need>} />
               <Route path="/activity" element={<Need perm={["planning.approve_plan", "floor.manage_users"]}><Activity /></Need>} />
               <Route path="*" element={<Navigate to="/" replace />} />

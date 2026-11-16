@@ -35,6 +35,7 @@ export const Board = page(["/floor/board"], () => import("../pages/floor/Board")
 export const Issues = page(["/floor/issues"], () => import("../pages/floor/Issues"));
 export const QualityChecks = page(["/floor/quality"], () => import("../pages/floor/QualityChecks"));
 export const Users = page(["/users"], () => import("../pages/Users"));
+export const Customers = page(["/customers"], () => import("../pages/Customers"));
 
 /** Starts fetching the page file for a menu address; harmless if it is already loaded. */
 export function preload(path: string) {

@@ -2,6 +2,7 @@ export interface Session {
   csrf_token: string; authenticated: boolean; username: string | null;
   can_request: boolean; can_approve: boolean; production_activation: boolean; writeback?: boolean;
   role: string | null; role_label: string | null; scope_factory: number | null; scope_line: number | null; perms: string[];
+  customer?: { customer_id: string; client_name: string };
 }
 export interface FactorySummary { factory_id: number; orders: number; operations: number; lines?: number; machines?: number; workers?: number }
 export interface Dataset {
@@ -232,4 +233,40 @@ export const floor = {
   createUser: (input: UserInput & { username: string }) => request<AppUser & { password: string }>("/floor/users", input),
   changeUser: (id: number, input: UserInput & { active: boolean }) => request<AppUser>(`/floor/users/${id}`, input),
   resetPassword: (id: number) => request<{ username: string; password: string }>(`/floor/users/${id}/password`, {}),
+};
+
+// ---------- customer portal ----------
+export interface PortalOrder {
+  order_id: string; style_code: string; quantity: number; stage: string; progress_percent: number;
+  estimated_ready_date: string | null; estimated_arrival_date: string | null; carrier: string | null; tracking_reference: string | null;
+  customer_note: string | null; po_number: string | null; product: string | null; category: string | null; ordered_on: string | null;
+  due_date: string | null; shipped_on: string | null; ready_from: "plan" | "schedule"; late: boolean;
+}
+export interface PortalProduct { style_code: string; name: string; fabric: string; gsm: number; base_price_usd: number; moq: number; sizes: string }
+export interface PortalRequest {
+  id: number; request_id: string; kind: "quote" | "sample" | "order_change" | "support"; kind_label: string; description: string;
+  order_id: string | null; style_code: string | null; quantity: number | null; colour: string | null; destination: string | null;
+  status: "PENDING" | "ACCEPTED" | "DECLINED"; staff_note: string; created_at: string; decided_at: string | null;
+  client_name?: string; customer?: string; decided_by?: string | null;
+}
+export interface PortalRequestInput { kind: string; description: string; order_id?: string; style_code?: string; quantity?: number | null; colour?: string; destination?: string; key?: string }
+export interface PendingAction { action_id: string; details: Record<string, unknown>; expires_at: string; status: string }
+export interface ChatReply { answer: string; session_id: string; sources: { title?: string; section_id?: string }[]; pending_actions: PendingAction[]; mode: string }
+export interface CustomerAccountRow { id: number; customer_id: string; username: string; client_name: string; data: string; active: boolean; created_at: string }
+
+export const portal = {
+  me: () => request<{ customer_id: string; client_name: string; username: string; data: string }>("/portal/me"),
+  orders: () => request<PortalOrder[]>("/portal/orders"),
+  order: (ref: string) => request<PortalOrder>(`/portal/orders/${encodeURIComponent(ref)}`),
+  products: () => request<PortalProduct[]>("/portal/products"),
+  requests: () => request<PortalRequest[]>("/portal/requests"),
+  sendRequest: (input: PortalRequestInput) => request<PortalRequest>("/portal/requests", input),
+  chat: (message: string, session_id: string | null) => request<ChatReply>("/portal/chat", { message, session_id }),
+  confirm: (actionId: string) => request<{ request_id: string; status: string }>(`/portal/actions/${actionId}/confirm`, {}),
+  staffRequests: () => request<PortalRequest[]>("/portal/staff/requests"),
+  decide: (id: number, decision: "ACCEPTED" | "DECLINED", note: string) => request<PortalRequest>(`/portal/staff/requests/${id}`, { decision, note }),
+  accounts: () => request<CustomerAccountRow[]>("/portal/staff/accounts"),
+  createAccount: (input: { username: string; client_name: string; dataset_id: number; email?: string }) =>
+    request<CustomerAccountRow & { password: string }>("/portal/staff/accounts", input),
+  clients: (dataset: number, q: string) => request<{ client_name: string; orders: number }[]>(`/portal/staff/clients?dataset=${dataset}&q=${encodeURIComponent(q)}`),
 };

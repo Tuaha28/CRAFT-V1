@@ -126,6 +126,38 @@ React (frontend/, Vite :5173) ──/api──▶ Django + DRF (backend/, :8001,
   the link. Without `CRAFT_EMAIL_HOST` in `backend/.env` the messages are saved
   in `backend/planning_runs/outbox/`.
 
+## Customer portal
+
+A customer company signs in on the same page and gets only the portal: **My
+orders** (stage, progress, the ready date from the approved CRAFT plan,
+shipping), **Catalogue** (the assistant handbook's reference garment families,
+shown as indicative, not a quotation), **Assistant** (the Needle Craft customer
+assistant in `web_v1/agent`) and **My requests** (order change, quotation,
+sample, support). A customer session can call only `/api/v1/portal/*`; every
+other API answers 403, and the assistant reads orders through `/customer/*`
+with a service key, scoped to the verified customer.
+
+- Admin: **Customers** page, add a customer for an existing company name in the
+  30/60/90% data (the password is shown once).
+- Production manager and merchandiser: **Customers** page, answer requests.
+  Accepting a request records the answer; it never changes a plan.
+- Start the assistant (its own Python 3.13 environment in `web_v1/agent/.venv`):
+
+```powershell
+cd web_v1\agent; py -3.13 -m venv .venv; .venv\Scripts\python.exe -m pip install -r requirements.txt; cd ..\backend
+.venv\Scripts\python.exe manage.py run_agent --init   # once: adds its two secrets to backend/.env (restart the API)
+.venv\Scripts\python.exe manage.py run_agent          # port 8003; uses GROQ_API_KEY, else offline answers
+```
+
+The assistant uses `openai/gpt-oss-20b` (Groq free tier): it answers handbook
+questions itself, and order questions from its own lookup of the live order
+record. `CRAFT_AGENT_MODEL=openai/gpt-oss-120b` in `backend/.env` makes the model
+look orders up and prepare change requests in the chat, but needs a paid Groq
+tier (about 9,000 tokens a question). Change requests always work through the
+request form. Without the assistant running, every other portal page works.
+One fix to the downloaded assistant: on Groq it no longer asks for the JSON
+answer during the tool-calling steps (the model invented a "json" tool).
+
 ## Demo copies and write-back
 
 The original databases are only ever read. To let the app change data (for a
