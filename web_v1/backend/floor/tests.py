@@ -127,6 +127,14 @@ class RoleTests(Fixture):
         self.assertFalse(self.users['merchandiser'].has_perm('floor.report_issue'))
         self.assertTrue(self.users['admin'].has_perm('floor.manage_users'))
 
+    def test_admin_runs_the_system_but_does_not_approve_or_do_floor_work(self):
+        admin = self.users['admin']
+        for perm in ('floor.manage_users', 'planning.request_plan', 'floor.view_floor'):
+            self.assertTrue(admin.has_perm(perm), perm)
+        for perm in ('planning.approve_plan', 'floor.enter_output', 'floor.record_defect', 'floor.repair_machine',
+                     'floor.report_issue', 'floor.handle_issue'):
+            self.assertFalse(admin.has_perm(perm), perm)
+
     def test_session_reports_role_scope_and_permissions(self):
         client = APIClient()
         client.force_authenticate(self.users['supervisor'])
@@ -217,6 +225,72 @@ class IssueTests(Fixture):
         self.assertEqual(set(Issue.objects.values_list('replan_id', flat=True)), {run.pk})
 
 
+class NewDisruptionTests(Fixture):
+    """Line stopped and late material: reported on the floor, re-planned around like machines and workers."""
+
+    def test_line_stopped_needs_a_line_of_this_factory(self):
+        with self.assertRaises(ValidationError):
+            self.issue(user='manager', kind='LINE_STOPPED', machine_id=None)
+        with self.assertRaises(ValidationError):
+            self.issue(user='manager', kind='LINE_STOPPED', machine_id=None, line_id=999)
+        stopped = self.issue(user='manager', kind='LINE_STOPPED', machine_id=None, line_id=44)
+        self.assertEqual((stopped.kind, stopped.line_id), ('LINE_STOPPED', 44))
+
+    def test_material_short_needs_material_and_arrival(self):
+        with mock.patch('floor.lookup.orders_using_material', return_value=['1']):
+            with self.assertRaises(ValidationError):
+                self.issue(user='manager', kind='MATERIAL_SHORT', machine_id=None, material_id=7)
+            with self.assertRaises(ValidationError):
+                self.issue(user='manager', kind='MATERIAL_SHORT', machine_id=None, arrival_date='2026-09-15')
+            short = self.issue(user='manager', kind='MATERIAL_SHORT', machine_id=None, material_id=7,
+                               arrival_date='2026-09-15')
+        self.assertEqual((short.material_id, str(short.arrival_date)), (7, '2026-09-15'))
+
+    def test_replan_after_accepts_all_four_kinds(self):
+        down = self.issue()
+        absent = self.issue(user='manager', kind='WORKER_ABSENT', worker_id=501, machine_id=None)
+        stopped = self.issue(user='manager', kind='LINE_STOPPED', machine_id=None, line_id=102)
+        with mock.patch('floor.lookup.orders_using_material', return_value=['1']) as used:
+            short = self.issue(user='manager', kind='MATERIAL_SHORT', machine_id=None, material_id=7,
+                               arrival_date='2026-09-15')
+            run = services.replan_after(self.users['planner'], dataset_id=self.dataset.pk, factory_id=4,
+                                        issue_ids=[down.pk, absent.pk, stopped.pk, short.pk])
+        self.assertEqual(used.call_args.args[1:], (7, ['1', '2']))
+        self.assertEqual(run.scenario['machines_down'], [901])
+        self.assertEqual(run.scenario['workers_absent'], [501])
+        self.assertEqual(run.scenario['lines_stopped'], [102])
+        self.assertEqual(run.scenario['release_after'], {'1': '2026-09-15'})
+        self.assertEqual(run.trigger['source'], 'MANUAL')
+        self.assertEqual(sorted(run.trigger['issue_ids']), sorted([down.pk, absent.pk, stopped.pk, short.pk]))
+
+    def test_machine_report_and_resolve_flip_status_in_the_demo_copy(self):
+        with mock.patch('erp.writer.set_machine_status', return_value=True) as flip:
+            with self.captureOnCommitCallbacks(execute=False) as pending:
+                down = self.issue(user='manager')
+            flip.assert_not_called()  # nothing touches the demo copy until the report is saved
+            for callback in pending:
+                callback()
+            with self.captureOnCommitCallbacks(execute=True):
+                services.move_issue(self.users['manager'], down.pk, 'RESOLVED', 'Belt replaced')
+        self.assertEqual([c.args[1:] for c in flip.call_args_list], [(901, 'Breakdown'), (901, 'Active')])
+
+    def test_quality_issues_still_do_not_change_the_plan(self):
+        quality = self.issue(user='manager', kind='QUALITY', machine_id=None, note='Open seams')
+        with self.assertRaises(ValidationError):
+            services.replan_after(self.users['planner'], dataset_id=self.dataset.pk, factory_id=4,
+                                  issue_ids=[quality.pk])
+
+    def test_material_used_by_no_planned_order_warns(self):
+        client = APIClient()
+        client.force_authenticate(self.users['manager'])
+        with mock.patch('floor.lookup.orders_using_material', return_value=[]):
+            response = client.post(f'/api/v1/floor/{self.dataset.pk}/4/issues',
+                                   {'kind': 'MATERIAL_SHORT', 'material_id': 7, 'arrival_date': '2026-09-15'},
+                                   format='json')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['warning'], 'No order in the current plan uses this material')
+
+
 class QualityTests(Fixture):
     def test_check_records_dhu_and_needs_a_type(self):
         services.record_check(self.users['qc'], dataset_id=self.dataset.pk, factory_id=4, line_id=44, day=0,
@@ -235,6 +309,24 @@ class QualityTests(Fixture):
 
 
 class UserTests(Fixture):
+    def test_admin_sets_a_manager_email_for_plan_emails(self):
+        client = APIClient()
+        client.force_authenticate(self.users['admin'])
+        made = client.post('/api/v1/floor/users', {'username': 'pm2', 'role': 'manager', 'factory_id': 4,
+                                                   'email': 'pm2@factory.test'}, format='json')
+        self.assertEqual(made.status_code, 201)
+        self.assertEqual(made.json()['email'], 'pm2@factory.test')
+        uid = made.json()['id']
+        changed = client.post(f'/api/v1/floor/users/{uid}', {'role': 'manager', 'factory_id': 4,
+                                                             'active': True, 'email': 'new@factory.test'}, format='json')
+        self.assertEqual(changed.json()['email'], 'new@factory.test')
+        kept = client.post(f'/api/v1/floor/users/{uid}', {'role': 'manager', 'factory_id': 4, 'active': True},
+                           format='json')
+        self.assertEqual(kept.json()['email'], 'new@factory.test')
+        bad = client.post('/api/v1/floor/users', {'username': 'pm3', 'role': 'manager', 'email': 'nope'},
+                          format='json')
+        self.assertEqual(bad.status_code, 400)
+
     def setUp(self):
         super().setUp()
         self.client = APIClient()

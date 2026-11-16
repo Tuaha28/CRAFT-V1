@@ -1,7 +1,8 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { DeliveryTape } from "./components/DeliveryTape";
-import type { OrderRow } from "./lib/api";
+import type { OrderRow, Run } from "./lib/api";
+import { AutoBanner } from "./components/AutoPlan";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.resetModules(); });
 const freshApp = async () => (await import("./app/App")).App;
@@ -104,5 +105,22 @@ describe("shop floor", () => {
       { hour: 8, target: 10, actual: 5 }, { hour: 9, target: 10, actual: 9 }, { hour: 11, target: 10, actual: 0 }]} />);
     const bars = [...container.querySelectorAll("rect.actual")];
     expect(bars.map((b) => b.classList.contains("behind"))).toEqual([true, false, false]); // 11:00 has not passed yet
+  });
+});
+
+describe("auto-planning", () => {
+  const base = { id: "r1", kind: "SCHEDULE", status: "SUCCEEDED", purpose: "DISRUPTION", decision: "PENDING" };
+  it("renders the Started by CRAFT banner for an automatic run", () => {
+    render(<AutoBanner run={{ ...base, trigger: { source: "AUTO", reason: "Machine 12 down" } } as unknown as Run} />);
+    expect(screen.getByText("Started by CRAFT: Machine 12 down")).toBeTruthy();
+    expect(screen.getByText(/as if it stays that way for the whole plan/)).toBeTruthy();
+  });
+  it("says when a newer CRAFT plan replaced this one", () => {
+    render(<AutoBanner run={{ ...base, decision: "SUPERSEDED", trigger: { source: "AUTO", reason: "Line 86 stopped" } } as unknown as Run} />);
+    expect(screen.getByText("Replaced by a newer CRAFT plan")).toBeTruthy();
+  });
+  it("shows nothing for a plan a person started", () => {
+    const { container } = render(<AutoBanner run={{ ...base, trigger: { source: "MANUAL", reason: "x" } } as unknown as Run} />);
+    expect(container.textContent).toBe("");
   });
 });

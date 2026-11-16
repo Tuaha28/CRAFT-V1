@@ -1209,3 +1209,19 @@ table.against td, table.against th { padding: 7px 6px; }
 @media (max-width: 900px) { .quality-hero { grid-template-columns: minmax(0, 1fr); } }
 .tv-line.idle { background: var(--surface); border-color: var(--rule); align-content: start; }
 .tv .board-lines { align-items: start; }
+
+/* ---------- auto-planning ---------- */
+.auto-banner { border-left: 4px solid var(--accent); }
+.auto-banner p { margin: 0 0 4px; }
+.autoplan .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; }
+.switch input { appearance: none; width: 42px; height: 24px; border-radius: 999px; background: var(--rule-strong); position: relative; cursor: pointer; transition: background .2s; margin: 0; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: transform .2s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(18px); }
+.switch input:disabled { opacity: .5; cursor: not-allowed; }
+.switch input:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.review-card { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.review-card h2 { margin: 0; flex: 1 1 260px; }
+.review-card p { margin: 0; flex-basis: 100%; order: 3; }
+@media (prefers-reduced-motion: reduce) { .switch input, .switch input::after { transition: none; } }

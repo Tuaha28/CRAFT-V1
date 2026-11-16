@@ -21,7 +21,7 @@ class Profile(models.Model):
 
 
 class Issue(models.Model):
-    KINDS = [('MACHINE_DOWN', 'Machine down'), ('WORKER_ABSENT', 'Worker absent'),
+    KINDS = [('MACHINE_DOWN', 'Machine down'), ('WORKER_ABSENT', 'Worker absent'), ('LINE_STOPPED', 'Line stopped'),
              ('MATERIAL_SHORT', 'Material short'), ('QUALITY', 'Quality problem'), ('OTHER', 'Other')]
     STATUSES = [('OPEN', 'Open'), ('IN_PROGRESS', 'In progress'), ('RESOLVED', 'Resolved')]
     dataset = models.ForeignKey('planning.Dataset', on_delete=models.PROTECT)
@@ -31,6 +31,9 @@ class Issue(models.Model):
     machine_id = models.PositiveIntegerField(null=True, blank=True)
     worker_id = models.PositiveIntegerField(null=True, blank=True)
     order_id = models.CharField(max_length=20, blank=True)
+    # Material short: which raw material (factory database id) and when it is expected to arrive.
+    material_id = models.PositiveIntegerField(null=True, blank=True)
+    arrival_date = models.DateField(null=True, blank=True)
     note = models.TextField(blank=True)
     status = models.CharField(max_length=12, choices=STATUSES, default='OPEN')
     reported_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')

@@ -61,7 +61,7 @@ def _dataset(dataset_id, factory_id):
 
 @transaction.atomic
 def report_issue(user, *, dataset_id, factory_id, kind, machine_id=None, worker_id=None, order_id='', line_id=None,
-                 note=''):
+                 note='', material_id=None, arrival_date=None):
     require(user, 'floor.report_issue')
     dataset = _dataset(dataset_id, factory_id)
     if kind not in dict(Issue.KINDS):
@@ -89,16 +89,40 @@ def report_issue(user, *, dataset_id, factory_id, kind, machine_id=None, worker_
         if Issue.objects.filter(dataset=dataset, worker_id=worker_id).exclude(status='RESOLVED').exists():
             raise ValidationError(f'Worker {worker_id} is already reported absent')
         subject = f'worker {worker_id} ({found["name"]})'
-    elif kind == 'MATERIAL_SHORT' and not str(order_id or '').strip():
-        raise ValidationError('Enter the order that is short of material')
-    if kind in ('MATERIAL_SHORT', 'QUALITY', 'OTHER') and not (note or '').strip() and not order_id:
+    elif kind == 'LINE_STOPPED':
+        if not line_id:
+            raise ValidationError('Choose the line that stopped')
+        if not any(int(l['line_id']) == int(line_id) for l in lookup.lines(dataset, factory_id)):
+            raise ValidationError(f'Line {line_id} is not in factory {factory_id}')
+        if Issue.objects.filter(dataset=dataset, kind='LINE_STOPPED', line_id=line_id).exclude(status='RESOLVED').exists():
+            raise ValidationError('This line is already reported stopped')
+        subject = f'line {line_id}'
+    elif kind == 'MATERIAL_SHORT':
+        if not material_id or not arrival_date:
+            raise ValidationError('Choose the material and when it is expected to arrive')
+        subject = f'material {material_id}, expected {arrival_date}'
+    if kind in ('QUALITY', 'OTHER') and not (note or '').strip() and not order_id:
         raise ValidationError('Describe the problem')
     check_scope(user, factory_id, line_id)
     issue = Issue.objects.create(dataset=dataset, factory_id=factory_id, line_id=line_id, kind=kind,
                                  machine_id=machine_id if kind == 'MACHINE_DOWN' else None,
                                  worker_id=worker_id if kind == 'WORKER_ABSENT' else None,
                                  order_id=str(order_id or '').strip(), note=(note or '').strip()[:2000],
+                                 material_id=material_id if kind == 'MATERIAL_SHORT' else None,
+                                 arrival_date=arrival_date if kind == 'MATERIAL_SHORT' else None,
                                  reported_by=user)
+    issue.affected_orders = None  # material short: which planned orders wait for it (None = no approved plan)
+    if kind == 'MATERIAL_SHORT':
+        approved = approved_plan(dataset_id, factory_id)
+        if approved is not None:
+            issue.affected_orders = lookup.orders_using_material(dataset, material_id,
+                                                                 planning_services._plan_orders(approved)[0])
+    if kind == 'MACHINE_DOWN':  # the demo copy shows the machine broken (off unless write-back is on)
+        from erp import writer
+        transaction.on_commit(lambda: writer.set_machine_status(dataset, machine_id, 'Breakdown'))
+    if kind in REPLANNABLE and issue.affected_orders != []:  # auto-planning (stored only when it is on)
+        from planning import autoplan
+        autoplan.record(dataset.pk, factory_id, 'ISSUE', issue.pk)
     label = dict(Issue.KINDS)[kind]
     planning_services.event(None, user, 'ISSUE_REPORTED',
                             f'{label}: {subject or ("order " + issue.order_id if issue.order_id else issue.note[:80])}'
@@ -128,25 +152,47 @@ def move_issue(user, issue_id, status, resolution=''):
     planning_services.event(None, user, 'ISSUE_' + status,
                             f'Issue {issue.pk} ({issue.get_kind_display().lower()}) '
                             f'{"taken" if status == "IN_PROGRESS" else "resolved: " + issue.resolution[:120]}')
+    if status == 'RESOLVED' and issue.kind == 'MACHINE_DOWN' and issue.machine_id:  # repaired, in the demo copy
+        from erp import writer
+        transaction.on_commit(lambda: writer.set_machine_status(issue.dataset, issue.machine_id, 'Active'))
     return issue
+
+
+REPLANNABLE = ('MACHINE_DOWN', 'WORKER_ABSENT', 'LINE_STOPPED', 'MATERIAL_SHORT')
+
+
+def disruption_inputs(issues, plan_order_ids):
+    """request_disruption keyword arguments for these issues: machines down, workers absent,
+    lines stopped, and orders that wait for late material (release_after, the later arrival wins)."""
+    release = {}
+    for issue in issues:
+        if issue.kind == 'MATERIAL_SHORT' and issue.material_id and issue.arrival_date:
+            for oid in lookup.orders_using_material(issue.dataset, issue.material_id, list(plan_order_ids)):
+                release[oid] = max(release.get(oid, ''), issue.arrival_date.isoformat()
+                                   if hasattr(issue.arrival_date, 'isoformat') else str(issue.arrival_date))
+    return {'machines_down': sorted({i.machine_id for i in issues if i.kind == 'MACHINE_DOWN'}),
+            'workers_absent': sorted({i.worker_id for i in issues if i.kind == 'WORKER_ABSENT'}),
+            'lines_stopped': sorted({i.line_id for i in issues if i.kind == 'LINE_STOPPED'}),
+            'release_after': release}
 
 
 @transaction.atomic
 def replan_after(user, *, dataset_id, factory_id, issue_ids, mode='QUICK'):
-    """Re-plan the approved plan's orders without the machines and workers of open issues."""
+    """Re-plan the approved plan's orders around open issues (machines, workers, lines, late material)."""
     planning_services.authorize(user, 'request_plan')
     check_scope(user, factory_id)
     issues = list(Issue.objects.select_for_update().filter(pk__in=issue_ids, dataset_id=dataset_id, factory_id=factory_id)
                   .exclude(status='RESOLVED'))
     if not issues or len(issues) != len(set(issue_ids)):
-        raise ValidationError('Choose open machine or worker issues of this factory')
-    if any(i.kind not in ('MACHINE_DOWN', 'WORKER_ABSENT') for i in issues):
-        raise ValidationError('Only machine-down and worker-absent issues change the plan')
+        raise ValidationError('Choose open issues of this factory')
+    if any(i.kind not in REPLANNABLE for i in issues):
+        raise ValidationError('Only machine, worker, line and material issues change the plan')
     parent, _plan = floor_plan(dataset_id, factory_id)
+    inputs = disruption_inputs(issues, planning_services._plan_orders(parent)[0])
     run = planning_services.request_disruption(
-        user, parent_id=parent.pk, mode=mode,
-        machines_down=[i.machine_id for i in issues if i.kind == 'MACHINE_DOWN'],
-        workers_absent=[i.worker_id for i in issues if i.kind == 'WORKER_ABSENT'])
+        user, parent_id=parent.pk, mode=mode, **inputs,
+        trigger={'source': 'MANUAL', 'reason': 'Re-plan requested from the Problems board',
+                 'kinds': sorted({i.kind for i in issues}), 'issue_ids': [i.pk for i in issues]})
     Issue.objects.filter(pk__in=[i.pk for i in issues]).update(replan=run)
     return run
 
@@ -240,7 +286,7 @@ def _validate_role(role, factory_id, line_id, dataset_id):
 
 
 @transaction.atomic
-def create_user(admin, *, username, role, factory_id=None, line_id=None, dataset_id=None):
+def create_user(admin, *, username, role, factory_id=None, line_id=None, dataset_id=None, email=''):
     """Returns (user, password); the password is shown once to the administrator and never stored in clear."""
     require(admin, 'floor.manage_users')
     if not USERNAME.fullmatch(username or ''):
@@ -249,7 +295,7 @@ def create_user(admin, *, username, role, factory_id=None, line_id=None, dataset
         raise ValidationError('This user name is taken')
     _validate_role(role, factory_id, line_id, dataset_id)
     password = secrets.token_urlsafe(12)
-    user = User.objects.create_user(username, password=password)
+    user = User.objects.create_user(username, password=password, email=(email or '').strip())
     _assign(user, role, factory_id, line_id, ensure_groups())
     planning_services.event(None, admin, 'USER_CREATED', f'{username} added as {ROLES[role][0].lower()}'
                             f'{f" for line {line_id}" if line_id else ""}')
@@ -257,7 +303,7 @@ def create_user(admin, *, username, role, factory_id=None, line_id=None, dataset
 
 
 @transaction.atomic
-def update_user(admin, user_id, *, role, factory_id=None, line_id=None, active=True, dataset_id=None):
+def update_user(admin, user_id, *, role, factory_id=None, line_id=None, active=True, dataset_id=None, email=None):
     require(admin, 'floor.manage_users')
     user = User.objects.filter(pk=user_id).first()
     if user is None:
@@ -267,7 +313,9 @@ def update_user(admin, user_id, *, role, factory_id=None, line_id=None, active=T
     _validate_role(role, factory_id, line_id, dataset_id)
     _assign(user, role, factory_id, line_id, ensure_groups())
     user.is_active = bool(active)
-    user.save(update_fields=['is_active'])
+    if email is not None:
+        user.email = email.strip()
+    user.save(update_fields=['is_active', 'email'])
     planning_services.event(None, admin, 'USER_CHANGED', f'{user.username}: {ROLES[role][0].lower()}'
                             f'{f", line {line_id}" if line_id else ""}{"" if active else ", deactivated"}')
     return user

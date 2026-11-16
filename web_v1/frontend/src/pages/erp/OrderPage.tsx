@@ -5,6 +5,8 @@ import { num, qty as quantity } from "../../lib/format";
 import { useReadyScope } from "../../app/scope";
 import { Chip, DataTable, Meter } from "../../components/DataTable";
 import { Loading, Notice, PageHead } from "../../components/ui";
+import { PriorityChip, PriorityControl, usePriority } from "../../components/Priority";
+import { useSession } from "../../app/session";
 
 type Stage = { name: string; sub: string; done: boolean };
 
@@ -42,6 +44,9 @@ export default function OrderPage() {
   const { id = "" } = useParams();
   const ready = useReadyScope();
   const data = useQuery({ queryKey: ["erp-order", ready, id], queryFn: () => erp.order(ready![0], ready![1], Number(id)), enabled: Boolean(ready) });
+  const session = useSession();
+  const planner = session.can_request;
+  const priority = usePriority(ready?.[0], ready?.[1], planner);
   if (!ready || data.isPending) return <Loading />;
   if (data.isError) return <Notice tone="error">{(data.error as ApiError).status === 404 ? "This order is not in the chosen factory." : data.error.message}</Notice>;
   const { order: o, routing, materials, delivery } = data.data;
@@ -55,7 +60,7 @@ export default function OrderPage() {
   return (
     <>
       <PageHead title={`Order ${o.production_order_id}`} lead={<>{o.po_number} · {o.client_name}, style <Link to={`/styles/${o.product_id}`}>{o.style_code}</Link> ({o.category}) · {ordered.toLocaleString("en-US")} pieces, due {String(o.delivery_deadline)}</>}>
-        <Chip value={o.po_status} /><Link className="btn" to="/orders">All orders</Link>
+        <PriorityChip on={priority.includes(String(o.production_order_id))} /><Chip value={o.po_status} /><Link className="btn" to="/orders">All orders</Link>
       </PageHead>
 
       <section className="panel section hero order-hero" aria-labelledby="journey-title">
@@ -83,6 +88,7 @@ export default function OrderPage() {
           ]} />
         </section>
         <aside className="plan-side">
+          {planner && <PriorityControl d={ready[0]} f={ready[1]} orderId={String(o.production_order_id)} canChange={planner} />}
           <section className="panel section">
             <h2>Quality</h2>
             <p><span className={`figure${dhu != null && dhu > 5 ? " late-text" : ""}`}>{dhu != null ? num(dhu, 1) : "—"}</span> <span className="muted">DHU</span></p>

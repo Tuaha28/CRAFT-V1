@@ -91,3 +91,24 @@ class ApiTests(TestCase):
             response = client.get(f'/api/v1/erp/{dataset.pk}/4/{module}')
             self.assertEqual(response.status_code, 200, module)
         self.assertEqual(client.get(f'/api/v1/erp/{dataset.pk}/9/summary').status_code, 404)
+
+
+class DemoCopyTests(SimpleTestCase):
+    """The app may read (and later write) <database>_demo copies; originals stay untouched."""
+
+    def test_demo_suffix_matches_source_pattern(self):
+        import re
+        from integrations.craft.legacy_repository import SOURCE_DATABASE_PATTERN
+        self.assertTrue(re.fullmatch(SOURCE_DATABASE_PATTERN, DB + '_demo'))
+        self.assertTrue(re.fullmatch(SOURCE_DATABASE_PATTERN, DB))
+        self.assertIsNone(re.fullmatch(SOURCE_DATABASE_PATTERN, 'garment_fyp_db_demo_x'))
+        self.assertIsNone(re.fullmatch(SOURCE_DATABASE_PATTERN, DB + '_demo_demo'))
+
+    def test_live_database_uses_copy_only_when_switched_on(self):
+        from django.test import override_settings
+        from .db import live_database
+        dataset = Dataset(database=DB)
+        with override_settings(CRAFT_USE_DEMO_COPIES=False, CRAFT_DEMO_SUFFIX='_demo'):
+            self.assertEqual(live_database(dataset), DB)
+        with override_settings(CRAFT_USE_DEMO_COPIES=True, CRAFT_DEMO_SUFFIX='_demo'):
+            self.assertEqual(live_database(dataset), DB + '_demo')

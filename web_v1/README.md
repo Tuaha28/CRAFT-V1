@@ -90,12 +90,61 @@ React (frontend/, Vite :5173) ──/api──▶ Django + DRF (backend/, :8001,
   the dedicated `craft_reader` account (SELECT-only grants are checked, the
   session is set read-only). Database settings come from the repository `.env`;
   they are never passed to scheduler runs.
+- A capture taken from the app (by hand, for new orders or at night) **refreshes
+  the dataset of the same database in place** (a demo copy's capture refreshes
+  its original's entry): the list keeps one entry per load, and the approved
+  plan, Auto-planning switch and Priority marks stay. Each plan remembers the
+  capture folder it was planned on (`PlanRun.source_path`), so old plans keep
+  their data.
 - Run outputs are kept in `backend/planning_runs/<run id>/` (git-ignored).
 - The worker touches `backend/planning_runs/worker.alive` on every loop. The
   runs API reports `worker_down` for a queued run when that file is older than a
   minute, and reading runs marks a RUNNING run whose worker went silent for 3
   minutes as failed ("Interrupted"), so nothing looks busy forever when the
   worker is stopped. Such runs are never retried automatically.
+
+## Auto-planning, priority and e-mail
+
+- **Auto-planning** is a switch per factory (Run page and Dashboard). When it is
+  on, problems reported on the floor (machine down, worker absent, line stopped,
+  material late), a rush order and a Priority change are collected; after
+  `AUTO_PLAN_QUIET_MINUTES` (15) without a new one, or at most
+  `AUTO_PLAN_MAX_WAIT_MINUTES` (60) after the first, the worker queues one CRAFT
+  re-plan of the approved plan as the `craft_auto` user. Only one run is ever
+  queued or running; a newer burst replaces an older plan that nobody decided
+  ("Replaced"). CRAFT never approves: a manager reviews the plan and approves or
+  rejects it.
+- **New orders**: every `AUTO_PLAN_NEW_ORDER_CHECK_MINUTES` (15) the worker
+  compares open orders in the database with the capture; new ones start a fresh
+  capture and then a plan of the approved orders plus the new ones. A capture
+  also runs once a night after `AUTO_CAPTURE_HOUR` (2:00 on the factory clock,
+  `FACTORY_TIME_ZONE`, default `Asia/Karachi`; e-mail times use it too).
+- **Priority**: a manager marks an order Priority (on or off). Every new plan
+  and re-plan for that factory lets CRAFT schedule it first.
+- **E-mail**: when a CRAFT plan is ready or fails, every active user who can
+  request plans for that factory and has an e-mail address gets a message with
+  the link. Without `CRAFT_EMAIL_HOST` in `backend/.env` the messages are saved
+  in `backend/planning_runs/outbox/`.
+
+## Demo copies and write-back
+
+The original databases are only ever read. To let the app change data (for a
+demo), make a copy of each load database named `<database>_demo` and a
+`craft_writer` account allowed on the copies only; the steps are in
+`docs/demo_copies.md`. Then in `backend/.env`:
+
+- `CRAFT_USE_DEMO_COPIES=1`: the app reads the copies.
+- `CRAFT_WRITEBACK=1` with `CRAFT_WRITER_USER` / `CRAFT_WRITER_PASSWORD`: an
+  approved plan updates the copy's schedule and order dates, and a machine
+  reported down or fixed updates its status. Before each write the app checks
+  the account's grants and refuses if it could reach an original.
+
+Rebuild a copy from its original (throws away the app's changes):
+
+```powershell
+.venv\Scripts\python.exe manage.py reset_demo_data --load 30         # prints the commands only
+.venv\Scripts\python.exe manage.py reset_demo_data --load 30 --run   # asks you to type RESET
+```
 
 ## Start it
 

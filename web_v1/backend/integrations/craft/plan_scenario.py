@@ -8,6 +8,9 @@ scenario.json may contain:
   workers_absent:  [employee ids] -> on leave for this plan
   new_order:       {order_id, product_id, quantity, release, due, routing: [{operation_id,
                     operation_name, sequence, machine_type, sam}]}  -> an unstarted order
+  lines_stopped:   [line ids]    -> every machine on the line "Breakdown"
+  release_after:   {order id: ISO date} -> the order cannot start before that date (late material)
+  priority_orders: [order ids]   -> due at the plan start, so CRAFT plans them first
 Both disruptions last the whole plan: the capture model has no time-limited
 machine or worker outages. The copy is re-hashed with the runner's own
 normalisation, so CRAFT verifies it exactly like a real capture, and the
@@ -25,9 +28,12 @@ ROOT = Path(__file__).resolve().parents[4]
 sys.path[:0] = [str(ROOT), str(ROOT / "scratch")]
 
 
-def build(base, factory_id, out, scenario):
-    source = json.loads((base / f"factory{factory_id}_source.json").read_text(encoding="utf-8"))
-    readiness = json.loads((base / f"factory{factory_id}_readiness.json").read_text(encoding="utf-8"))
+def apply(source, factory_id, scenario):
+    """The what-if copy of one factory's source data; the given source is not changed.
+
+    Only CRAFT's input changes: machines out of service, workers on leave, whole lines
+    stopped, orders released later (material arriving late), priority orders due at the
+    plan start, and one new order."""
     source = copy.deepcopy(source)
     machines = {int(m["asset_id"]): m for m in source["resources"]["machines"] if int(m["factory_id"]) == factory_id}
     workers = {int(w["employee_id"]) for w in source["resources"]["workers"] if int(w["factory_id"]) == factory_id}
@@ -87,6 +93,34 @@ def build(base, factory_id, out, scenario):
                                    "planned_work_segments": json.dumps([[stamp(start), stamp(end)]]),
                                    "production_order_id": oid, "schedule_item_id": next_item})
             next_item += 1
+
+    lines = {int(m["line_id"]) for m in machines.values() if m.get("line_id") is not None}
+    for line in scenario.get("lines_stopped", ()):
+        if int(line) not in lines:
+            raise SystemExit(f"LINE_NOT_IN_FACTORY:{line}")
+        for machine in machines.values():
+            if machine.get("line_id") is not None and int(machine["line_id"]) == int(line):
+                machine["current_status"] = "Breakdown"
+
+    by_id = {str(int(o["production_order_id"])): o for o in source["orders"]}
+    for oid, when in (scenario.get("release_after") or {}).items():
+        if str(oid) not in by_id:
+            raise SystemExit(f"RELEASE_ORDER_NOT_FOUND:{oid}")
+        current = str(by_id[str(oid)].get("scheduled_start_date") or "")[:10]
+        by_id[str(oid)]["scheduled_start_date"] = max(current, date.fromisoformat(when).isoformat())
+    # A priority order is due at the plan start, so CRAFT's due-date driven planning puts it first.
+    for oid in scenario.get("priority_orders", ()):
+        if str(oid) not in by_id:
+            raise SystemExit(f"PRIORITY_ORDER_NOT_FOUND:{oid}")
+        by_id[str(oid)]["delivery_deadline"] = source["reference_time"][:10]
+    return source
+
+
+def build(base, factory_id, out, scenario):
+    source = json.loads((base / f"factory{factory_id}_source.json").read_text(encoding="utf-8"))
+    readiness = json.loads((base / f"factory{factory_id}_readiness.json").read_text(encoding="utf-8"))
+    source = apply(source, factory_id, scenario)
+    order = scenario.get("new_order")
 
     from web_v1.backend.integrations.craft.snapshot_adapter import normalize_snapshot
     out.mkdir(parents=True, exist_ok=False)

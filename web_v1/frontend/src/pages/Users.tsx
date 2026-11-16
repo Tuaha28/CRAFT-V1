@@ -54,18 +54,29 @@ function EditUser({ user, roles, factoryId, datasetId, lines, self, onClose }: {
   const [factory, setFactory] = useState(user.factory_id !== null);
   const [line, setLine] = useState<number | null>(user.line_id);
   const [active, setActive] = useState(user.active);
+  const [email, setEmail] = useState(user.email ?? "");
   const save = useMutation({
     meta: { success: "User updated." },
-    mutationFn: () => floor.changeUser(user.id, { role, factory_id: factory ? factoryId : null, line_id: factory ? line : null, dataset_id: datasetId, active }),
+    mutationFn: () => floor.changeUser(user.id, { role, factory_id: factory ? factoryId : null, line_id: factory ? line : null, dataset_id: datasetId, active, email }),
     onSuccess: async () => { await client.invalidateQueries({ queryKey: ["floor-users"] }); onClose(); },
   });
   return (
     <form className="form-grid" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
       <RoleFields id={`u${user.id}`} roles={roles} role={role} setRole={setRole} factory={factory} setFactory={setFactory} line={line} setLine={setLine} factoryId={factoryId} lines={lines} />
+      <EmailField id={`u${user.id}`} value={email} onChange={setEmail} />
       <label className="check"><input type="checkbox" checked={active} disabled={self} onChange={(e) => setActive(e.target.checked)} /> Can sign in</label>
       <div className="form-actions"><button className="btn primary" disabled={save.isPending}>Save</button><button type="button" className="btn" onClick={onClose}>Cancel</button></div>
       {save.isError && <Notice tone="error">{save.error.message}</Notice>}
     </form>
+  );
+}
+
+/** Email address, used only for CRAFT's plan emails to managers. */
+function EmailField({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="field"><label htmlFor={`${id}-email`}>Email</label>
+      <input id={`${id}-email`} type="email" value={value} onChange={(e) => onChange(e.target.value.trim())} autoComplete="off" placeholder="name@factory.com" />
+      <span className="hint">Managers get an email when CRAFT has a new plan for them to review.</span></div>
   );
 }
 
@@ -79,13 +90,14 @@ export default function Users() {
   const [role, setRole] = useState("supervisor");
   const [factory, setFactory] = useState(true);
   const [line, setLine] = useState<number | null>(null);
+  const [email, setEmail] = useState("");
   const [shown, setShown] = useState<{ username: string; password: string } | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   const create = useMutation({
     meta: { success: "User created." },
-    mutationFn: () => floor.createUser({ username, role, factory_id: factory ? ready![1] : null, line_id: factory ? line : null, dataset_id: ready![0] }),
-    onSuccess: async (u) => { setShown({ username: u.username, password: u.password }); setUsername(""); setLine(null); setAdding(false); await client.invalidateQueries({ queryKey: ["floor-users"] }); },
+    mutationFn: () => floor.createUser({ username, role, factory_id: factory ? ready![1] : null, line_id: factory ? line : null, dataset_id: ready![0], email }),
+    onSuccess: async (u) => { setShown({ username: u.username, password: u.password }); setUsername(""); setLine(null); setEmail(""); setAdding(false); await client.invalidateQueries({ queryKey: ["floor-users"] }); },
   });
   const reset = useMutation({
     meta: { success: "Password reset." },
@@ -108,6 +120,7 @@ export default function Users() {
           <div className="field"><label htmlFor="nu-name">User name</label>
             <input id="nu-name" value={username} onChange={(e) => setUsername(e.target.value.trim())} pattern="[A-Za-z0-9_.\-]{3,40}" required autoComplete="off" />
             <span className="hint">3 to 40 letters, digits, dots, dashes or underscores.</span></div>
+          <EmailField id="nu" value={email} onChange={setEmail} />
           <RoleFields id="nu" roles={roles} role={role} setRole={setRole} factory={factory} setFactory={setFactory} line={line} setLine={setLine} factoryId={ready[1]} lines={factoryLines} />
           <div className="form-actions"><button className="btn primary" disabled={create.isPending}>{create.isPending ? "Adding…" : "Add user"}</button></div>
           {create.isError && <Notice tone="error">{create.error.message}</Notice>}
@@ -122,7 +135,9 @@ export default function Users() {
                 <EditUser user={u} roles={roles} factoryId={ready[1]} datasetId={ready[0]} lines={factoryLines} self={u.username === session.username} onClose={() => setEditing(null)} /></td></tr>
             ) : (
               <tr key={u.id}>
-                <td><strong>{u.username}</strong>{u.username === session.username && <span className="muted small"> (you)</span>}</td>
+                <td><strong>{u.username}</strong>{u.username === session.username && <span className="muted small"> (you)</span>}
+                  {u.email ? <><br /><span className="muted small">{u.email}</span></>
+                    : (u.role === "manager" || u.role === "admin") && <><br /><span className="warn-text small">No email address: this person won't get CRAFT's plan emails</span></>}</td>
                 <td>{u.role_label ?? <span className="muted">No role</span>}</td>
                 <td>{u.factory_id ? `Factory ${u.factory_id}` : "All factories"}{u.line_id ? `, ${lineName(factoryLines, u.line_id)}` : ""}</td>
                 <td className="small">{u.last_login ? when(u.last_login) : "Never"}</td>

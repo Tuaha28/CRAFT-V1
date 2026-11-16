@@ -121,7 +121,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="rail-foot">
           <span className="avatar" title={who} aria-hidden="true">{(session.username ?? "?").slice(0, 2).toUpperCase()}</span>
           <span className="rail-name"><strong>{session.username}</strong><small>{session.role_label ?? ""}</small></span>
-          <span className="rail-who">{who}. {session.production_activation ? "Production activation on." : "An approved plan goes to the shop-floor pages of this app; the factory database is never changed."}</span>
+          <span className="rail-who">{who}. {session.production_activation ? "Production activation on." : session.writeback ? "An approved plan goes to the shop-floor pages and into the demo factory data." : "An approved plan goes to the shop-floor pages of this app; the factory database is never changed."}</span>
           <button type="button" className="sign-out" onClick={signOut} title="Sign out"><LogOut size={18} aria-hidden="true" /><span className="nav-label">Sign out</span></button>
         </div>
       </aside>

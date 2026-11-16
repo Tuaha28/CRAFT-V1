@@ -12,6 +12,7 @@ import { DeliveryBoard, LineTimeline } from "../components/HomeBoards";
 import { daysLate, isLate, OrderDrawer, useAgo } from "../components/Overview";
 import { Loading, Notice, Progress } from "../components/ui";
 import { CountUp } from "../components/CountUp";
+import { ReviewCard } from "../components/AutoPlan";
 import { PlanHealth, StatTile } from "../components/HomeFocus";
 import { AskCraft } from "../components/AskCraft";
 
@@ -143,6 +144,7 @@ export default function Dashboard() {
           {session.can_request && <Link className={`btn${waiting.length ? "" : " primary"}`} to="/plan">New plan</Link>}
         </div>
       </header>
+      {ready && <ReviewCard d={ready[0]} f={ready[1]} />}
 
       <Running runs={active} />
 

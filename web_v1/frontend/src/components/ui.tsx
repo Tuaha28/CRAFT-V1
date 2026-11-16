@@ -5,10 +5,10 @@ import type { RunStatus } from "../lib/api";
 
 const STATUS_TEXT: Record<string, string> = {
   QUEUED: "Waiting", RUNNING: "Running", SUCCEEDED: "Finished", FAILED: "Failed", CANCELLED: "Cancelled",
-  PENDING: "Awaiting decision", APPROVED: "Approved", REJECTED: "Rejected",
+  PENDING: "Awaiting decision", APPROVED: "Approved", REJECTED: "Rejected", SUPERSEDED: "Replaced",
 };
 
-export function Status({ value }: { value: RunStatus | "PENDING" | "APPROVED" | "REJECTED" }) {
+export function Status({ value }: { value: RunStatus | "PENDING" | "APPROVED" | "REJECTED" | "SUPERSEDED" }) {
   return <span className={`status ${value}`}>{STATUS_TEXT[value] ?? value}</span>;
 }
 

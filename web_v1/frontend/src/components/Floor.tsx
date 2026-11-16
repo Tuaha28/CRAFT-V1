@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { floor, type FloorOp, type HourPoint, type LineRef, type LineState } from "../lib/api";
+import { erp, floor, type FloorOp, type HourPoint, type LineRef, type LineState } from "../lib/api";
 import { Notice } from "./ui";
 import { useReadyScope } from "../app/scope";
 
@@ -87,7 +87,7 @@ export function HourBars({ hours, passed, height = 120 }: { hours: HourPoint[]; 
   );
 }
 
-const KINDS = [["MACHINE_DOWN", "Machine down"], ["WORKER_ABSENT", "Worker absent"], ["MATERIAL_SHORT", "Material short"],
+const KINDS = [["MACHINE_DOWN", "Machine down"], ["WORKER_ABSENT", "Worker absent"], ["LINE_STOPPED", "Line stopped"], ["MATERIAL_SHORT", "Material short"],
   ["QUALITY", "Quality problem"], ["OTHER", "Other"]] as const;
 
 /** Report a problem on the floor. Machine and worker lists come from the operations planned on the line. */
@@ -95,6 +95,8 @@ export function ReportProblem({ d, f, lineId, ops, onDone }: { d: number; f: num
   const client = useQueryClient();
   const [kind, setKind] = useState<string>("MACHINE_DOWN");
   const [machine, setMachine] = useState(""), [worker, setWorker] = useState(""), [order, setOrder] = useState(""), [note, setNote] = useState("");
+  const [material, setMaterial] = useState(""), [arrival, setArrival] = useState("");
+  const materials = useQuery({ queryKey: ["erp-materials", d, f], queryFn: () => erp.materials(d, f), enabled: kind === "MATERIAL_SHORT" });
   const machines = [...new Map(ops.flatMap((o) => o.machines.map((m, i) => [m, o.machine_models[i] ?? ""] as const))).entries()];
   const workers = [...new Map(ops.flatMap((o) => o.workers.map((w, i) => [w, o.worker_names[i] ?? ""] as const))).entries()];
   const orders = [...new Set(ops.map((o) => o.order_id))];
@@ -105,9 +107,11 @@ export function ReportProblem({ d, f, lineId, ops, onDone }: { d: number; f: num
       machine_id: kind === "MACHINE_DOWN" ? Number(machine) || null : null,
       worker_id: kind === "WORKER_ABSENT" ? Number(worker) || null : null,
       order_id: ["MATERIAL_SHORT", "QUALITY", "OTHER"].includes(kind) ? order : "",
+      material_id: kind === "MATERIAL_SHORT" ? Number(material) || null : null,
+      arrival_date: kind === "MATERIAL_SHORT" ? arrival || null : null,
     }),
     onSuccess: async () => {
-      setMachine(""); setWorker(""); setOrder(""); setNote("");
+      setMachine(""); setWorker(""); setOrder(""); setNote(""); setMaterial(""); setArrival("");
       await client.invalidateQueries({ queryKey: ["floor-issues"] });
       await client.invalidateQueries({ queryKey: ["floor-line"] });
       await client.invalidateQueries({ queryKey: ["floor-board"] });
@@ -130,15 +134,27 @@ export function ReportProblem({ d, f, lineId, ops, onDone }: { d: number; f: num
         <div className="field"><label htmlFor="rp-worker">Worker</label>
           <input id="rp-worker" list="rp-workers" inputMode="numeric" value={worker} onChange={(e) => setWorker(e.target.value.replace(/\D/g, ""))} placeholder="Employee number" required />
           <datalist id="rp-workers">{workers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</datalist></div>)}
-      {kind !== "MACHINE_DOWN" && kind !== "WORKER_ABSENT" && (
+      {kind === "LINE_STOPPED" && (
+        <p className="field hint">{lineId ? `Reports this line (${lineId}) as stopped. CRAFT can re-plan without it.` : "Open this from a line's page to report that line as stopped."}</p>)}
+      {kind === "MATERIAL_SHORT" && (<>
+        <div className="field"><label htmlFor="rp-material">Material</label>
+          <select id="rp-material" value={material} onChange={(e) => setMaterial(e.target.value)} required>
+            <option value="">{materials.isPending ? "Loading materials…" : "Choose the material"}</option>
+            {(materials.data?.materials ?? []).map((m) => <option key={String(m.material_id)} value={String(m.material_id)}>{String(m.name)}</option>)}
+          </select></div>
+        <div className="field"><label htmlFor="rp-arrival">Expected to arrive</label>
+          <input id="rp-arrival" type="date" value={arrival} onChange={(e) => setArrival(e.target.value)} required /></div>
+      </>)}
+      {kind !== "MACHINE_DOWN" && kind !== "WORKER_ABSENT" && kind !== "LINE_STOPPED" && (
         <div className="field"><label htmlFor="rp-order">Order</label>
-          <input id="rp-order" list="rp-orders" value={order} onChange={(e) => setOrder(e.target.value.replace(/\D/g, ""))} placeholder="Order number" required={kind === "MATERIAL_SHORT"} />
+          <input id="rp-order" list="rp-orders" value={order} onChange={(e) => setOrder(e.target.value.replace(/\D/g, ""))} placeholder={kind === "MATERIAL_SHORT" ? "Order number (optional)" : "Order number"} />
           <datalist id="rp-orders">{orders.map((o) => <option key={o} value={o} />)}</datalist></div>)}
       <div className="field wide"><label htmlFor="rp-note">Details</label>
         <textarea id="rp-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened, and since when" /></div>
       <div className="form-actions">
-        <button className="btn primary" disabled={send.isPending}>{send.isPending ? "Reporting…" : "Report problem"}</button>
+        <button className="btn primary" disabled={send.isPending || (kind === "LINE_STOPPED" && !lineId)}>{send.isPending ? "Reporting…" : "Report problem"}</button>
         {send.isSuccess && <span className="ontime-text small" role="status">Reported. The planner and the production manager can see it now.</span>}
+        {send.data?.warning && <span className="warn-text small" role="status">{send.data.warning}</span>}
       </div>
       {send.isError && <Notice tone="error">{send.error.message}</Notice>}
     </form>

@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/v1/planning/current/<int:dataset_id>/<int:factory_id>', views.current_plan),
     path('api/v1/planning/experiments', views.experiments),
     path('api/v1/planning/events', views.events),
+    path('api/v1/planning/priority', views.priority),
+    path('api/v1/planning/autoplan', views.autoplan_setting),
 ]

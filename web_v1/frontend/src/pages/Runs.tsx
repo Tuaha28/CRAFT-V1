@@ -3,10 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { MODE_LABEL, setLabel, stageText, when } from "../lib/format";
 import { Loading, Notice, PageHead, Progress, Status } from "../components/ui";
+import { AutoPlanSwitch } from "../components/AutoPlan";
+import { useReadyScope } from "../app/scope";
+import { useSession } from "../app/session";
 
 export default function Runs() {
   const navigate = useNavigate();
   const runs = useQuery({ queryKey: ["runs"], queryFn: api.runs, refetchInterval: 10_000 });
+  const ready = useReadyScope();
+  const session = useSession();
   if (runs.isPending) return <Loading />;
   if (runs.isError) return <Notice tone="error">{runs.error.message}</Notice>;
   return (
@@ -15,6 +20,7 @@ export default function Runs() {
         <Link className="btn" to="/compare">Compare plans</Link>
         <Link className="btn primary" to="/plan">New plan</Link>
       </PageHead>
+      {ready && <AutoPlanSwitch d={ready[0]} f={ready[1]} canChange={session.can_request} />}
       {!runs.data.length ? (
         <section className="panel empty"><h2>No plans yet</h2><Link className="btn primary" to="/plan">Start a plan</Link></section>
       ) : (

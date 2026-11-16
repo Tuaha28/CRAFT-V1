@@ -37,6 +37,50 @@ ERP_ENV_FILE = os.environ.get('CRAFT_ERP_ENV_FILE') or str(_REPO / '.env')
 # Ask CRAFT: an AI model only reads the question and picks a built-in answer (assistant/router.py).
 # Off unless GROQ_API_KEY is set in the environment or in web_v1/backend/.env (gitignored).
 ASK_AI_ENV_FILE = os.environ.get('CRAFT_ASK_ENV_FILE') or str(BASE_DIR / '.env')
+
+
+def _local(name, default=''):
+    """A setting from the environment, else from web_v1/backend/.env (gitignored), else the default."""
+    if os.environ.get(name) is not None:
+        return os.environ[name]
+    try:
+        from dotenv import dotenv_values
+        return dotenv_values(ASK_AI_ENV_FILE).get(name) or default
+    except (ImportError, OSError):
+        return default
+
+
+# Demo copies: <database>_demo, created by the user (web_v1/docs/demo_copies.md). Off until switched on.
+CRAFT_DEMO_SUFFIX = '_demo'
+CRAFT_USE_DEMO_COPIES = _local('CRAFT_USE_DEMO_COPIES') == '1'
 ASK_AI_URL = os.environ.get('CRAFT_ASK_URL') or 'https://api.groq.com/openai/v1/chat/completions'
 ASK_AI_MODEL = os.environ.get('CRAFT_ASK_MODEL') or 'openai/gpt-oss-20b'
 ASK_AI_TIMEOUT = 20
+
+# Email to managers when an automatic CRAFT plan is ready (planning/notify.py). Real SMTP once the
+# user puts CRAFT_EMAIL_* in .env; until then messages are saved as files in planning_runs/outbox.
+APP_BASE_URL = _local('APP_BASE_URL', 'http://localhost:5173')
+DEFAULT_FROM_EMAIL = _local('CRAFT_EMAIL_FROM', 'CRAFT Planner <craft@localhost>')
+if _local('CRAFT_EMAIL_HOST'):
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = _local('CRAFT_EMAIL_HOST')
+    EMAIL_PORT = int(_local('CRAFT_EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = _local('CRAFT_EMAIL_USER')
+    EMAIL_HOST_PASSWORD = _local('CRAFT_EMAIL_PASSWORD')
+    EMAIL_USE_TLS = _local('CRAFT_EMAIL_TLS', '1') == '1'
+    EMAIL_TIMEOUT = 20
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    EMAIL_FILE_PATH = str(Path(PLANNING_RUNS_DIR) / 'outbox')
+
+# Auto-planning (planning/autoplan.py): wait this long after the newest trigger, at most this long after the oldest.
+AUTO_PLAN_QUIET_MINUTES = int(_local('AUTO_PLAN_QUIET_MINUTES', '15'))
+AUTO_PLAN_MAX_WAIT_MINUTES = int(_local('AUTO_PLAN_MAX_WAIT_MINUTES', '60'))
+AUTO_PLAN_NEW_ORDER_CHECK_MINUTES = int(_local('AUTO_PLAN_NEW_ORDER_CHECK_MINUTES', '15'))
+AUTO_CAPTURE_HOUR = int(_local('AUTO_CAPTURE_HOUR', '2'))
+# The factory's clock: the nightly capture hour and the times in e-mails use it (the database stays UTC).
+FACTORY_TIME_ZONE = _local('FACTORY_TIME_ZONE', 'Asia/Karachi')
+
+# Write-back (erp/writer.py): approved plans and machine status go into the <database>_demo copies only,
+# through the craft_writer account the user creates (web_v1/docs/demo_copies.md). Off until switched on.
+CRAFT_WRITEBACK = _local('CRAFT_WRITEBACK') == '1'

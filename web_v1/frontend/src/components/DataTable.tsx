@@ -54,7 +54,7 @@ export function Pager({ page, size, total, onPage }: { page: number; size: numbe
 export function Chip({ value }: { value: string | number | null | undefined }) {
   const text = String(value ?? "—");
   const tone = /breakdown|overdue|late|shortage|short by/i.test(text) ? "bad"
-    : /maintenance|idle|packing|in_production|processing|pending|awaiting/i.test(text) ? "warn"
+    : /priority|maintenance|idle|packing|in_production|processing|pending|awaiting/i.test(text) ? "warn"
     : /active|shipped|completed|in_transit|on time|covered/i.test(text) ? "good" : "";
   return <span className={`chip ${tone}`}>{text.replace(/_/g, " ")}</span>;
 }

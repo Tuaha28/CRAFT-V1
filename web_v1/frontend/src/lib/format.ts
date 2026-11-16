@@ -68,3 +68,9 @@ export function qty(value: number | string | null | undefined, unit: unknown = "
     : n.toLocaleString("en-US", { maximumFractionDigits: 1 });
   return u ? `${text} ${u}` : text;
 }
+
+/** Priority orders first (in the list's own order), then the rest unchanged. Returns a new array. */
+export function priorityFirst<T extends { order_id: string }>(rows: T[], priority: string[]): T[] {
+  const on = new Set(priority);
+  return [...rows.filter((r) => on.has(r.order_id)), ...rows.filter((r) => !on.has(r.order_id))];
+}

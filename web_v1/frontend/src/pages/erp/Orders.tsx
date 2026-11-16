@@ -8,6 +8,8 @@ import { Chip, DataTable, Meter, Pager, useListParams } from "../../components/D
 import { CountUp } from "../../components/CountUp";
 import { RingCard } from "../../components/RingCard";
 import { Loading, Notice, PageHead } from "../../components/ui";
+import { PriorityChip, usePriority } from "../../components/Priority";
+import { useSession } from "../../app/session";
 
 const STATUSES = [["", "All"], ["OVERDUE", "Overdue"], ["Confirmed", "Not started"], ["In_Production", "In production"], ["Shipped", "Shipped"]] as const;
 const SIZE = 50;
@@ -58,6 +60,7 @@ export default function Orders() {
   const [picked, setPicked] = useState<number | null>(null);
   const status = get("status");
   const params = { q: get("q"), status, sort: get("sort"), page, size: SIZE };
+  const priority = usePriority(ready?.[0], ready?.[1], useSession().can_request);
   const data = useQuery({ queryKey: ["erp-orders", ready, params], queryFn: () => erp.orders(ready![0], ready![1], params),
     enabled: Boolean(ready), placeholderData: keepPreviousData });
   // One cheap count per status (a page of one row; only the total is read).
@@ -104,7 +107,7 @@ export default function Orders() {
               <DataTable rows={items} empty="No orders match." onRow={(r) => setPicked(Number(r.production_order_id))}
                 selected={(r) => r === current}
                 columns={[
-                  { key: "po_number", label: "Order", render: (r) => <><strong>Order {String(r.production_order_id)}</strong><br /><span className="muted small">{String(r.po_number)} · {String(r.client_name)}</span></> },
+                  { key: "po_number", label: "Order", render: (r) => <><strong>Order {String(r.production_order_id)}</strong> <PriorityChip on={priority.includes(String(r.production_order_id))} /><br /><span className="muted small">{String(r.po_number)} · {String(r.client_name)}</span></> },
                   { key: "style_code", label: "Style", render: (r) => <>{String(r.style_code)}<br /><span className="muted small">{String(r.category)}</span></> },
                   { key: "target_quantity", label: "Pieces", num: true, render: (r) => Number(r.target_quantity).toLocaleString() },
                   { key: "delivery_deadline", label: "Due", render: (r) => <><span className="nowrap">{String(r.delivery_deadline)}</span><br /><span className="small"><DaysLeft row={r} /></span></> },

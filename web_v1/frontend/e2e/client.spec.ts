@@ -87,6 +87,21 @@ test("order progress never counts more pieces than were ordered", async () => {
   expect(done).toBeLessThanOrEqual(ordered);
 });
 
+test("auto-planning: the switch on the Plans page turns on and off, and stays", async () => {
+  await open("/runs");
+  const toggle = page.getByRole("switch");
+  await expect(toggle).toBeVisible();
+  await expect(page.getByText("A manager approves every plan.")).toBeVisible();
+  const before = await toggle.isChecked();
+  await toggle.click();
+  await expect.poll(() => toggle.isChecked()).toBe(!before);
+  await page.reload();
+  await expect(page.getByRole("switch")).toBeVisible({ timeout: 60_000 });
+  expect(await page.getByRole("switch").isChecked()).toBe(!before);
+  await page.getByRole("switch").click();
+  await expect.poll(() => page.getByRole("switch").isChecked()).toBe(before);
+});
+
 test("theme: the switch changes the page and is remembered", async () => {
   await open("/");
   const theme = () => page.evaluate(() => document.documentElement.dataset.theme);

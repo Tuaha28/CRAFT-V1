@@ -10,10 +10,11 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from governance.management.commands.craft_worker import _last_exception_line, _redact
-from planning import jobs, services
+from planning import autoplan, jobs, notify, services
 from planning.datasets import discover
 
 POLL_SECONDS = 5
+AUTOPLAN_SECONDS = 60  # how often the auto-planning watcher looks at stored triggers
 
 
 def _tail(path, lines=40):
@@ -46,9 +47,17 @@ class Command(BaseCommand):
             self.stderr.write('Set CRAFT_WORKER_PYTHON to the scheduler virtualenv python.exe')
             return
         self.stdout.write('Planning worker ready')
+        last_tick = 0.0
         while True:
             services.worker_beat()
             services.expire_orphans()
+            if time.monotonic() - last_tick >= AUTOPLAN_SECONDS:
+                last_tick = time.monotonic()
+                try:
+                    for error in autoplan.watch():  # each step is guarded on its own
+                        self.stderr.write(f'Auto-planning check failed: {_redact(error)[:300]}')
+                except Exception as exc:  # the watcher must never stop the worker
+                    self.stderr.write(f'Auto-planning check failed: {type(exc).__name__}: {_redact(str(exc))[:300]}')
             run = services.claim()
             if run is not None:
                 self.stdout.write(f'Run {run.pk} ({run.kind}) started')
@@ -56,11 +65,21 @@ class Command(BaseCommand):
                     self.run_job(run)
                 except Exception as exc:  # a failed run must never stop the worker
                     services.finish(run.pk, 'FAILED', stage='Failed', error=_redact(str(exc))[:2000])
+                self.notify(run)
                 self.stdout.write(f'Run {run.pk} finished')
             if options['once']:
                 return
             if run is None:
                 time.sleep(POLL_SECONDS)
+
+    def notify(self, run):
+        """Email the managers about a finished automatic run (notify never raises; belt and braces here)."""
+        try:
+            run.refresh_from_db()
+            if run.kind == 'SCHEDULE' and run.status in ('SUCCEEDED', 'FAILED'):
+                notify.run_finished(run)
+        except Exception as exc:  # email must never stop the worker
+            self.stderr.write(f'Email for run {run.pk} failed: {type(exc).__name__}')
 
     def watch(self, run, process, log_path, out_dir=None):
         """Wait for the child, beating and reporting progress; stop it on cancel."""
@@ -112,6 +131,8 @@ class Command(BaseCommand):
         root = jobs.CAPTURE_SCRIPT.parent
         before = {p.name for p in root.glob('capture_*')}
         env = {k: v for k, v in os.environ.items() if not k.startswith('DJANGO_')}
+        if run.scenario.get('database'):  # which factory database to read (e.g. a demo copy)
+            env['LEGACY_DB_NAME'] = run.scenario['database']
         services.beat(run.pk, stage='Reading the database (read-only)', out_dir=str(base))
         with open(log_path, 'w', encoding='utf-8') as log:
             process = subprocess.Popen(jobs.capture_command(), cwd=jobs.ROOT, env=env,
@@ -130,5 +151,7 @@ class Command(BaseCommand):
             {'run_id': str(run.pk), 'requested_by': run.requested_by.get_username(),
              'finished_at': timezone.now().isoformat()}), encoding='utf-8')
         discover()
+        from planning.models import Dataset
+        into = Dataset.objects.filter(path=str(new[-1].resolve())).first()
         services.finish(run.pk, 'SUCCEEDED', stage='Done', progress=1.0, log_tail=tail,
-                        summary={'dataset': new[-1].name})
+                        summary={'dataset': into.slug if into else new[-1].name, 'capture': new[-1].name})

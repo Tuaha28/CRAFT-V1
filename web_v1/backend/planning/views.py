@@ -30,7 +30,7 @@ def _run(r, worker_alive=True):
             'heartbeat_at': r.heartbeat_at, 'error': r.error, 'summary': r.summary,
             'decision': r.decision, 'decided_by': r.decided_by.get_username() if r.decided_by else None,
             'decided_at': r.decided_at, 'decision_reason': r.decision_reason,
-            'purpose': r.purpose, 'parent_id': str(r.parent_id) if r.parent_id else None,
+            'purpose': r.purpose, 'parent_id': str(r.parent_id) if r.parent_id else None, 'trigger': r.trigger,
             'scenario': {**{k: v for k, v in r.scenario.items() if k != 'new_order'},
                          **({'new_order': {k: v for k, v in r.scenario['new_order'].items() if k != 'routing'}}
                             if r.scenario.get('new_order') else {})}}
@@ -42,6 +42,12 @@ def _fail(exc):
     return Response({'error': ' '.join(exc.messages)}, status=409)
 
 
+def _writeback_on():
+    """Approved plans are written into the demo copies of the factory databases."""
+    from erp import writer
+    return writer.enabled()
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def session(request):
@@ -51,6 +57,7 @@ def session(request):
                      'can_request': user.has_perm('planning.request_plan'),
                      'can_approve': user.has_perm('planning.approve_plan'),
                      'production_activation': bool(getattr(settings, 'CRAFT_PRODUCTION_ACTIVATION', False)),
+                     'writeback': _writeback_on(),
                      **(_floor_session(user) if apps.is_installed('floor') else {})})
 
 
@@ -68,7 +75,7 @@ def sign_out(request):
 @api_view(['GET'])
 def datasets(request):
     discover()
-    return Response([_dataset(d) for d in Dataset.objects.order_by('load_pct', 'slug')])
+    return Response([_dataset(d) for d in Dataset.objects.filter(active=True).order_by('load_pct', 'slug')])
 
 
 @api_view(['GET'])
@@ -136,6 +143,9 @@ def run_detail(request, run_id):
     digest_path = Path(run.out_dir) / 'digest.json' if run.out_dir else None
     body['digest'] = (json.loads(digest_path.read_text(encoding='utf-8'))
                       if run.status == 'SUCCEEDED' and digest_path and digest_path.exists() else None)
+    wrote = run.writebacks.filter(kind='PLAN').order_by('-created_at').first()
+    body['writeback'] = ({'ok': wrote.ok, 'rows': wrote.rows, 'error': wrote.error[:300], 'at': wrote.created_at}
+                         if wrote else None)
     return Response(body)
 
 
@@ -229,14 +239,14 @@ def disruption(request, run_id):
 @api_view(['POST'])
 def promise(request, run_id):
     from erp import queries
-    from erp.db import ErpUnavailable, read_only
+    from erp.db import ErpUnavailable, live_database, read_only
     data = PromiseRequest(data=request.data)
     data.is_valid(raise_exception=True)
     parent = PlanRun.objects.filter(pk=run_id).select_related('dataset').first()
     if parent is None or parent.dataset is None:
         return Response({'error': 'Plan not found'}, status=404)
     try:
-        with read_only(parent.dataset.database) as cursor:
+        with read_only(live_database(parent.dataset)) as cursor:
             style = queries.style_detail(cursor, data.validated_data['product_id'])
     except ErpUnavailable as exc:
         return Response({'error': str(exc)}, status=503)
@@ -252,3 +262,50 @@ def promise(request, run_id):
     except (ValidationError, PermissionDenied) as exc:
         return _fail(exc)
     return Response(_run(run), status=201)
+
+
+class PriorityIn(serializers.Serializer):
+    dataset = serializers.IntegerField()
+    factory = serializers.IntegerField()
+    order_id = serializers.CharField(max_length=20)
+    on = serializers.BooleanField()
+    reason = serializers.CharField(max_length=500, required=False, allow_blank=True, default='')
+
+
+@api_view(['GET', 'POST'])
+def priority(request):
+    """GET ?dataset=&factory= -> {'orders': [...]}; POST marks or unmarks one order (request_plan)."""
+    if request.method == 'POST':
+        data = PriorityIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        v = data.validated_data
+        try:
+            services.set_priority(request.user, dataset_id=v['dataset'], factory_id=v['factory'],
+                                  order_id=v['order_id'], on=v['on'], reason=v['reason'])
+        except (ValidationError, PermissionDenied) as exc:
+            return _fail(exc)
+        return Response({'orders': services.priority_orders(v['dataset'], v['factory'])})
+    try:
+        dataset_id, factory_id = int(request.query_params['dataset']), int(request.query_params['factory'])
+    except (KeyError, ValueError):
+        return Response({'error': 'dataset and factory are required'}, status=400)
+    return Response({'orders': services.priority_orders(dataset_id, factory_id)})
+
+
+@api_view(['GET', 'POST'])
+def autoplan_setting(request):
+    """GET/POST ?dataset=&factory= -> {'enabled': bool}. Switching needs request_plan."""
+    from . import autoplan
+    try:
+        dataset_id, factory_id = int(request.query_params['dataset']), int(request.query_params['factory'])
+    except (KeyError, ValueError):
+        return Response({'error': 'dataset and factory are required'}, status=400)
+    if request.method == 'POST':
+        try:
+            autoplan.set_enabled(request.user, dataset_id=dataset_id, factory_id=factory_id,
+                                 on=bool(request.data.get('enabled')))
+        except (ValidationError, PermissionDenied) as exc:
+            return _fail(exc)
+    from django.conf import settings as conf
+    email = 'SMTP' if conf.EMAIL_BACKEND.endswith('smtp.EmailBackend') else 'OUTBOX'
+    return Response({'enabled': autoplan.enabled(dataset_id, factory_id), 'email': email})

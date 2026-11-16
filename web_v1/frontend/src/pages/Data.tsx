@@ -22,13 +22,19 @@ export default function Data() {
         lead="Saved copies of the factory database. CRAFT plans from a saved copy, so every plan can be repeated.">
         {session.can_request && <button className="btn" onClick={() => capture.mutate()} disabled={capture.isPending}>Capture the database now</button>}
       </PageHead>
+      {session.writeback && session.perms.includes("floor.manage_users") && (
+        <section className="panel section">
+          <h2>Reset demo data</h2>
+          <p className="muted small">Approved plans and machine changes are written into demo copies of the factory data; the originals are never changed. To throw the changes away and start again, an administrator runs this on the server (it asks to type RESET first):</p>
+          <pre className="log">python manage.py reset_demo_data --load 30 --run</pre>
+        </section>)}
       {capture.isError && <Notice tone="error">{(capture.error as Error).message}</Notice>}
-      <p className="muted small">A capture reads the database without changing it, checks it and saves every factory. It can take half an hour or more.</p>
+      <p className="muted small">A capture reads the database without changing it, checks it and updates the matching data below with every factory. Plans already made keep the data they were made from. It can take half an hour or more.</p>
 
       {datasets.data.map((d) => (
         <section key={d.id} className="panel section">
           <div className="section-head"><h2>{d.label}</h2>
-            <span className="muted small">{d.origin === "LIVE_CAPTURE" ? "Captured from the web app" : "Pinned snapshot"}, reference {d.reference_time.slice(0, 10)}</span></div>
+            <span className="muted small">{d.captured_at ? `Data from ${d.captured_at.slice(6, 8)}/${d.captured_at.slice(4, 6)}/${d.captured_at.slice(0, 4)}` : "Pinned snapshot"}, reference {d.reference_time.slice(0, 10)}</span></div>
           <div className="table-wrap"><table>
             <thead><tr><th>Factory</th><th className="num">Orders</th><th className="num">Lines</th><th className="num">Machines</th><th className="num">Workers</th><th /></tr></thead>
             <tbody>{d.factories.map((f) => (

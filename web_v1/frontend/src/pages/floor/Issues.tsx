@@ -61,7 +61,7 @@ export default function Issues() {
   if (!ready || list.isPending) return <Loading label="Loading problems" />;
   if (list.isError) return <Notice tone="error">{list.error.message}</Notice>;
   const data = list.data;
-  const replannable = (i: Issue) => i.status !== "RESOLVED" && (i.kind === "MACHINE_DOWN" || i.kind === "WORKER_ABSENT") && !i.replan_id;
+  const replannable = (i: Issue) => i.status !== "RESOLVED" && ["MACHINE_DOWN", "WORKER_ABSENT", "LINE_STOPPED", "MATERIAL_SHORT"].includes(i.kind) && !i.replan_id;
   const toggle = (id: number) => { const next = new Set(picked); if (next.has(id)) next.delete(id); else next.add(id); setPicked(next); };
   return (
     <>

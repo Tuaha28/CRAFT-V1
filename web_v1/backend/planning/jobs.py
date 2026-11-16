@@ -84,8 +84,9 @@ def build_scenario(run, base_dir):
     out = Path(base_dir) / 'scenario'
     spec = Path(base_dir) / 'scenario_request.json'
     spec.write_text(json.dumps(run.scenario), encoding='utf-8')
-    child = subprocess.run([settings.PLANNING_SCHEDULER_PYTHON, str(SCENARIO), run.dataset.path, str(run.factory_id),
-                            str(out), str(spec)], cwd=ROOT, env=scheduler_env(run.dataset.path),
+    source = run.source_path or run.dataset.path
+    child = subprocess.run([settings.PLANNING_SCHEDULER_PYTHON, str(SCENARIO), source, str(run.factory_id),
+                            str(out), str(spec)], cwd=ROOT, env=scheduler_env(source),
                            capture_output=True, text=True, timeout=1800, check=False)
     if child.returncode or 'SCENARIO_OK' not in child.stdout:
         raise RuntimeError('SCENARIO_FAILED: ' + ((child.stdout or '') + (child.stderr or ''))[-1500:])
@@ -122,7 +123,8 @@ def summarize(data, run=None):
 
 def orderbook(dataset, factory_id):
     """Eligible order book (cached per capture and factory)."""
-    cache = Path(settings.PLANNING_RUNS_DIR) / 'orderbooks' / f'{dataset.slug}_factory{int(factory_id)}.json'
+    snapshot = Path(dataset.path).name  # a refreshed dataset reads its new order book
+    cache = Path(settings.PLANNING_RUNS_DIR) / 'orderbooks' / f'{dataset.slug}_{snapshot}_factory{int(factory_id)}.json'
     if not cache.exists():
         cache.parent.mkdir(parents=True, exist_ok=True)
         partial = cache.with_suffix('.partial')

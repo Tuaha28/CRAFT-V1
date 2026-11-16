@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from planning.models import Dataset
 from . import queries
-from .db import ErpUnavailable, cached, read_only
+from .db import ErpUnavailable, cached, live_database, read_only
 
 CACHE_SECONDS = 300
 
@@ -16,9 +16,9 @@ def _run(request, dataset_id, factory_id, name, compute, cache=True):
     ref = date.fromisoformat(dataset.reference_time[:10]) if dataset.reference_time else date.today()
 
     def work():
-        with read_only(dataset.database) as cursor:
+        with read_only(live_database(dataset)) as cursor:
             return compute(cursor, factory_id, ref)
-    key = (dataset.database, factory_id, name, tuple(sorted(request.query_params.items())))
+    key = (live_database(dataset), factory_id, name, tuple(sorted(request.query_params.items())))
     try:
         data = cached(key, CACHE_SECONDS, work) if cache else work()
     except ErpUnavailable as exc:

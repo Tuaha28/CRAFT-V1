@@ -33,6 +33,7 @@ def _issue(i):
     return {'id': i.pk, 'kind': i.kind, 'kind_label': i.get_kind_display(), 'status': i.status,
             'status_label': i.get_status_display(), 'line_id': i.line_id, 'machine_id': i.machine_id,
             'worker_id': i.worker_id, 'order_id': i.order_id, 'note': i.note,
+            'material_id': i.material_id, 'arrival_date': i.arrival_date,
             'reported_by': i.reported_by.get_username(), 'handled_by': i.handled_by.get_username() if i.handled_by else None,
             'resolution': i.resolution, 'created_at': i.created_at, 'resolved_at': i.resolved_at,
             'replan_id': str(i.replan_id) if i.replan_id else None}
@@ -262,6 +263,8 @@ class IssueIn(serializers.Serializer):
     order_id = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     line_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     note = serializers.CharField(max_length=2000, required=False, allow_blank=True, default='')
+    material_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    arrival_date = serializers.DateField(required=False, allow_null=True, default=None)
 
 
 @api_view(['GET', 'POST'])
@@ -274,7 +277,10 @@ def issues(request, dataset_id, factory_id):
                                           **data.validated_data)
         except ERRORS as exc:
             return _fail(exc)
-        return Response(_issue(issue), status=201)
+        body = _issue(issue)
+        if getattr(issue, 'affected_orders', None) == []:
+            body['warning'] = 'No order in the current plan uses this material'
+        return Response(body, status=201)
     try:
         _viewer(request, factory_id)
     except ERRORS as exc:
@@ -332,7 +338,7 @@ def _user(u):
     role = role_of(u)
     return {'id': u.pk, 'username': u.username, 'role': role, 'role_label': ROLES[role][0] if role else None,
             'factory_id': profile.factory_id if profile else None, 'line_id': profile.line_id if profile else None,
-            'active': u.is_active, 'last_login': u.last_login, 'date_joined': u.date_joined}
+            'active': u.is_active, 'last_login': u.last_login, 'date_joined': u.date_joined, 'email': u.email}
 
 
 class UserIn(serializers.Serializer):
@@ -340,6 +346,7 @@ class UserIn(serializers.Serializer):
     factory_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     line_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     dataset_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    email = serializers.EmailField(required=False, allow_blank=True, default='')  # for CRAFT's plan emails
 
 
 class NewUserIn(UserIn):
@@ -348,6 +355,7 @@ class NewUserIn(UserIn):
 
 class ChangeUserIn(UserIn):
     active = serializers.BooleanField(default=True)
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True, default=None)  # None = keep
 
 
 @api_view(['GET', 'POST'])

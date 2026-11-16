@@ -2,13 +2,15 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, erp, type Digest, type MethodResult, type RunDetail } from "../lib/api";
-import { MODE_LABEL, duration, num, planDate, setLabel, eventText, signed, stageText, when } from "../lib/format";
+import { MODE_LABEL, duration, num, planDate, priorityFirst, setLabel, eventText, signed, stageText, when } from "../lib/format";
+import { PriorityChip } from "../components/Priority";
 import { useSession } from "../app/session";
 import { useReadyScope } from "../app/scope";
 import { DeliveryTape } from "../components/DeliveryTape";
 import { Gantt } from "../components/Gantt";
 import { WhatIf } from "../components/WhatIf";
 import { ConfirmButton, Loading, Notice, PageHead, Progress, Status } from "../components/ui";
+import { AutoBanner } from "../components/AutoPlan";
 import { CountUp } from "../components/CountUp";
 import { FloorView, hallsFromMachines } from "../components/FloorView";
 import { lineName, useFloorLines } from "../components/Floor";
@@ -37,11 +39,14 @@ function Decision({ run, d, v3 }: { run: RunDetail; d: Digest; v3: MethodResult 
   const checks = planChecks(run, d, v3);
   return (
     <section className="panel section hero decision" id="decision" aria-labelledby="decision-title">
-      <h2 id="decision-title">{run.decision === "PENDING" ? "Approve this plan?" : run.decision === "APPROVED" ? "Plan approved" : "Plan sent back"}</h2>
+      <h2 id="decision-title">{run.decision === "PENDING" ? "Approve this plan?" : run.decision === "APPROVED" ? "Plan approved" : run.decision === "SUPERSEDED" ? "Replaced by a newer CRAFT plan" : "Plan sent back"}</h2>
       {run.decision !== "PENDING" ? (
         <><p className="decided"><Status value={run.decision} /> by {run.decided_by}, {when(run.decided_at)}</p>
-          {run.decision_reason && <p className="muted small">“{run.decision_reason}”</p>}</>
-      ) : <p className="muted small">Once approved, it becomes the plan the shop floor works from. Production activation is off, so the factory database never changes.</p>}
+          {run.decision_reason && <p className="muted small">“{run.decision_reason}”</p>}
+          {run.writeback && (run.writeback.ok
+            ? <p className="muted small">Written to the demo factory data ({run.writeback.rows} rows).</p>
+            : <Notice tone="error">Approved, but not written to the demo factory data: {run.writeback.error}</Notice>)}</>
+      ) : <p className="muted small">{session.writeback ? "Once approved, it becomes the plan the shop floor works from, and the demo factory data is updated when you approve." : "Once approved, it becomes the plan the shop floor works from. Production activation is off, so the factory database never changes."}</p>}
       <ul className="checks">{checks.map((c) => (
         <li key={c.text} className={c.ok ? "ok" : "warn"}><span aria-hidden="true">{c.ok ? "✓" : "!"}</span>{c.text}</li>))}</ul>
       {run.decision === "PENDING" && (session.can_approve ? (
@@ -77,7 +82,13 @@ function AgainstCurrent({ run, d, v3 }: { run: RunDetail; d: Digest; v3: MethodR
     const old = cur.digest.methods.find((m) => m.policy === "CRAFT_V3");
     if (!sameOrders || !old) body = <p className="muted small">The approved plan covers other orders, so the two are not compared here. <Link to={`/compare?a=${cur.run.id}&b=${run.id}`}>Compare anyway</Link></p>;
     else {
+      const finish = (rows: Digest["order_rows"], id: string) => rows.find((o) => o.order_id === id)?.methods.CRAFT_V3?.finish_day;
+      const priority = (run.scenario?.priority_orders ?? []).filter((id) => same.has(id));
       const rows: [string, string, string, number][] = [
+        ...priority.map((id): [string, string, string, number] => {
+          const mine = finish(d.order_rows, id), theirs = finish(cur.digest!.order_rows, id);
+          return [`Order ${id} (Priority) finishes (day)`, num(mine, 1), num(theirs, 1), (mine ?? 0) - (theirs ?? 0)];
+        }),
         ["Late orders", String(v3.late), String(old.late), v3.late - old.late],
         ["Days late on average", num(v3.mean_tardiness_days, 1), num(old.mean_tardiness_days, 1), (v3.mean_tardiness_days ?? 0) - (old.mean_tardiness_days ?? 0)],
         ["Last order finishes (day)", num(v3.makespan_days, 0), num(old.makespan_days, 0), (v3.makespan_days ?? 0) - (old.makespan_days ?? 0)],
@@ -235,7 +246,7 @@ function History({ r }: { r: RunDetail }) {
 const isLateRow = (o: Digest["order_rows"][number]) => o.status === "Late" || o.status === "Not fully planned";
 
 /** Orders, latest first: the late ones lead, the rest open with one click. */
-function OrdersTable({ d }: { d: Digest }) {
+function OrdersTable({ d, priority }: { d: Digest; priority: string[] }) {
   const [all, setAll] = useState(false);
   const lateness = (o: Digest["order_rows"][number]) => {
     const f = o.methods.CRAFT_V3?.finish_day;
@@ -243,7 +254,8 @@ function OrdersTable({ d }: { d: Digest }) {
   };
   const rows = [...d.order_rows].sort((a, b) => lateness(b) - lateness(a));
   const late = rows.filter(isLateRow);
-  const shown = all ? rows : late.length ? late : rows.slice(0, 8);
+  const base = all ? rows : late.length ? late : rows.slice(0, 8);
+  const shown = priorityFirst([...base, ...rows.filter((o) => priority.includes(o.order_id) && !base.includes(o))], priority);
   return (
     <>
       <div className="table-wrap"><table>
@@ -253,7 +265,7 @@ function OrdersTable({ d }: { d: Digest }) {
           const isLate = isLateRow(o);
           return (
             <tr key={o.order_id}>
-              <td className="nowrap"><Link to={`/orders/${o.order_id}`}>Order {o.order_id}</Link></td><td className="num">{o.pieces ?? "—"}</td>
+              <td className="nowrap"><Link to={`/orders/${o.order_id}`}>Order {o.order_id}</Link> <PriorityChip on={priority.includes(o.order_id)} /></td><td className="num">{o.pieces ?? "—"}</td>
               <td className="date">{o.due_day != null ? planDate(d.reference_time, o.due_day) : "—"}</td>
               <td className={`date ${isLate ? "late-text" : "ontime-text"}`}>{mine?.finish_day != null ? planDate(d.reference_time, mine.finish_day) : "not planned"}</td>
               <td><strong className={isLate ? "late-text" : "ontime-text"}>{o.status ?? "—"}</strong><br /><span className="small muted">{o.reason}</span></td>
@@ -281,7 +293,7 @@ function PlanTabs({ r, d }: { r: RunDetail; d: Digest }) {
             className={tab === key ? "on" : ""} onClick={() => setTab(key)}>{label}</button>))}
       </div>
       <div id="plan-tab" role="tabpanel" aria-labelledby={`tab-${tab}`} className="section">
-        {tab === "orders" && <OrdersTable d={d} />}
+        {tab === "orders" && <OrdersTable d={d} priority={r.scenario?.priority_orders ?? []} />}
         {tab === "deliveries" && (<>
           <p className="muted small">Plan starts {planDate(d.reference_time, 0)}. One lane per order, earliest due first.</p>
           <DeliveryTape rows={d.order_rows} reference={d.reference_time} /></>)}
@@ -329,6 +341,7 @@ export default function RunPage() {
         {d && <Link className="btn" to={`/compare?a=${r.id}`}>Compare with another plan</Link>}
         {d?.workbook && <a className="btn" href={api.workbookUrl(r.id)}>Download Excel plan</a>}
       </PageHead>
+      <AutoBanner run={r} />
       <WhatIfHeader run={r} />
       {r.mode === "QUICK" && <Notice>Quick plan: shorter thinking time, so deliveries can be later than in a full plan.</Notice>}
       {["QUEUED", "RUNNING"].includes(r.status) && <InProgress run={r} />}

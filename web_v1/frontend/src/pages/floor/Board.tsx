@@ -86,7 +86,11 @@ export default function Board() {
       <div className="panel empty"><p>No plan has been approved for this factory yet, so there is nothing to track.</p></div></>);
   }
   const down = (issues.data?.issues ?? []).filter((i) => i.kind === "MACHINE_DOWN" && i.status !== "RESOLVED");
-  const attention = b.open_issues > 0 || b.lines.some((l) => l.state === "BEHIND");
+  // A line with planned work but no output entered is not "on plan": nobody knows yet.
+  const problem = b.open_issues > 0 || b.lines.some((l) => l.state === "BEHIND");
+  const unknown = !problem && b.lines.some((l) => l.state === "NO_DATA");
+  const attention = problem || unknown;
+  const andonText = problem ? "Attention" : unknown ? "Output not entered" : "All on plan";
   return (
     <>
       <PageHead title="Line board" lead="Every line against the plan. Updates on its own.">
@@ -98,7 +102,7 @@ export default function Board() {
           <strong>Factory {ready[1]}</strong>
           <span className="muted">{b.date ? new Date(`${b.date}T00:00:00`).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }) : ""}</span>
           <span className="tv-spacer" />
-          <span className={`andon ${attention ? "attention" : "ok"}`} role="status"><i aria-hidden="true" />{attention ? "Attention" : "All on plan"}</span>
+          <span className={`andon ${attention ? "attention" : "ok"}`} role="status"><i aria-hidden="true" />{andonText}</span>
           <span className="tv-clock">{clock}</span>
         </div>
         {down.length > 0 && (

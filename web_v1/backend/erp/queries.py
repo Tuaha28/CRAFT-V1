@@ -118,6 +118,18 @@ def orders(cursor, fid, ref, *, q='', status='', page=1, size=50, sort='deadline
     return {'total': total, 'items': items}
 
 
+def orders_using_material(cursor, material_id, order_ids):
+    """The ids among order_ids whose style's bill of materials contains the material."""
+    ids = [int(o) for o in order_ids]
+    if not ids:
+        return []
+    found = rows(cursor, 'SELECT DISTINCT o.production_order_id FROM production_orders o '
+                         'JOIN bill_of_materials b ON b.product_id = o.product_id '
+                         f'WHERE b.material_id = %s AND o.production_order_id IN ({",".join(["%s"] * len(ids))})',
+                 [int(material_id), *ids])
+    return sorted((str(r['production_order_id']) for r in found), key=int)
+
+
 def order_detail(cursor, fid, production_order_id):
     head = one(cursor, f'SELECT p.*, o.production_order_id, o.target_quantity, o.scheduled_start_date, o.scheduled_end_date, '
                        f'o.status AS production_status, pr.product_id, pr.style_code, pr.name AS product, pr.category '

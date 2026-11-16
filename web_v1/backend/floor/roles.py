@@ -7,9 +7,9 @@ and production manager groups keep the names planning_setup already uses.
 from django.contrib.auth.models import Group, Permission
 
 ROLES = {
-    'admin': ('Administrator', ['planning.request_plan', 'planning.approve_plan', 'floor.manage_users',
-                                'floor.view_floor', 'floor.report_issue', 'floor.handle_issue',
-                                'floor.enter_output', 'floor.record_defect', 'floor.repair_machine']),
+    # Runs the system (accounts, factory data, captures, auto-planning settings) and sees everything, but does
+    # not approve plans or do floor work: approval stays with the production manager (separation of duties).
+    'admin': ('Administrator', ['planning.request_plan', 'floor.manage_users', 'floor.view_floor']),
     'manager': ('Production manager', ['planning.request_plan', 'planning.approve_plan', 'floor.view_floor',
                                        'floor.report_issue', 'floor.handle_issue']),
     'planner': ('Planner', ['planning.request_plan', 'floor.view_floor', 'floor.handle_issue']),

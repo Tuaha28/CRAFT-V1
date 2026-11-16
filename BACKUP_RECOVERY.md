@@ -93,3 +93,13 @@ Refreshed from local commit `0d8ad01` (branch `craft-v1-consolidation`): CRAFT V
 figures, results), and the client web app (Ask CRAFT with optional Groq routing, floor
 view, dark teal redesign, all design pages, stuck-run fix). Still source-only:
 `handout.md`, `.env`, data captures and databases excluded.
+
+## Refresh 2026-11-16 (auto-planning)
+
+Refreshed from local commit `fb74aa1` (branch `craft-v1-consolidation`): auto-planning
+(CRAFT re-plans after machine down, worker absent, line stopped, material late and
+urgent orders; one run per burst; a manager approves every plan), e-mail to managers,
+Priority orders, new-order check and nightly capture (captures refresh their dataset
+in place), write-back of approved plans to the `_demo` database copies only, the
+whole-branch review fixes, and the administrator role without plan approval. Still
+source-only: `handout.md`, `.env`, data captures and databases excluded.

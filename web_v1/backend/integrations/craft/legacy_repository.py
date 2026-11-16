@@ -12,7 +12,8 @@ from .contracts import json_value
 
 # The canonical v1 database or a DATA v2 staging dataset built and validated
 # by data_generation/run_seed_staging.py; nothing else is a legitimate source.
-SOURCE_DATABASE_PATTERN = r"garment_fyp_db(?:_seed_v2_data2_load\d+_\d{8}_\d{6})?"
+# "_demo" is the writable demo copy of a database (the original is never written).
+SOURCE_DATABASE_PATTERN = r"garment_fyp_db(?:_seed_v2_data2_load\d+_\d{8}_\d{6})?(?:_demo)?"
 
 
 def verify_select_only_grants(grants):

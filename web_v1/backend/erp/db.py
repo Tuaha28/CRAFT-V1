@@ -26,6 +26,13 @@ def _config(database):
     return config
 
 
+def live_database(dataset):
+    """The database the app reads for a capture: its demo copy when demo copies are switched on."""
+    if settings.CRAFT_USE_DEMO_COPIES:
+        return dataset.database + settings.CRAFT_DEMO_SUFFIX
+    return dataset.database
+
+
 @contextmanager
 def read_only(database):
     if not re.fullmatch(SOURCE_DATABASE_PATTERN, database or ''):

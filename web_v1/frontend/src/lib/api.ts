@@ -1,6 +1,6 @@
 export interface Session {
   csrf_token: string; authenticated: boolean; username: string | null;
-  can_request: boolean; can_approve: boolean; production_activation: boolean;
+  can_request: boolean; can_approve: boolean; production_activation: boolean; writeback?: boolean;
   role: string | null; role_label: string | null; scope_factory: number | null; scope_line: number | null; perms: string[];
 }
 export interface FactorySummary { factory_id: number; orders: number; operations: number; lines?: number; machines?: number; workers?: number }
@@ -26,12 +26,20 @@ export interface Run {
   id: string; kind: "SCHEDULE" | "CAPTURE"; status: RunStatus; stage: string; progress: number; mode: "FULL" | "QUICK";
   dataset: Dataset | null; factory_id: number | null; orders: number | null; order_offset: number;
   requested_by: string; created_at: string; started_at: string | null; finished_at: string | null; heartbeat_at: string | null; worker_down?: boolean;
-  error: string; summary: RunSummary; decision: "PENDING" | "APPROVED" | "REJECTED"; decided_by: string | null;
+  error: string; summary: RunSummary; decision: "PENDING" | "APPROVED" | "REJECTED" | "SUPERSEDED"; decided_by: string | null;
   decided_at: string | null; decision_reason: string;
   purpose: "PLAN" | "DISRUPTION" | "PROMISE"; parent_id: string | null;
-  scenario: { machines_down?: number[]; workers_absent?: number[];
+  /** Why the run exists; source AUTO = started by CRAFT's auto-planning. */
+  trigger?: RunTrigger;
+  scenario: { machines_down?: number[]; workers_absent?: number[]; lines_stopped?: number[];
+    release_after?: Record<string, string>; priority_orders?: string[];
     new_order?: { order_id: number; product_id: number; style_code?: string; quantity: number; release: string; due: string } };
 }
+export interface RunTrigger {
+  source?: "AUTO" | "MANUAL"; reason?: string; kinds?: string[]; issue_ids?: number[];
+  priority?: { on: string[]; off: string[] }; new_order_ids?: string[];
+}
+export interface AutoPlanState { enabled: boolean; email: "SMTP" | "OUTBOX" }
 export interface GanttRow {
   key: string; order_id: string; step: number; name: string | null; machine_type: string | null; line: number;
   start: number; end: number; crew: number; pieces: number | null; machines: string[]; workers: string[];
@@ -50,6 +58,7 @@ export interface Digest {
 export interface RunDetail extends Run {
   log_tail: string; digest: Digest | null;
   events: { action: string; message: string; actor: string | null; created_at: string }[];
+  writeback?: { ok: boolean; rows: number; error: string; at: string } | null;
 }
 export interface OrderBook {
   factory_id: number; reference_time: string; orders_in_capture: number; resources: Record<string, number>;
@@ -104,6 +113,11 @@ export const api = {
   promise: (id: string, input: { product_id: number; quantity: number; release: string; due: string; mode: "FULL" | "QUICK" }) =>
     request<Run>(`/planning/runs/${id}/promise`, input),
   events: () => request<ActivityEvent[]>("/planning/events"),
+  autoplan: (d: number, f: number) => request<AutoPlanState>(`/planning/autoplan?dataset=${d}&factory=${f}`),
+  setAutoplan: (d: number, f: number, enabled: boolean) => request<AutoPlanState>(`/planning/autoplan?dataset=${d}&factory=${f}`, { enabled }),
+  priority: (d: number, f: number) => request<{ orders: string[] }>(`/planning/priority?dataset=${d}&factory=${f}`),
+  setPriority: (d: number, f: number, orderId: string, on: boolean, reason = "") =>
+    request<{ orders: string[] }>("/planning/priority", { dataset: d, factory: f, order_id: orderId, on, reason }),
   workbookUrl: (id: string) => `${BASE}/planning/runs/${id}/workbook`,
   /** Ask CRAFT: is the AI reader on, and its reading of one question (only the question is sent). */
   askStatus: () => request<{ ai: boolean }>("/assistant/status"),
@@ -189,10 +203,10 @@ export interface Checks {
 }
 export interface AppUser {
   id: number; username: string; role: string | null; role_label: string | null; factory_id: number | null; line_id: number | null;
-  active: boolean; last_login: string | null; date_joined: string;
+  active: boolean; last_login: string | null; date_joined: string; email: string;
 }
 export interface RoleInfo { key: string; label: string; line_required: boolean }
-export interface UserInput { role: string; factory_id: number | null; line_id: number | null; dataset_id: number | null }
+export interface UserInput { role: string; factory_id: number | null; line_id: number | null; dataset_id: number | null; email?: string }
 
 const floorPath = (d: number, f: number, path: string) => `/floor/${d}/${f}/${path}`;
 
@@ -207,8 +221,9 @@ export const floor = {
   addCheck: (d: number, f: number, input: { line_id: number; day: number; operation_key: string; checked: number; defects: number; defect_type: string; note: string }) =>
     request<{ id: number }>(floorPath(d, f, "checks"), input),
   issues: (d: number, f: number, open = false) => request<IssueList>(floorPath(d, f, `issues${open ? "?open=1" : ""}`)),
-  report: (d: number, f: number, input: { kind: string; machine_id?: number | null; worker_id?: number | null; order_id?: string; line_id?: number | null; note?: string }) =>
-    request<Issue>(floorPath(d, f, "issues"), input),
+  report: (d: number, f: number, input: { kind: string; machine_id?: number | null; worker_id?: number | null; order_id?: string; line_id?: number | null; note?: string;
+    material_id?: number | null; arrival_date?: string | null }) =>
+    request<Issue & { warning?: string }>(floorPath(d, f, "issues"), input),
   moveIssue: (id: number, status: "IN_PROGRESS" | "RESOLVED", resolution = "") =>
     request<Issue>(`/floor/issues/${id}/status`, { status, resolution }),
   replan: (d: number, f: number, issue_ids: number[], mode: "QUICK" | "FULL") =>
