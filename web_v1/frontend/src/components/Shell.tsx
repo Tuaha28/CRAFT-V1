@@ -11,6 +11,7 @@ import { setTheme, useTheme } from "../app/theme";
 import { Search } from "./Search";
 import { Alerts } from "./Alerts";
 import { Toaster } from "./Toaster";
+import { FactoryClock } from "./FactoryClock";
 import { preload, preloadWhenIdle } from "../app/pages";
 
 // `also`: other pages reached through tabs on this entry's page; the entry stays lit on them.
@@ -20,27 +21,28 @@ const NAV: { group: string | null; items: NavItem[] }[] = [
   { group: null, items: [{ to: "/", label: "Home", icon: Home, end: true }] },
   { group: "Planning", items: [
     { to: "/plan", label: "New plan", icon: PlusCircle, perm: ["planning.request_plan"] },
-    { to: "/runs", label: "Plans", icon: ListChecks, perm: [...PLANNING, "floor.view_floor"], also: ["/compare"] }] },
+    { to: "/runs", label: "Plans", icon: ListChecks, perm: [...PLANNING, "floor.view_plans"], also: ["/compare"] }] },
   { group: "Shop floor", items: [
     { to: "/floor/line", label: "My line", icon: Wrench, perm: ["floor.view_floor"] },
     { to: "/floor/board", label: "Line board", icon: MonitorPlay, perm: ["floor.view_floor"] },
     { to: "/floor/issues", label: "Problems", icon: AlertTriangle, perm: ["floor.view_floor"] },
     { to: "/floor/quality", label: "Quality", icon: ClipboardCheck, perm: ["floor.view_floor"], also: ["/quality"] }] },
   { group: "Factory", items: [
-    { to: "/orders", label: "Orders", icon: ClipboardList }, { to: "/styles", label: "Styles", icon: Shirt },
-    { to: "/workforce", label: "Resources", icon: Boxes, also: ["/machines", "/materials"] }] },
+    { to: "/orders", label: "Orders", icon: ClipboardList, perm: ["floor.view_orders"] },
+    { to: "/styles", label: "Styles", icon: Shirt, perm: ["floor.view_orders"] },
+    { to: "/workforce", label: "Resources", icon: Boxes, perm: ["floor.view_workers", "floor.view_machines"], also: ["/machines", "/materials"] }] },
   { group: "Admin", items: [
     { to: "/users", label: "Users", icon: UserCog, perm: ["floor.manage_users"] },
     { to: "/customers", label: "Customers", icon: Handshake, perm: ["portal.handle_request", "floor.manage_users"] },
     { to: "/data", label: "Data", icon: Database, perm: PLANNING },
-    { to: "/activity", label: "Activity", icon: Activity, perm: ["planning.approve_plan", "floor.manage_users"] }] },
+    { to: "/activity", label: "Activity", icon: Activity, perm: ["floor.view_activity"] }] },
 ];
 
 /** The product mark. */
 export function Logo() {
   return (
     <svg className="logo" viewBox="0 0 30 30" aria-hidden="true">
-      <path d="M15 3l11 6-11 6L4 9z" fill="#99f6e4" /><path d="M4 9l11 6v12L4 21z" fill="#14b8a6" /><path d="M26 9l-11 6v12l11-6z" fill="#2dd4bf" />
+      <path d="M15 3l11 6-11 6L4 9z" fill="#fed7aa" /><path d="M4 9l11 6v12L4 21z" fill="#f97316" /><path d="M26 9l-11 6v12l11-6z" fill="#fb923c" />
     </svg>
   );
 }
@@ -102,7 +104,11 @@ export function Shell({ children }: { children: ReactNode }) {
         <nav aria-label="Main" id="main-nav">
           {NAV.map(({ group, items }) => ({ group, items: items.filter((i) => !i.perm || i.perm.some((p) => can(session, p)))
             // Floor roles start on their own page, so the overview gets its own address.
-            .map((i) => (i.to === "/" && homeOf(session.role) ? { ...i, to: "/overview", label: "Overview" } : i)) }))
+            .map((i) => (i.to === "/" && homeOf(session.role) ? { ...i, to: "/overview", label: "Overview" } : i))
+            // maintenance sees machines but not the worker list: Resources opens on Machines
+            .map((i) => (i.to === "/workforce" && !can(session, "floor.view_workers") ? { ...i, to: "/machines" } : i))
+            // a role without the overview (floor roles) has no Home page
+            .filter((i) => !(i.to === "/" || i.to === "/overview") || can(session, "floor.view_overview")) }))
             .filter(({ items }) => items.length).map(({ group, items }) => (
             <div key={group ?? "home"} className="nav-group">
               {group && <span className="nav-title">{group}</span>}
@@ -115,10 +121,10 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <Link to={`${homeOf(session.role) ? "/overview" : "/"}?ask=1`} className="rail-ask">
+        {can(session, "floor.view_overview") && <Link to={`${homeOf(session.role) ? "/overview" : "/"}?ask=1`} className="rail-ask">
           <span className="rail-ask-icon" aria-hidden="true"><Sparkles size={16} /></span>
           <span><strong>Ask CRAFT</strong><small>Late orders, stock, machines, quality</small></span>
-        </Link>
+        </Link>}
         <div className="rail-foot">
           <span className="avatar" title={who} aria-hidden="true">{(session.username ?? "?").slice(0, 2).toUpperCase()}</span>
           <span className="rail-name"><strong>{session.username}</strong><small>{session.role_label ?? ""}</small></span>
@@ -127,7 +133,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="workspace">
-        <header className="topbar"><ScopePicker /><div className="topbar-tools"><Search /><ThemeToggle /><Alerts /></div></header>
+        <header className="topbar"><ScopePicker /><FactoryClock /><div className="topbar-tools">{can(session, "floor.view_orders") && <Search />}<ThemeToggle />{can(session, "floor.view_overview") && <Alerts />}</div></header>
         <main className="main" id="main" tabIndex={-1}><div key={pathname} className="page">{children}</div></main>
       </div>
       <Toaster />

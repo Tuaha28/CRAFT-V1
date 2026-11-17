@@ -15,7 +15,7 @@ from django.contrib.auth.models import Permission, User
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from . import services
+from . import jobs, services
 from .models import AutoPlanSetting, AutoTrigger, Dataset, PlanRun
 
 SYSTEM_USER = 'craft_auto'
@@ -322,10 +322,97 @@ def watch(now=None):
     """One pass of the worker's watcher: new orders, the nightly capture, then due re-plans. Each step runs
     even when an earlier one fails; returns the errors (the worker logs them)."""
     errors = []
-    for name in ('check_new_orders', 'nightly_capture', 'tick'):
+    for name in ('check_new_orders', 'nightly_capture', 'tick', 'plan_ahead'):
         try:
             globals()[name](now)
         except Exception as exc:
             log.exception('Auto-planning step %s failed', name)
             errors.append(f'{name}: {type(exc).__name__}: {exc}')
     return errors
+
+
+# ---------- plan ahead: a first plan, and the next plan before the current one runs out ----------
+
+def _waiting(dataset_id, factory_id):
+    """A plan of this factory is queued, running or waiting for a manager's decision."""
+    return PlanRun.objects.filter(dataset_id=dataset_id, factory_id=factory_id, kind='SCHEDULE').filter(
+        status__in=services.ACTIVE).exists() or PlanRun.objects.filter(
+        dataset_id=dataset_id, factory_id=factory_id, kind='SCHEDULE', status='SUCCEEDED', decision='PENDING').exists()
+
+
+def _recently_rejected(dataset_id, factory_id, kind, now):
+    for run in PlanRun.objects.filter(dataset_id=dataset_id, factory_id=factory_id, decision='REJECTED',
+                                      trigger__source='AUTO', decided_at__gte=now - timedelta(hours=24)):
+        if kind in (run.trigger or {}).get('kinds', ()):
+            return True
+    return False
+
+
+def _progress(approved):
+    """(share of the plan's pieces recorded, unfinished order ids in plan order)."""
+    from django.db.models import Sum
+    from floor.models import OutputEntry
+    from floor.plan import load
+    plan = load(approved)
+    done = {r['operation_key']: int(r['n'] or 0) for r in OutputEntry.objects.filter(
+        run__dataset_id=approved.dataset_id, run__factory_id=approved.factory_id, operation_key__in=list(plan.ops))
+        .values('operation_key').annotate(n=Sum('pieces'))}
+    total = sum(int(op.get('pieces') or 0) for op in plan.ops.values())
+    finished = sum(min(done.get(k, 0), int(op.get('pieces') or 0)) for k, op in plan.ops.items())
+    orders = list(dict.fromkeys(op['order_id'] for op in sorted(plan.ops.values(), key=lambda o: (o['start'], o['key']))))
+    unfinished = [o for o in orders if any(done.get(k, 0) < int(op.get('pieces') or 0)
+                                           for k, op in plan.ops.items() if op['order_id'] == o)]
+    return (finished / total if total else 1.0), unfinished
+
+
+def _next_orders(dataset, factory_id, after, count):
+    """The next `count` orders in the factory's queue after the last of `after` (release order)."""
+    book = [str(o['order_id']) for o in jobs.orderbook(dataset, factory_id).get('eligible', ())]
+    taken = set(after)
+    last = max((book.index(o) for o in after if o in book), default=-1)
+    return [o for o in book[last + 1:] if o not in taken][:count]
+
+
+def plan_ahead(now=None):
+    """Queue a first plan for a factory without one, or the next plan when the approved plan is nearly done.
+    One heavy run at a time, smallest factory first. Returns the runs queued (at most one)."""
+    from floor.plan import approved_plan
+    now = now or timezone.now()
+    if _busy():
+        return []
+    settings_on = list(AutoPlanSetting.objects.filter(enabled=True).select_related('dataset'))
+    size = lambda s: next((f.get('orders') or 0 for f in s.dataset.factories if f['factory_id'] == s.factory_id), 0)
+    for setting in sorted(settings_on, key=lambda s: (size(s), s.dataset_id, s.factory_id)):
+        dataset, factory_id = setting.dataset, setting.factory_id
+        if _waiting(dataset.pk, factory_id):
+            continue
+        approved = approved_plan(dataset.pk, factory_id)
+        count = int(settings.AUTO_PLAN_ORDERS)
+        try:
+            if approved is None:
+                if _recently_rejected(dataset.pk, factory_id, 'FIRST_PLAN', now):
+                    continue
+                trigger = {'source': 'AUTO', 'reason': f'First plan for factory {factory_id}', 'kinds': ['FIRST_PLAN'],
+                           'issue_ids': [], 'priority': {'on': [], 'off': []}, 'new_order_ids': []}
+                run = services.request_schedule(system_user(), dataset_id=dataset.pk, factory_id=factory_id,
+                                                orders=count, order_offset=0, mode='QUICK', trigger=trigger)
+            else:
+                share, unfinished = _progress(approved)
+                if share < float(settings.AUTO_PLAN_NEXT_AT) or _recently_rejected(dataset.pk, factory_id, 'NEXT_PLAN', now):
+                    continue
+                planned = services._plan_orders(approved)[0]
+                new = _next_orders(dataset, factory_id, planned, count)
+                if not new and not unfinished:
+                    continue
+                trigger = {'source': 'AUTO', 'reason': f'Next orders for factory {factory_id} '
+                                                       f'(current plan {round(100 * share)}% done)',
+                           'kinds': ['NEXT_PLAN'], 'issue_ids': [], 'priority': {'on': [], 'off': []},
+                           'new_order_ids': new}
+                run = services.request_schedule(system_user(), dataset_id=dataset.pk, factory_id=factory_id,
+                                                orders=len(unfinished + new), order_offset=0, mode='QUICK',
+                                                order_ids=unfinished + new, trigger=trigger)
+        except (ValidationError, RuntimeError, OSError) as exc:
+            log.warning('Plan ahead skipped factory %s: %s', factory_id, exc)
+            continue
+        return [run]  # one heavy run at a time
+    return []

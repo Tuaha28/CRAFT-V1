@@ -11,12 +11,12 @@ const S = 7;  // px per unit; x runs right-back, y left-back, z up
 const COLS = 7;
 type Fill = Record<MachineState | "floor" | "wall" | "store" | "roof", [string, string, string]>;
 const LIGHT_FILL: Fill = {
-  run: ["#99f6e4", "#14b8a6", "#0d9488"], fix: ["#fde68a", "#f59e0b", "#d97706"], down: ["#fca5a5", "#ef4444", "#dc2626"],
+  run: ["#bbf7d0", "#22c55e", "#15803d"], fix: ["#fde68a", "#f59e0b", "#d97706"], down: ["#fca5a5", "#ef4444", "#dc2626"],
   idle: ["#cbd3e3", "#aeb8cd", "#98a4bd"], floor: ["#ffffff", "#e4e9f4", "#d6dcea"], wall: ["#eef1f8", "#dfe5f2", "#d2d9e9"],
   store: ["#d6dcea", "#c3cce0", "#b2bcd4"], roof: ["#aeb8cd", "#98a4bd", "#8794b0"],
 };
 const DARK_FILL: Fill = {
-  run: ["#99f6e4", "#2dd4bf", "#14b8a6"], fix: ["#fde68a", "#fbbf24", "#d97706"], down: ["#fecaca", "#f87171", "#dc2626"],
+  run: ["#bbf7d0", "#4ade80", "#16a34a"], fix: ["#fde68a", "#fbbf24", "#d97706"], down: ["#fecaca", "#f87171", "#dc2626"],
   idle: ["#353e44", "#2a3237", "#22292d"], floor: ["#1a2024", "#141a1d", "#101518"], wall: ["#262e33", "#1e252a", "#192024"],
   store: ["#2f383d", "#262e33", "#20272b"], roof: ["#3d484e", "#2f383d", "#283035"],
 };

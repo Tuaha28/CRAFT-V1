@@ -6,17 +6,25 @@ and production manager groups keep the names planning_setup already uses.
 """
 from django.contrib.auth.models import Group, Permission
 
+# What office roles read: plans, orders and styles, the worker and machine lists, the overview.
+OFFICE = ['floor.view_plans', 'floor.view_orders', 'floor.view_workers', 'floor.view_machines', 'floor.view_overview']
+
 ROLES = {
     # Runs the system (accounts, factory data, captures, auto-planning settings) and sees everything, but does
     # not approve plans or do floor work: approval stays with the production manager (separation of duties).
-    'admin': ('Administrator', ['planning.request_plan', 'floor.manage_users', 'floor.view_floor']),
+    'admin': ('Administrator', ['planning.request_plan', 'floor.manage_users', 'floor.view_floor', *OFFICE,
+                                'floor.view_activity']),
     'manager': ('Production manager', ['planning.request_plan', 'planning.approve_plan', 'floor.view_floor',
-                                       'floor.report_issue', 'floor.handle_issue', 'portal.handle_request']),
-    'planner': ('Planner', ['planning.request_plan', 'floor.view_floor', 'floor.handle_issue']),
+                                       'floor.report_issue', 'floor.handle_issue', 'portal.handle_request', *OFFICE,
+                                       'floor.view_activity']),
+    'planner': ('Planner', ['planning.request_plan', 'floor.view_floor', 'floor.handle_issue', *OFFICE]),
+    # floor roles: their own work only (no plans, orders lists or worker names)
     'supervisor': ('Line supervisor', ['floor.view_floor', 'floor.report_issue', 'floor.enter_output']),
-    'qc': ('Quality inspector', ['floor.view_floor', 'floor.report_issue', 'floor.record_defect']),
-    'maintenance': ('Maintenance technician', ['floor.view_floor', 'floor.report_issue', 'floor.repair_machine']),
-    'merchandiser': ('Merchandiser', ['floor.view_floor', 'portal.handle_request']),
+    'qc': ('Quality inspector', ['floor.view_floor', 'floor.report_issue', 'floor.record_defect', 'floor.view_orders']),
+    'maintenance': ('Maintenance technician', ['floor.view_floor', 'floor.report_issue', 'floor.repair_machine',
+                                               'floor.view_machines']),
+    'merchandiser': ('Merchandiser', ['portal.handle_request', 'floor.view_plans', 'floor.view_orders',
+                                      'floor.view_overview']),
 }
 # A line supervisor always works for one line; the others may be limited to one.
 LINE_REQUIRED = {'supervisor'}

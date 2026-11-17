@@ -49,8 +49,13 @@ def _guard(view):
 @_guard
 def me(request):
     account = _account(request)
+    from django.apps import apps
+    simulated = False
+    if apps.is_installed('sim'):
+        from sim.models import FactoryClock
+        simulated = FactoryClock.objects.filter(dataset=account.dataset, speed__gt=0).exists()
     return Response({'customer_id': account.customer_id, 'client_name': account.client_name,
-                     'username': request.user.get_username(), 'data': account.dataset.label})
+                     'username': request.user.get_username(), 'data': account.dataset.label, 'simulated': simulated})
 
 
 @api_view(['GET'])

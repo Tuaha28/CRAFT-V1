@@ -22,7 +22,7 @@ function Need({ perm, children }: { perm: string | string[]; children: ReactNode
 }
 const PortalApp = lazy(() => import("../portal/PortalApp"));
 const PLANNING = ["planning.request_plan", "planning.approve_plan"];
-const PLAN_VIEW = [...PLANNING, "floor.view_floor"];
+const PLAN_VIEW = [...PLANNING, "floor.view_plans"];
 
 /** "/" is the factory overview for office roles; floor roles land on their own page. */
 function Home() {
@@ -61,15 +61,15 @@ function Gate() {
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/overview" element={<Dashboard />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/orders/:id" element={<OrderPage />} />
-              <Route path="/styles" element={<Styles />} />
-              <Route path="/styles/:id" element={<StylePage />} />
-              <Route path="/materials" element={<Materials />} />
-              <Route path="/workforce" element={<Workforce />} />
-              <Route path="/machines" element={<Machines />} />
-              <Route path="/quality" element={<Quality />} />
+              <Route path="/overview" element={<Need perm="floor.view_overview"><Dashboard /></Need>} />
+              <Route path="/orders" element={<Need perm="floor.view_orders"><Orders /></Need>} />
+              <Route path="/orders/:id" element={<Need perm="floor.view_orders"><OrderPage /></Need>} />
+              <Route path="/styles" element={<Need perm="floor.view_orders"><Styles /></Need>} />
+              <Route path="/styles/:id" element={<Need perm="floor.view_orders"><StylePage /></Need>} />
+              <Route path="/materials" element={<Need perm={["floor.view_overview", "floor.report_issue"]}><Materials /></Need>} />
+              <Route path="/workforce" element={<Need perm="floor.view_workers"><Workforce /></Need>} />
+              <Route path="/machines" element={<Need perm={["floor.view_machines", "floor.report_issue"]}><Machines /></Need>} />
+              <Route path="/quality" element={<Need perm={["floor.view_overview", "floor.record_defect"]}><Quality /></Need>} />
               <Route path="/plan" element={<Need perm="planning.request_plan"><NewPlan /></Need>} />
               <Route path="/runs" element={<Need perm={PLAN_VIEW}><Runs /></Need>} />
               <Route path="/compare" element={<Need perm={PLAN_VIEW}><Compare /></Need>} />
@@ -81,7 +81,7 @@ function Gate() {
               <Route path="/users" element={<Need perm="floor.manage_users"><Users /></Need>} />
               <Route path="/customers" element={<Need perm={["portal.handle_request", "floor.manage_users"]}><Customers /></Need>} />
               <Route path="/data" element={<Need perm={PLANNING}><Data /></Need>} />
-              <Route path="/activity" element={<Need perm={["planning.approve_plan", "floor.manage_users"]}><Activity /></Need>} />
+              <Route path="/activity" element={<Need perm="floor.view_activity"><Activity /></Need>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

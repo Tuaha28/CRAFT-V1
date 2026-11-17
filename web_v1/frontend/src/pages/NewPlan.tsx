@@ -18,7 +18,7 @@ export default function NewPlan() {
   const datasets = useQuery({ queryKey: ["datasets"], queryFn: api.datasets });
   const [datasetId, setDatasetId] = useState<number | null>(null);
   const [factoryId, setFactoryId] = useState<number | null>(null);
-  const [orders, setOrders] = useState(10);
+  const [orders, setOrders] = useState(3);  // a small plan finishes in minutes on a laptop
   const [offset, setOffset] = useState(0);
   const [mode, setMode] = useState<"QUICK" | "FULL">("QUICK");
 
@@ -76,18 +76,13 @@ export default function NewPlan() {
       <form className="plan-layout" onSubmit={onSubmit}>
         <section className="panel section" aria-labelledby="orders-title">
           <h2 id="orders-title">Which orders?</h2>
-          <p className="muted small">Orders are taken in release order{book.data ? `: ${eligible} can be planned (${book.data.orders_in_capture} in the factory data)` : ""}. Set 1 starts at the first order, set 2 at the 11th, set 3 at the 21st.</p>
+          <p className="muted small">Orders are taken in release order{book.data ? `: ${eligible} can be planned (${book.data.orders_in_capture} in the factory data)` : ""}. More orders give a fuller plan but take longer: about 10–20 minutes for 3 orders, over an hour for 10.</p>
           <div className="toolbar">
-            <div className="field"><label htmlFor="n">Number of orders</label>
+            <div className="field"><label htmlFor="n">Orders to plan</label>
               <input id="n" type="number" min={1} max={30} value={orders} onChange={(e) => setOrders(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} /></div>
             <div className="field"><label htmlFor="off">Start at order</label>
               <input id="off" type="number" min={1} max={Math.max(1, eligible)} value={offset + 1}
                 onChange={(e) => setOffset(Math.max(0, (Number(e.target.value) || 1) - 1))} /></div>
-            <div className="tabs" role="group" aria-label="Quick sets">
-              {[0, 10, 20].map((o, i) => (
-                <button key={o} type="button" className={offset === o && orders === 10 ? "on" : ""} onClick={() => { setOffset(o); setOrders(10); }}>Set {i + 1}</button>
-              ))}
-            </div>
           </div>
           {book.isPending ? <Loading label="Reading the order book (first time for this factory can take a minute)" /> :
             book.isError ? <Notice tone="error">{book.error.message}</Notice> : (

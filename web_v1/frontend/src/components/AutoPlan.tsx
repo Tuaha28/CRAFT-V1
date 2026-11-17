@@ -23,6 +23,11 @@ export function AutoPlanSwitch({ d, f, canChange }: { d: number; f: number; canC
     mutationFn: (on: boolean) => api.setAutoplan(d, f, on),
     onSuccess: (data) => client.setQueryData(["autoplan", d, f], data),
   });
+  const all = useMutation({
+    meta: { success: (on: unknown) => `Auto-planning ${on ? "on" : "off"} for every factory of this data.` },
+    mutationFn: (on: boolean) => api.setAutoplanAll(d, on),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["autoplan"] }),
+  });
   if (!state.data) return null;
   const on = state.data.enabled;
   return (
@@ -35,7 +40,12 @@ export function AutoPlanSwitch({ d, f, canChange }: { d: number; f: number; canC
           <span>{on ? "On" : "Off"} for factory {f}</span>
         </label>
       </div>
-      <p className="muted small">CRAFT makes a new plan after problems on the floor and emails the managers. A manager approves every plan.</p>
+      <p className="muted small">CRAFT makes the factory's first plan, the next plan when the current one is nearly done, and a new plan after problems on the floor, and emails the managers. A manager approves every plan.</p>
+      {canChange && (
+        <div className="toolbar">
+          <button type="button" className="btn" disabled={all.isPending} onClick={() => all.mutate(true)}>Turn on for all factories</button>
+          <button type="button" className="btn" disabled={all.isPending} onClick={() => all.mutate(false)}>Turn off for all factories</button>
+        </div>)}
       {state.data.email === "OUTBOX" && <p className="muted small">Email is not set up; messages are saved to the outbox.</p>}
     </section>
   );

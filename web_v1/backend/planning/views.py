@@ -36,6 +36,10 @@ def _run(r, worker_alive=True):
                             if r.scenario.get('new_order') else {})}}
 
 
+def _sees_plans(user):
+    return any(user.has_perm(p) for p in ('floor.view_plans', 'planning.request_plan', 'planning.approve_plan'))
+
+
 def _fail(exc):
     if isinstance(exc, PermissionDenied):
         return Response({'error': str(exc) or 'Permission required'}, status=403)
@@ -115,6 +119,8 @@ def runs(request):
         except (ValidationError, PermissionDenied) as exc:
             return _fail(exc)
         return Response(_run(run), status=201)
+    if not _sees_plans(request.user):
+        return Response({'error': 'Your role cannot see plans'}, status=403)
     services.expire_orphans()  # a run whose worker died must not look busy forever, even with no worker running
     alive = services.worker_alive()
     query = PlanRun.objects.select_related('dataset', 'requested_by', 'decided_by').order_by('-created_at')
@@ -132,6 +138,8 @@ def captures(request):
 
 @api_view(['GET'])
 def run_detail(request, run_id):
+    if not _sees_plans(request.user):
+        return Response({'error': 'Your role cannot see plans'}, status=403)
     services.expire_orphans()
     run = PlanRun.objects.select_related('dataset', 'requested_by', 'decided_by').filter(pk=run_id).first()
     if run is None:
@@ -175,6 +183,8 @@ def decide(request, run_id):
 
 @api_view(['GET'])
 def workbook(request, run_id):
+    if not _sees_plans(request.user):
+        return Response({'error': 'Your role cannot see plans'}, status=403)
     run = PlanRun.objects.filter(pk=run_id, status='SUCCEEDED').first()
     path = Path(run.out_dir) / f'factory{run.factory_id}_craft_v3_plan.xlsx' if run and run.out_dir else None
     if path is None or not path.exists():
@@ -184,6 +194,8 @@ def workbook(request, run_id):
 
 @api_view(['GET'])
 def experiments(request):
+    if not _sees_plans(request.user):
+        return Response({'error': 'Your role cannot see plans'}, status=403)
     path = Path(settings.PLANNING_EXPERIMENTS_DIR) / 'paper_data.json'
     if not path.exists():
         return Response({'error': 'Experiment results not found'}, status=404)
@@ -192,6 +204,8 @@ def experiments(request):
 
 @api_view(['GET'])
 def events(request):
+    if not request.user.has_perm('floor.view_activity'):
+        return Response({'error': 'Your role cannot see the activity log'}, status=403)
     query = PlanEvent.objects.select_related('actor', 'run').order_by('-created_at')[:300]
     return Response([{'action': e.action, 'message': e.message, 'run_id': str(e.run_id) if e.run_id else None,
                       'actor': e.actor.get_username() if e.actor else None, 'created_at': e.created_at}
@@ -200,6 +214,8 @@ def events(request):
 
 @api_view(['GET'])
 def current_plan(request, dataset_id, factory_id):
+    if not _sees_plans(request.user):
+        return Response({'error': 'Your role cannot see plans'}, status=403)
     """The plan the dashboard shows: the latest approved plan, else the latest finished one."""
     finished = PlanRun.objects.filter(kind='SCHEDULE', status='SUCCEEDED', dataset_id=dataset_id, factory_id=factory_id)
     run = (finished.filter(decision='APPROVED').order_by('-decided_at').first()
@@ -309,3 +325,21 @@ def autoplan_setting(request):
     from django.conf import settings as conf
     email = 'SMTP' if conf.EMAIL_BACKEND.endswith('smtp.EmailBackend') else 'OUTBOX'
     return Response({'enabled': autoplan.enabled(dataset_id, factory_id), 'email': email})
+
+
+@api_view(['POST'])
+def autoplan_all(request):
+    """POST ?dataset= {enabled}: Auto-planning on or off for every factory of this data (request_plan)."""
+    from . import autoplan
+    try:
+        dataset = Dataset.objects.get(pk=int(request.query_params['dataset']), active=True)
+    except (KeyError, ValueError, Dataset.DoesNotExist):
+        return Response({'error': 'dataset is required'}, status=400)
+    on = bool(request.data.get('enabled'))
+    factories = sorted(f['factory_id'] for f in dataset.factories)
+    try:
+        for factory_id in factories:
+            autoplan.set_enabled(request.user, dataset_id=dataset.pk, factory_id=factory_id, on=on)
+    except (ValidationError, PermissionDenied) as exc:
+        return _fail(exc)
+    return Response({'enabled': on, 'factories': factories})

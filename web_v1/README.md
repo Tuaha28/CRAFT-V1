@@ -114,6 +114,13 @@ React (frontend/, Vite :5173) ──/api──▶ Django + DRF (backend/, :8001,
   queued or running; a newer burst replaces an older plan that nobody decided
   ("Replaced"). CRAFT never approves: a manager reviews the plan and approves or
   rejects it.
+- **Plans ahead**: for a factory with Auto-planning on, CRAFT also makes the
+  **first plan** (the next `AUTO_PLAN_ORDERS` = 5 orders in its queue) when it
+  has none, and the **next plan** (the unfinished orders plus the next 5) once
+  the approved plan is `AUTO_PLAN_NEXT_AT` = 80% done. One factory at a time,
+  smallest first; nothing new while a plan of that factory waits for a manager;
+  a plan sent back is not retried for 24 hours. **Turn on for all factories**
+  on the Plans page switches every factory of the chosen data.
 - **New orders**: every `AUTO_PLAN_NEW_ORDER_CHECK_MINUTES` (15) the worker
   compares open orders in the database with the capture; new ones start a fresh
   capture and then a plan of the approved orders plus the new ones. A capture
@@ -158,6 +165,35 @@ request form. Without the assistant running, every other portal page works.
 One fix to the downloaded assistant: on Groq it no longer asks for the JSON
 answer during the tool-calling steps (the model invented a "json" tool).
 
+## Factory simulator
+
+The factory data is a frozen snapshot, so the simulator plays the approved
+CRAFT plan forward on a **factory clock** (top bar, for production managers and
+admins: **Run the factory**, Pause, 1×, 10×, 60×, Reset). 1× is one factory hour
+per real minute; 60× is one per second. Each factory hour every planned step
+records its pieces (a little slower or faster than planned; missed work carries
+over), a daily quality check is recorded, machines break down and get repaired,
+and workers are absent now and then. Problems go through the normal Problems
+page as the `craft_sim` user, so Auto-planning, e-mail and approval work as for
+real reports, and the simulator follows each newly approved plan. The Line
+board, My line and the customer portal use the factory clock as "today"; every
+page shows **Simulated factory clock** while it runs. Reset removes only
+simulated records.
+
+Rates (backend/.env): `SIM_BREAKDOWN_PER_HOUR` (default 0.0015 per busy machine
+per hour) and `SIM_ABSENCE_PER_DAY` (0.02 per planned worker per day); raise
+them for a livelier demo.
+
+For the paper, the same engine runs without the clock:
+
+```powershell
+.venv\Scripts\python.exe manage.py simulate --run <plan id> --days 30 --seeds 1-10 --breakdown 0,0.0015,0.003
+```
+
+It writes planned vs executed results (on-time %, lateness, adherence = share of
+planned pieces done in their planned hour, breakdowns, absences) to
+`deliverables/paper/results/simulation/`.
+
 ## Demo copies and write-back
 
 The original databases are only ever read. To let the app change data (for a
@@ -190,8 +226,9 @@ $env:DJANGO_SETTINGS_MODULE='config.settings_integration'; $env:DJANGO_SECRET_KE
 web_v1\backend\.venv\Scripts\python.exe web_v1\backend\manage.py migrate
 web_v1\backend\.venv\Scripts\python.exe web_v1\backend\manage.py planning_setup --user manager1 --role manager --password-file web_v1\backend\.planner_users.local
 
-# every time: API, worker and web page in three windows
-powershell -ExecutionPolicy Bypass -File web_v1\start_planner.ps1
+# every time: API, worker, web page and customer assistant in their own windows
+powershell -ExecutionPolicy Bypass -File web_v1\start_planner.ps1        # fast production build (about 30 s to build)
+powershell -ExecutionPolicy Bypass -File web_v1\start_planner.ps1 -Dev   # development: reloads on code changes
 ```
 
 Then open http://127.0.0.1:5173. Roles: **Planner** (request and cancel

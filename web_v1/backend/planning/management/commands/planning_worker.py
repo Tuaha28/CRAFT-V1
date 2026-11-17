@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from django.apps import apps
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -15,6 +16,7 @@ from planning.datasets import discover
 
 POLL_SECONDS = 5
 AUTOPLAN_SECONDS = 60  # how often the auto-planning watcher looks at stored triggers
+SIM_SECONDS = 5  # how often a running factory clock moves (sim app)
 
 
 def _tail(path, lines=40):
@@ -48,9 +50,17 @@ class Command(BaseCommand):
             return
         self.stdout.write('Planning worker ready')
         last_tick = 0.0
+        last_sim = 0.0
         while True:
             services.worker_beat()
             services.expire_orphans()
+            if apps.is_installed('sim') and time.monotonic() - last_sim >= SIM_SECONDS:
+                last_sim = time.monotonic()
+                try:
+                    from sim import runner as sim_runner
+                    sim_runner.tick()  # the simulated factory clock, if one is running
+                except Exception as exc:  # the simulator must never stop the worker
+                    self.stderr.write(f'Factory simulator failed: {type(exc).__name__}: {_redact(str(exc))[:300]}')
             if time.monotonic() - last_tick >= AUTOPLAN_SECONDS:
                 last_tick = time.monotonic()
                 try:

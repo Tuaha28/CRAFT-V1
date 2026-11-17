@@ -135,6 +135,15 @@ class RoleTests(Fixture):
                      'floor.report_issue', 'floor.handle_issue'):
             self.assertFalse(admin.has_perm(perm), perm)
 
+    def test_planning_setup_keeps_every_role_permission(self):
+        """The start script runs planning_setup each time; it must not strip floor or portal rights."""
+        from django.core.management import call_command
+        call_command('planning_setup', stdout=__import__('io').StringIO())
+        manager = Group.objects.get(name='Production manager')
+        codes = set(manager.permissions.values_list('codename', flat=True))
+        self.assertTrue({'approve_plan', 'request_plan', 'view_floor', 'handle_issue', 'handle_request'} <= codes)
+        self.assertIn('handle_issue', set(Group.objects.get(name='Planner').permissions.values_list('codename', flat=True)))
+
     def test_session_reports_role_scope_and_permissions(self):
         client = APIClient()
         client.force_authenticate(self.users['supervisor'])

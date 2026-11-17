@@ -5,5 +5,6 @@ from erp.urls import urlpatterns as erp
 from floor.urls import urlpatterns as floor
 from assistant.urls import urlpatterns as assistant
 from portal.urls import urlpatterns as portal
+from sim.urls import urlpatterns as sim
 
-urlpatterns = [*governance, *planning, *erp, *floor, *assistant, *portal]
+urlpatterns = [*governance, *planning, *erp, *floor, *assistant, *portal, *sim]

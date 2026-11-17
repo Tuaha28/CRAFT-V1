@@ -39,9 +39,20 @@ def _issue(i):
             'replan_id': str(i.replan_id) if i.replan_id else None}
 
 
+def _now(plan):
+    """The factory's time: the simulated factory clock when one runs for this factory, else the computer's clock."""
+    from django.apps import apps
+    if apps.is_installed('sim'):
+        from sim.runner import factory_now
+        found = factory_now(plan.run.dataset_id, plan.run.factory_id)
+        if found is not None:
+            return found.replace(tzinfo=None)
+    return datetime.now()
+
+
 def _now_hour(plan, day):
     """Hours of a plan day already passed: all for past days, none for future days."""
-    now = datetime.now()
+    now = _now(plan)
     today = plan.day_of(now.date())
     return 24 if day < today else 0 if day > today else now.hour + 1
 
@@ -56,8 +67,13 @@ def _day(request, plan, days):
     return int(raw)
 
 
+def _today(plan):
+    """The factory's date (see _now)."""
+    return _now(plan).date()
+
+
 def _default_day(plan, days):
-    today = plan.day_of(date.today())
+    today = plan.day_of(_today(plan))
     if today in days:
         return today
     later = [d for d in days if d >= today]

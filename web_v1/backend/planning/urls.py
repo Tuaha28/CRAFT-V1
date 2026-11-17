@@ -19,4 +19,5 @@ urlpatterns = [
     path('api/v1/planning/events', views.events),
     path('api/v1/planning/priority', views.priority),
     path('api/v1/planning/autoplan', views.autoplan_setting),
+    path('api/v1/planning/autoplan/all', views.autoplan_all),
 ]

@@ -111,3 +111,11 @@ Refreshed from local commit `c370006` (branch `craft-v1-consolidation`): the cus
 the Needle Craft customer assistant vendored as `web_v1/agent` with one Groq fix, and the
 `run_agent` launcher. Still source-only: `handout.md`, `.env`, virtual environments, data
 captures and databases excluded.
+
+## Refresh 2026-11-17 (simulator, plan ahead, roles, design)
+
+Refreshed from local commit `7987c19` (branch `craft-v1-consolidation`): the factory simulator
+(factory clock, experiment command), auto-planning that makes first and next plans, least-privilege
+roles enforced by the server, the fixed planning_setup role reset, the production-build start script,
+the orange theme with readable hovers and smooth motion. Still source-only: `handout.md`, `.env`,
+virtual environments, data captures and databases excluded.

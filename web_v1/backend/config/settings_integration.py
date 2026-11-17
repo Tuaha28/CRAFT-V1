@@ -7,7 +7,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
 if not SECRET_KEY:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY is required for integration settings')
 DEBUG = os.environ.get('DJANGO_DEBUG') == '1'
-INSTALLED_APPS = [*INSTALLED_APPS, 'django.contrib.auth', 'django.contrib.sessions', 'governance', 'planning', 'erp', 'floor', 'portal']
+INSTALLED_APPS = [*INSTALLED_APPS, 'django.contrib.auth', 'django.contrib.sessions', 'governance', 'planning', 'erp', 'floor', 'portal', 'sim']
 MIDDLEWARE = [*MIDDLEWARE, 'django.contrib.sessions.middleware.SessionMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware',
               'portal.middleware.CustomerGuard',
@@ -24,6 +24,8 @@ ROOT_URLCONF = 'config.urls_app'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:5173', 'http://localhost:5173']
+# Extra page addresses allowed to sign in (comma-separated), e.g. a second copy on another port for tests.
+CSRF_TRUSTED_ORIGINS += [o.strip() for o in os.environ.get('CRAFT_EXTRA_ORIGINS', '').split(',') if o.strip()]
 CRAFT_PRODUCTION_ACTIVATION = False
 
 # CRAFT V3 planning (web app). The scheduler runs in its own virtualenv as a
@@ -92,3 +94,12 @@ CRAFT_WRITEBACK = _local('CRAFT_WRITEBACK') == '1'
 CRAFT_AGENT_URL = _local('CRAFT_AGENT_URL', 'http://127.0.0.1:8003')
 CRAFT_AGENT_JWT_SECRET = _local('CRAFT_AGENT_JWT_SECRET')
 CRAFT_AGENT_SERVICE_KEY = _local('CRAFT_AGENT_SERVICE_KEY')
+
+# Factory simulator (sim app): realistic defaults; raise them in backend/.env for a livelier demo.
+SIM_BREAKDOWN_PER_HOUR = float(_local('SIM_BREAKDOWN_PER_HOUR', '0.0015'))  # per busy machine per working hour
+SIM_ABSENCE_PER_DAY = float(_local('SIM_ABSENCE_PER_DAY', '0.02'))  # per planned worker per day
+
+# Auto-planning plans ahead: a first plan of the next AUTO_PLAN_ORDERS orders for a factory without one, and the
+# next plan once the approved plan is AUTO_PLAN_NEXT_AT done (share of its pieces recorded).
+AUTO_PLAN_ORDERS = int(_local('AUTO_PLAN_ORDERS', '5'))
+AUTO_PLAN_NEXT_AT = float(_local('AUTO_PLAN_NEXT_AT', '0.8'))

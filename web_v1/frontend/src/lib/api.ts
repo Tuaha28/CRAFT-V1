@@ -115,6 +115,7 @@ export const api = {
     request<Run>(`/planning/runs/${id}/promise`, input),
   events: () => request<ActivityEvent[]>("/planning/events"),
   autoplan: (d: number, f: number) => request<AutoPlanState>(`/planning/autoplan?dataset=${d}&factory=${f}`),
+  setAutoplanAll: (d: number, on: boolean) => request<{ enabled: boolean; factories: number[] }>(`/planning/autoplan/all?dataset=${d}`, { enabled: on }),
   setAutoplan: (d: number, f: number, enabled: boolean) => request<AutoPlanState>(`/planning/autoplan?dataset=${d}&factory=${f}`, { enabled }),
   priority: (d: number, f: number) => request<{ orders: string[] }>(`/planning/priority?dataset=${d}&factory=${f}`),
   setPriority: (d: number, f: number, orderId: string, on: boolean, reason = "") =>
@@ -255,7 +256,7 @@ export interface ChatReply { answer: string; session_id: string; sources: { titl
 export interface CustomerAccountRow { id: number; customer_id: string; username: string; client_name: string; data: string; active: boolean; created_at: string }
 
 export const portal = {
-  me: () => request<{ customer_id: string; client_name: string; username: string; data: string }>("/portal/me"),
+  me: () => request<{ customer_id: string; client_name: string; username: string; data: string; simulated: boolean }>("/portal/me"),
   orders: () => request<PortalOrder[]>("/portal/orders"),
   order: (ref: string) => request<PortalOrder>(`/portal/orders/${encodeURIComponent(ref)}`),
   products: () => request<PortalProduct[]>("/portal/products"),
@@ -269,4 +270,11 @@ export const portal = {
   createAccount: (input: { username: string; client_name: string; dataset_id: number; email?: string }) =>
     request<CustomerAccountRow & { password: string }>("/portal/staff/accounts", input),
   clients: (dataset: number, q: string) => request<{ client_name: string; orders: number }[]>(`/portal/staff/clients?dataset=${dataset}&q=${encodeURIComponent(q)}`),
+};
+
+// ---------- factory simulator ----------
+export interface ClockState { now: string | null; speed: number; running: boolean; seed: number | null; has_plan: boolean; can_control: boolean }
+export const sim = {
+  clock: (d: number, f: number) => request<ClockState>(`/sim/clock?dataset=${d}&factory=${f}`),
+  control: (d: number, f: number, body: { action: string; speed?: number }) => request<ClockState>(`/sim/clock?dataset=${d}&factory=${f}`, body),
 };

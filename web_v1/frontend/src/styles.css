@@ -8,110 +8,110 @@
   --rail: 236px;
 
   color-scheme: dark;
-  --bg: #0a0c0f;
-  --bg-glow-1: rgba(45, 212, 191, 0.09);
-  --bg-glow-2: rgba(96, 165, 250, 0.04);
-  --inset: #0e1114;
-  --surface: #13171c;
-  --surface-2: #1b2026;
-  --popover: #151a20;
-  --glass: #13171c;
+  --bg: #121110;
+  --bg-glow-1: rgba(251, 146, 60, 0.08);
+  --bg-glow-2: rgba(96, 165, 250, 0.03);
+  --inset: #0f0e0d;
+  --surface: #1b1917;
+  --surface-2: #24201c;
+  --popover: #1f1c19;
+  --glass: #1b1917;
   --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0));
-  --rail-bg: #0e1114;
-  --topbar-bg: rgba(10, 12, 15, 0.92);
+  --rail-bg: #0f0e0d;
+  --topbar-bg: rgba(18, 17, 16, 0.92);
   --hover: rgba(255, 255, 255, 0.045);
-  --ink: #e8ecef;
-  --ink-2: #a7b0ba;
-  --ink-3: #8c96a1;
-  --rule: #222830;
-  --rule-strong: #2e3640;
-  --link: #5eead4;
-  --link-soft: #2dd4bf;
-  --accent: #2dd4bf;
-  --accent-wash: rgba(45, 212, 191, 0.14);
+  --ink: #f1ece6;
+  --ink-2: #c9bdb1;
+  --ink-3: #ab9f93;
+  --rule: #2f2a25;
+  --rule-strong: #4a3d30;
+  --link: #fdba74;
+  --link-soft: #fb923c;
+  --accent: #fb923c;
+  --accent-wash: rgba(251, 146, 60, 0.14);
   --accent-2: #60a5fa;
   --accent-2-ink: #93c5fd;
   --accent-2-wash: rgba(96, 165, 250, 0.12);
-  --line-a: #2dd4bf;
+  --line-a: #fb923c;
   --line-b: #a78bfa;
   --late: #f87171;
   --late-wash: rgba(248, 113, 113, 0.13);
   --late-hatch: rgba(248, 113, 113, 0.2);
-  --ontime: #2dd4bf;
-  --ontime-wash: rgba(45, 212, 191, 0.13);
+  --ontime: #4ade80;
+  --ontime-wash: rgba(74, 222, 128, 0.13);
   --warn: #fbbf24;
   --warn-ink: #fcd34d;
   --warn-wash: rgba(251, 191, 36, 0.12);
-  --focus: #5eead4;
-  --primary-bg: linear-gradient(135deg, #5eead4, #14b8a6);
-  --on-primary: #04201c;
-  --primary-shadow: 0 0 24px rgba(45, 212, 191, 0.32);
+  --focus: #fdba74;
+  --primary-bg: linear-gradient(135deg, #fdba74, #f97316);
+  --on-primary: #2a1302;
+  --primary-shadow: 0 0 24px rgba(249, 115, 22, 0.32);
   --shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.85);
   --shadow-pop: 0 22px 54px -14px rgba(0, 0, 0, 0.8);
   --overlay: rgba(3, 6, 8, 0.66);
   --log-bg: #07090b;
   --log-ink: #d7e0ea;
-  --stage-bg: radial-gradient(70% 70% at 50% 42%, rgba(45, 212, 191, 0.10), transparent 75%), linear-gradient(180deg, #0e1215, #0a0c0f);
-  --tag-bg: rgba(14, 17, 20, 0.85);
-  --series-craft: #2dd4bf;
+  --stage-bg: radial-gradient(70% 70% at 50% 42%, rgba(251, 146, 60, 0.10), transparent 75%), linear-gradient(180deg, #161412, #121110);
+  --tag-bg: rgba(15, 14, 13, 0.85);
+  --series-craft: #fb923c;
   --series-compare: #60a5fa;
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --hero-bg: radial-gradient(560px 280px at 100% 0%, rgba(45, 212, 191, 0.24), transparent 70%), #12171a;
-  --hero-rule: #1f4d47;
-  --hero-glow: 0 0 0 1px rgba(45, 212, 191, 0.05), 0 24px 60px -30px rgba(45, 212, 191, 0.35);
-  --late-hero-bg: radial-gradient(520px 260px at 100% 0%, rgba(248, 113, 113, 0.18), transparent 70%), #171314;
+  --hero-bg: radial-gradient(560px 280px at 100% 0%, rgba(251, 146, 60, 0.22), transparent 70%), #1a1715;
+  --hero-rule: #5a3b22;
+  --hero-glow: 0 0 0 1px rgba(251, 146, 60, 0.05), 0 24px 60px -30px rgba(251, 146, 60, 0.35);
+  --late-hero-bg: radial-gradient(520px 260px at 100% 0%, rgba(248, 113, 113, 0.18), transparent 70%), #1a1414;
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f4f7f7;
-  --bg-glow-1: rgba(13, 148, 136, 0.08);
+  --bg: #f7f5f2;
+  --bg-glow-1: rgba(234, 88, 12, 0.06);
   --bg-glow-2: rgba(37, 99, 235, 0.04);
-  --inset: #eef2f2;
+  --inset: #f0ece7;
   --surface: #ffffff;
-  --surface-2: #e8eeee;
+  --surface-2: #f1ece6;
   --popover: #ffffff;
   --glass: #ffffff;
   --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
   --rail-bg: #ffffff;
-  --topbar-bg: rgba(244, 247, 247, 0.95);
-  --hover: rgba(15, 40, 40, 0.05);
-  --ink: #0f1a1c;
-  --ink-2: #45545a;
-  --ink-3: #5c6b71;
-  --rule: rgba(15, 40, 45, 0.12);
-  --rule-strong: rgba(15, 40, 45, 0.24);
-  --link: #0f766e;
-  --link-soft: #0d9488;
-  --accent: #0d9488;
-  --accent-wash: rgba(13, 148, 136, 0.11);
+  --topbar-bg: rgba(247, 245, 242, 0.95);
+  --hover: rgba(60, 40, 20, 0.05);
+  --ink: #1c1612;
+  --ink-2: #5a4d42;
+  --ink-3: #6e6156;
+  --rule: rgba(60, 40, 20, 0.12);
+  --rule-strong: rgba(60, 40, 20, 0.24);
+  --link: #c2410c;
+  --link-soft: #ea580c;
+  --accent: #ea580c;
+  --accent-wash: rgba(234, 88, 12, 0.10);
   --accent-2: #2563eb;
   --accent-2-ink: #1d4ed8;
   --accent-2-wash: rgba(37, 99, 235, 0.09);
-  --line-a: #0d9488;
+  --line-a: #ea580c;
   --line-b: #7c3aed;
   --late: #c81e3a;
   --late-wash: rgba(200, 30, 58, 0.08);
   --late-hatch: rgba(200, 30, 58, 0.13);
-  --ontime: #0f766e;
-  --ontime-wash: rgba(15, 118, 110, 0.1);
+  --ontime: #15803d;
+  --ontime-wash: rgba(21, 128, 61, 0.10);
   --warn: #b45309;
   --warn-ink: #92400e;
   --warn-wash: rgba(217, 119, 6, 0.11);
-  --focus: #0f766e;
-  --primary-bg: linear-gradient(135deg, #14b8a6, #0d9488);
-  --primary-shadow: 0 10px 20px -12px #0d9488;
+  --focus: #c2410c;
+  --primary-bg: linear-gradient(135deg, #fdba74, #f97316);
+  --primary-shadow: 0 10px 20px -12px #ea580c;
   --shadow: 0 14px 30px -22px rgba(30, 41, 82, 0.4);
   --shadow-pop: 0 22px 50px -16px rgba(30, 41, 82, 0.35);
   --overlay: rgba(17, 26, 48, 0.4);
   --log-bg: #111a30;
-  --stage-bg: radial-gradient(70% 70% at 50% 42%, rgba(13, 148, 136, 0.08), transparent 75%), linear-gradient(180deg, #eef2f2, #e3eaea);
+  --stage-bg: radial-gradient(70% 70% at 50% 42%, rgba(234, 88, 12, 0.07), transparent 75%), linear-gradient(180deg, #f3efea, #ebe5de);
   --tag-bg: rgba(255, 255, 255, 0.9);
-  --series-craft: #0d9488;
+  --series-craft: #ea580c;
   --series-compare: #2563eb;
-  --on-primary: #ffffff;
-  --hero-bg: radial-gradient(560px 280px at 100% 0%, rgba(13, 148, 136, 0.13), transparent 70%), #ffffff;
-  --hero-rule: rgba(13, 148, 136, 0.35);
-  --hero-glow: 0 14px 30px -22px rgba(13, 148, 136, 0.45);
+  --on-primary: #2a1302;
+  --hero-bg: radial-gradient(560px 280px at 100% 0%, rgba(234, 88, 12, 0.12), transparent 70%), #ffffff;
+  --hero-rule: rgba(234, 88, 12, 0.35);
+  --hero-glow: 0 14px 30px -22px rgba(234, 88, 12, 0.4);
   --late-hero-bg: radial-gradient(520px 260px at 100% 0%, rgba(200, 30, 58, 0.09), transparent 70%), #ffffff;
 }
 
@@ -808,11 +808,11 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .lp-line { font-size: 0.76rem; color: var(--ink-2); }
 .lp-track { position: relative; height: 16px; border-radius: 6px; background: var(--hover); }
 .lp-bar { position: absolute; top: 2px; bottom: 2px; border-radius: 5px; transform-origin: left center; animation: grow-x 700ms cubic-bezier(.2, .8, .2, 1) both; }
-.lp-bar.h0 { background: hsl(172, 66%, 50%); }
+.lp-bar.h0 { background: hsl(27, 96%, 61%); }
 .lp-bar.h1 { background: hsl(213, 90%, 68%); }
-.lp-bar.h2 { background: hsl(166, 76%, 66%); }
+.lp-bar.h2 { background: hsl(33, 97%, 72%); }
 .lp-bar.h3 { background: hsl(255, 85%, 76%); }
-.lp-bar.h4 { background: hsl(190, 80%, 60%); }
+.lp-bar.h4 { background: hsl(222, 70%, 62%); }
 .lp-now { position: absolute; top: 6px; bottom: 0; left: 0; width: 2px; background: var(--ink); border-radius: 2px; opacity: 0.8; }
 .lp-now b { position: absolute; top: -4px; left: 50%; transform: translateX(-50%); padding: 0 5px; border-radius: 4px; background: var(--ink); color: var(--bg); font-size: 0.62rem; font-weight: 700; line-height: 1.5; }
 .lp-sweep-box { position: absolute; top: 0; bottom: 0; left: 62px; right: 2px; pointer-events: none; overflow: visible; }
@@ -1031,7 +1031,7 @@ h1 { letter-spacing: -0.02em; }
   .nav-group { gap: 2px; padding-bottom: 8px; border-bottom: 0; }
   .nav-title { position: static; width: auto; height: auto; overflow: visible; clip: auto; padding: 8px 12px 4px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
   .rail nav a { flex-direction: row; gap: 12px; padding: 9px 12px; font-size: 0.93rem; text-align: left; border-radius: 12px; }
-  .rail nav a.active { background: var(--accent-wash); color: var(--link); box-shadow: inset 0 0 0 1px var(--hero-rule), 0 0 22px -8px rgba(45, 212, 191, 0.45); }
+  .rail nav a.active { background: var(--accent-wash); color: var(--link); box-shadow: inset 0 0 0 1px var(--hero-rule), 0 0 22px -8px rgba(251, 146, 60, 0.45); }
   .rail-ask { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--hero-rule); border-radius: 16px; background: var(--hero-bg); color: var(--ink); text-decoration: none; transition: box-shadow 160ms ease, transform 160ms ease; }
   .rail-ask:hover { box-shadow: var(--hero-glow); transform: translateY(-1px); }
   .rail-ask strong { display: block; font-size: 0.92rem; }
@@ -1100,7 +1100,7 @@ table.against td, table.against th { padding: 7px 6px; }
 /* New plan: step strip, work bars, ready card */
 .wizard-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .wizard-steps li { display: flex; gap: 12px; align-items: center; padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--rule); min-width: 0; }
-.wizard-steps li.now { border-color: var(--accent); box-shadow: 0 0 18px -4px rgba(45, 212, 191, 0.35); }
+.wizard-steps li.now { border-color: var(--accent); box-shadow: 0 0 18px -4px rgba(251, 146, 60, 0.35); }
 .wizard-steps strong { display: block; font-size: 0.93rem; }
 .wizard-steps small { display: block; color: var(--ink-2); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wizard-steps li > span:last-child { min-width: 0; }
@@ -1248,3 +1248,51 @@ table.against td, table.against th { padding: 7px 6px; }
 .decide-inline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .decide-inline input { flex: 1 1 160px; min-width: 0; padding: 8px 10px; border-radius: var(--radius-s); border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink); font: inherit; }
 @media (max-width: 640px) { .portal-ask { flex-direction: column; } .portal-msg { max-width: 100%; } }
+
+/* ---------- factory simulator ---------- */
+.factory-clock { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.topbar:has(.factory-clock .sim-badge) .topbar-tools { flex: 0 1 auto; }
+/* while the simulation runs the clock needs the room: the date is in the clock, search keeps its icon (and Ctrl K) */
+.topbar:has(.factory-clock .sim-badge) .scope > .muted { display: none; }
+.topbar:has(.factory-clock .sim-badge) .search-trigger { font-size: 0; gap: 0; padding: 0 12px; }
+.topbar:has(.factory-clock .sim-badge) .search-trigger kbd { display: none; }
+.factory-clock .btn { padding: 4px 10px; min-height: 32px; font-size: 0.82rem; }
+.factory-clock .btn.on { background: var(--accent-wash); border-color: var(--accent); color: var(--ink); }
+.sim-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem;
+  font-weight: 600; background: var(--accent-2-wash); color: var(--accent-2-ink); border: 1px solid var(--accent-2); }
+.factory-clock.running .sim-badge { animation: sim-pulse 2.4s ease-in-out infinite; }
+.sim-time { font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+.sim-controls { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+@keyframes sim-pulse { 50% { opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) { .factory-clock.running .sim-badge { animation: none; } }
+
+/* ---------- hover fixes (dark mode): coloured buttons keep their colour on hover ---------- */
+.btn:hover:not(:disabled) { background: var(--surface-2); }
+.btn.primary:hover:not(:disabled) { background: var(--primary-bg); color: var(--on-primary); }
+.rail nav a.active:hover { background: var(--accent-wash); color: var(--link); filter: brightness(1.15); }
+
+/* ---------- motion: everything eases instead of jumping (off when the system asks for less motion) ---------- */
+:root { --ease-out: cubic-bezier(.2, .8, .2, 1); --t-fast: 160ms; --t-med: 240ms; }
+html { scroll-behavior: smooth; }
+:where(a, button, .btn, input, select, textarea, summary, .chip, .icon-btn, .search-trigger, .rail nav a, .tabs a, .tabs button,
+  .stat-tile, .ring-card, .choice, .panel, tbody td, .switch, .factory-clock .btn, .portal-msg, .pick-list button) {
+  transition: background-color var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease,
+    box-shadow var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out), opacity var(--t-fast) ease, filter var(--t-fast) ease;
+}
+/* a gentle press on everything clickable */
+:where(.btn, .icon-btn, .rail nav a, .tabs a, .tabs button, .choice, .ring-card, .stat-tile):active:not(:disabled) { transform: scale(0.97); }
+/* page content arrives in a short cascade */
+:where(.page) > * { animation: slide-up 360ms var(--ease-out) both; }
+:where(.page) > *:nth-child(2) { animation-delay: 40ms; }
+:where(.page) > *:nth-child(3) { animation-delay: 80ms; }
+:where(.page) > *:nth-child(4) { animation-delay: 120ms; }
+:where(.page) > *:nth-child(5) { animation-delay: 160ms; }
+:where(.page) > *:nth-child(n+6) { animation-delay: 200ms; }
+/* table rows and list items fade in when they appear */
+:where(tbody tr, .ask-items li, .late-list li, .pick-list li, .portal-cards > *) { animation: fade 260ms ease both; }
+/* switching between light and dark fades instead of flashing */
+:where(body, .rail, .topbar, .panel, .main) { transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease; }
+/* focus ring slides out a little */
+:where(:focus-visible) { outline-offset: 3px; transition: outline-offset var(--t-fast) ease; }
+.btn { transition: transform var(--t-med) var(--ease-out), border-color var(--t-fast) ease, background-color var(--t-fast) ease,
+  color var(--t-fast) ease, box-shadow var(--t-med) var(--ease-out), filter var(--t-fast) ease; }

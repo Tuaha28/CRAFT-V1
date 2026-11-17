@@ -1,3 +1,4 @@
+import { can, useSession } from "../app/session";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { erp, floor, type FloorOp, type HourPoint, type LineRef, type LineState } from "../lib/api";
@@ -24,7 +25,8 @@ export const lineName = (lines: LineRef[] | undefined, id: number | null | undef
 
 /** Floor queries keyed by capture and factory. */
 export function useFloorLines(d: number | undefined, f: number | undefined) {
-  return useQuery({ queryKey: ["floor-lines", d, f], queryFn: () => floor.lines(d!, f!), enabled: d !== undefined && f !== undefined });
+  const allowed = can(useSession(), "floor.view_floor");  // roles without the floor pages get no line names
+  return useQuery({ queryKey: ["floor-lines", d, f], queryFn: () => floor.lines(d!, f!), enabled: allowed && d !== undefined && f !== undefined });
 }
 
 /** A line's name, for places that only know its id. */

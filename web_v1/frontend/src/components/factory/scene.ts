@@ -25,7 +25,7 @@ const PALETTES = {
   dark: {
     ground: 0x0a0c0f, grid: 0x1f2c2d, slab: 0x151a1e, belt: 0x2a3236, table: 0x6b8084, leg: 0x283034, head: 0x8fb3b0, idle: 0x3a4246, worker: 0xf0dfc8, fog: 0x0a0c0f,
     sky: 0xbfe9e3, under: 0x0e1214, hemi: 2.1, sun: 2.4, gridOpacity: 0.3, glassOpacity: 0.07, stripOpacity: 0.08, exposure: 1.1, blending: THREE.AdditiveBlending,
-    lines: ["#2dd4bf", "#60a5fa", "#a78bfa", "#f472b6", "#a3e635", "#38bdf8"], fix: "#fbbf24", down: "#fb7185",
+    lines: ["#fb923c", "#60a5fa", "#a78bfa", "#f472b6", "#a3e635", "#38bdf8"], fix: "#fbbf24", down: "#fb7185",
   },
   light: {
     ground: 0xeef1f8, grid: 0xc7d0e4, slab: 0xffffff, belt: 0xc3cde0, table: 0xdfe5f0, leg: 0x98a4bf, head: 0x5d7099, idle: 0xb9c2d4, worker: 0xb9835a, fog: 0xeef1f8,

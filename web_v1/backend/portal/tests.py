@@ -105,6 +105,13 @@ class OrderShapeTests(PortalBase):
         self.assertTrue(found['late'])  # due before today and not shipped
         self.assertIn('confirm', found['customer_note'])
 
+    def test_started_order_is_in_production_with_step_progress(self):
+        # 200 pieces, 4 steps: step 1 has 100 done, the rest nothing; nothing has passed every step yet
+        waiting = [dict(ROWS[0], production_status='Pending', po_status='Confirmed')]
+        with mock.patch.object(orders, 'fetch', return_value=(waiting, {477: 0}, {477: 0.125})):
+            found = orders.customer_order(self.acme, 'NC-0477')
+        self.assertEqual((found['stage'], found['progress_percent']), ('In production', 12))
+
     def test_another_company_sees_none_of_them(self):
         self.assertEqual(orders.customer_orders(self.other), [])
         self.assertIsNone(orders.customer_order(self.other, 'NC-0477'))
@@ -185,6 +192,14 @@ class GuardTests(PortalBase):
         self.assertEqual(sorted(o['order_id'] for o in client.get('/api/v1/portal/orders').json()),
                          ['NC-0012', 'NC-0477'])
         self.assertEqual(self.portal(self.other).get('/api/v1/portal/orders/NC-0477').status_code, 404)
+
+    def test_portal_says_when_the_factory_is_simulated(self):
+        from datetime import datetime, timezone as dt_timezone
+        from sim.models import FactoryClock
+        client = self.portal(self.acme)
+        self.assertFalse(client.get('/api/v1/portal/me').json()['simulated'])
+        FactoryClock.objects.create(dataset=self.dataset, factory_id=6, now=datetime(2026, 9, 10, tzinfo=dt_timezone.utc), speed=10)
+        self.assertTrue(client.get('/api/v1/portal/me').json()['simulated'])
 
     def test_staff_cannot_use_customer_pages(self):
         staff = User.objects.create_user('planner')

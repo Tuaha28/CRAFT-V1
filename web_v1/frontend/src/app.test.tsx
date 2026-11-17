@@ -36,6 +36,29 @@ describe("CRAFT planner", () => {
     }
   }, 15_000);
 
+  it("shows the simulated clock badge and speed buttons for a manager", async () => {
+    const session = { csrf_token: "t", authenticated: true, username: "boss", can_request: true, can_approve: true,
+      production_activation: false, role: "manager", role_label: "Production manager", scope_factory: null, scope_line: null,
+      perms: ["planning.approve_plan", "planning.request_plan", "floor.view_floor"] };
+    const datasets = [{ id: 2, slug: "d", label: "30% load", origin: "SNAPSHOT", database: "db", load_pct: 30,
+      reference_time: "2026-09-10T00:00:00", factories: [{ factory_id: 6, orders: 74, operations: 635 }], captured_at: "" }];
+    const clock = { now: "2026-09-12T08:00:00Z", speed: 10, running: true, seed: 1, has_plan: true, can_control: true };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(JSON.stringify(
+      String(url).includes("/sim/clock") ? clock : datasets))));
+    const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+    const { SessionContext } = await import("./app/session");
+    const { ScopeProvider } = await import("./app/scope");
+    const { FactoryClock } = await import("./components/FactoryClock");
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionContext.Provider value={session}><ScopeProvider><FactoryClock /></ScopeProvider></SessionContext.Provider>
+      </QueryClientProvider>);
+    expect(await screen.findByText("Simulated factory clock", {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "60×" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "10×" })).toHaveAttribute("aria-pressed", "true");
+  }, 15_000);
+
   it("reports an unreachable server plainly", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     const App = await freshApp();

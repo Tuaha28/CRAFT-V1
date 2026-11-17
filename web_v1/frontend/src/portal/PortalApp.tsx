@@ -24,6 +24,7 @@ function PortalShell({ children }: { children: ReactNode }) {
   const client = useQueryClient();
   const { pathname } = useLocation();
   const signOut = async () => { await api.logout(); await client.invalidateQueries({ queryKey: ["session"] }); };
+  const me = useQuery({ queryKey: ["portal-me"], queryFn: portal.me, refetchInterval: 30_000 });
   return (
     <div className="shell portal">
       <a className="skip-link" href="#main">Skip to content</a>
@@ -47,7 +48,9 @@ function PortalShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="workspace">
-        <header className="topbar"><span className="muted small">Customer portal · {session.customer?.client_name}</span><div className="topbar-tools"><ThemeToggle /></div></header>
+        <header className="topbar"><span className="muted small">Customer portal · {session.customer?.client_name}</span>
+          {me.data?.simulated && <span className="sim-badge" title="A demonstration: the factory's progress is simulated">Simulated factory clock</span>}
+          <div className="topbar-tools"><ThemeToggle /></div></header>
         <main className="main" id="main" tabIndex={-1}><div key={pathname} className="page">{children}</div></main>
       </div>
       <Toaster />

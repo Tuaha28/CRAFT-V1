@@ -30,6 +30,10 @@ class Command(BaseCommand):
             group, _ = Group.objects.get_or_create(name=name)
             group.permissions.set(Permission.objects.filter(content_type__app_label='planning', codename__in=codenames))
             groups[key] = group
+        from django.apps import apps
+        if apps.is_installed('floor'):  # the full role definitions (floor and portal rights too), so a restart never strips them
+            from floor.roles import ensure_groups
+            ensure_groups()
         self.stdout.write(f'Roles ready: {", ".join(name for name, _ in ROLES.values())}')
         self.stdout.write(f'Factory captures found: {len(discover())}')
         if not user:

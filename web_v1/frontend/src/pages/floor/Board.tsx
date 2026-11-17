@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { floor, type Board as BoardData } from "../../lib/api";
+import { floor, sim, type Board as BoardData } from "../../lib/api";
 import { num } from "../../lib/format";
 import { useReadyScope } from "../../app/scope";
 import { DayNav, lineName, StateChip, useFloorLines } from "../../components/Floor";
@@ -9,9 +9,14 @@ import { Loading, Notice, PageHead } from "../../components/ui";
 
 type BoardLine = BoardData["lines"][number];
 
+/** The factory's time: the simulated factory clock when it runs for this factory, else the wall clock. */
 function useClock() {
+  const ready = useReadyScope();
+  const factory = useQuery({ queryKey: ["sim-clock", ready?.[0], ready?.[1]], queryFn: () => sim.clock(ready![0], ready![1]),
+    enabled: Boolean(ready), refetchInterval: 5000 });
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const t = window.setInterval(() => setNow(new Date()), 30_000); return () => window.clearInterval(t); }, []);
+  if (factory.data?.now) return new Date(factory.data.now).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
   return now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 

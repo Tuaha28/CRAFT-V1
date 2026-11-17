@@ -17,7 +17,13 @@ class Profile(models.Model):
                        ('handle_issue', 'Acknowledge and close issues, and re-plan after them'),
                        ('enter_output', 'Enter hourly output for a line'),
                        ('record_defect', 'Record quality checks and defects'),
-                       ('repair_machine', 'Take and close machine breakdown issues')]
+                       ('repair_machine', 'Take and close machine breakdown issues'),
+                       ('view_plans', 'See plans and their results'),
+                       ('view_orders', 'See orders and styles'),
+                       ('view_workers', 'See the worker list (names and skills)'),
+                       ('view_machines', 'See the machine list'),
+                       ('view_overview', 'See the factory overview, stock and quality summary'),
+                       ('view_activity', 'See the activity log (who did what)')]
 
 
 class Issue(models.Model):

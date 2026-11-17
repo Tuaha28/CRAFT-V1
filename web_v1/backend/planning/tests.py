@@ -44,6 +44,7 @@ class Fixture(TestCase):
         self.planner = _user('planner', 'request_plan')
         self.manager = _user('manager', 'request_plan', 'approve_plan')
         self.viewer = _user('viewer')
+        self.reader = _user('reader', 'view_plans')  # an office role that may see plans
 
     def tearDown(self):
         self.settings_override.disable()
@@ -305,7 +306,7 @@ class ApiTests(Fixture):
         PlanRun.objects.filter(pk=stuck.pk).update(heartbeat_at='2020-01-01T00:00:00Z')
         waiting = self.request(order_offset=10)
         client = APIClient()
-        client.force_authenticate(self.viewer)
+        client.force_authenticate(self.reader)
         rows = {r['id']: r for r in client.get('/api/v1/planning/runs').json()}
         self.assertEqual(rows[str(stuck.pk)]['status'], 'FAILED')  # no worker needed to clear it
         self.assertTrue(rows[str(waiting.pk)]['worker_down'])
@@ -314,7 +315,7 @@ class ApiTests(Fixture):
 
     def test_experiments_endpoint(self):
         client = APIClient()
-        client.force_authenticate(self.viewer)
+        client.force_authenticate(self.reader)
         path = Path(self.tmp.name) / 'paper_data.json'
         path.write_text(json.dumps({'cases': [], 'v31_done': False}))
         with override_settings(PLANNING_EXPERIMENTS_DIR=self.tmp.name):
@@ -335,7 +336,7 @@ class CurrentPlanTests(Fixture):
 
     def test_dashboard_prefers_the_approved_plan_and_skips_rejected(self):
         client = APIClient()
-        client.force_authenticate(self.viewer)
+        client.force_authenticate(self.reader)
         url = f'/api/v1/planning/current/{self.dataset.pk}/4'
         self.assertIsNone(client.get(url).json()['run'])
         approved = self._finished('APPROVED')

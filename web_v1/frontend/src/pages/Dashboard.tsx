@@ -76,7 +76,7 @@ export default function Dashboard() {
   const { dataset, factoryId } = useScope();
   const summary = useQuery({ queryKey: ["erp-summary", ready], queryFn: () => erp.summary(ready![0], ready![1]), enabled: Boolean(ready), refetchInterval: 60_000 });
   const plan = useQuery({ queryKey: ["current-plan", ready], queryFn: () => erp.currentPlan(ready![0], ready![1]), enabled: Boolean(ready), refetchInterval: 60_000 });
-  const machines = useQuery({ queryKey: ["erp-machines", ready, "all"], enabled: Boolean(ready),
+  const machines = useQuery({ queryKey: ["erp-machines", ready, "all"], enabled: Boolean(ready) && can(session, "floor.view_machines"),
     queryFn: () => erp.machines(ready![0], ready![1], { size: 200 }) });
   const board = useQuery({ queryKey: ["floor-board", ready, undefined], enabled: Boolean(ready) && can(session, "floor.view_floor"),
     queryFn: () => floor.board(ready![0], ready![1]), refetchInterval: 30_000 });

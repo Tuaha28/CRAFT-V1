@@ -5,6 +5,7 @@ import { ArrowUp, Sparkles, X } from "lucide-react";
 import { api, erp, type AskRoute } from "../lib/api";
 import { ask, SUGGESTIONS, type Answer, type AskContext, type Source } from "../lib/ask";
 import { useReadyScope } from "../app/scope";
+import { can, useSession } from "../app/session";
 import { lineName, useFloorLines } from "./Floor";
 
 /** pending: waiting for the AI reading; route: the AI reading; fellBack: the AI was on but failed, so the built-in reading answered. */
@@ -45,7 +46,8 @@ export function AskCraft({ open, onClose, onOrder }: { open: boolean; onClose: (
   const summary = useQuery({ queryKey: ["erp-summary", ready], queryFn: () => erp.summary(ready![0], ready![1]), enabled: on });
   const materials = useQuery({ queryKey: ["erp-materials", ready], queryFn: () => erp.materials(ready![0], ready![1]), enabled: on });
   const quality = useQuery({ queryKey: ["erp-quality", ready], queryFn: () => erp.quality(ready![0], ready![1]), enabled: on });
-  const machines = useQuery({ queryKey: ["erp-machines", ready, "all"], queryFn: () => erp.machines(ready![0], ready![1], { size: 200 }), enabled: on });
+  const seesMachines = can(useSession(), "floor.view_machines");
+  const machines = useQuery({ queryKey: ["erp-machines", ready, "all"], queryFn: () => erp.machines(ready![0], ready![1], { size: 200 }), enabled: on && seesMachines });
   const lines = useFloorLines(ready?.[0], ready?.[1]);
   const ai = useQuery({ queryKey: ["ask-status"], queryFn: api.askStatus, enabled: open, staleTime: 60_000 });
   const [turns, setTurns] = useState<Turn[]>([]);

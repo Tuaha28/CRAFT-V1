@@ -2,7 +2,7 @@
 read-only account is not available on this machine)."""
 from datetime import date
 from unittest import skipUnless
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIClient
 from planning.models import Dataset
@@ -86,7 +86,13 @@ class ApiTests(TestCase):
                                          factories=[{'factory_id': 4}])
         client = APIClient()
         self.assertEqual(client.get(f'/api/v1/erp/{dataset.pk}/4/summary').status_code, 403)
-        client.force_authenticate(User.objects.create_user('viewer'))
+        nobody = User.objects.create_user('nobody')  # signed in, but no page rights: refused
+        client.force_authenticate(nobody)
+        self.assertEqual(client.get(f'/api/v1/erp/{dataset.pk}/4/summary').status_code, 403)
+        viewer = User.objects.create_user('viewer')
+        for code in ('view_overview', 'view_orders', 'view_workers', 'view_machines'):
+            viewer.user_permissions.add(Permission.objects.get(codename=code, content_type__app_label='floor'))
+        client.force_authenticate(User.objects.get(pk=viewer.pk))
         for module in ('summary', 'orders', 'styles', 'materials', 'workforce', 'machines', 'quality'):
             response = client.get(f'/api/v1/erp/{dataset.pk}/4/{module}')
             self.assertEqual(response.status_code, 200, module)

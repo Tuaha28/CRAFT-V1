@@ -1,3 +1,4 @@
+import { can, useSession } from "../app/session";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { AlertCircle, Info } from "lucide-react";
@@ -98,11 +99,20 @@ export function ConfirmButton({ label, confirm, onConfirm, disabled, className =
 export const RESOURCE_TABS = [["/workforce", "Workers"], ["/machines", "Machines"], ["/materials", "Materials"]] as const;
 export const QUALITY_TABS = [["/floor/quality", "Checks on the floor"], ["/quality", "History"]] as const;
 
+/** Pages behind a tab that not every role may open (the server checks the same permissions). */
+const TAB_PERMS: Record<string, string[]> = {
+  "/workforce": ["floor.view_workers"], "/machines": ["floor.view_machines", "floor.report_issue"],
+  "/materials": ["floor.view_overview", "floor.report_issue"], "/quality": ["floor.view_overview", "floor.record_defect"],
+  "/floor/quality": ["floor.view_floor"],
+};
+
 /** Links between pages that share one menu entry, shown as tabs under the page title. */
 export function PageTabs({ items, label }: { items: readonly (readonly [string, string])[]; label: string }) {
+  const session = useSession();
+  const allowed = items.filter(([to]) => !TAB_PERMS[to] || TAB_PERMS[to].some((p) => can(session, p)));
   return (
     <nav className="tabs page-tabs" aria-label={label}>
-      {items.map(([to, text]) => <NavLink key={to} to={to} className={({ isActive }) => (isActive ? "on" : undefined)}>{text}</NavLink>)}
+      {allowed.map(([to, text]) => <NavLink key={to} to={to} className={({ isActive }) => (isActive ? "on" : undefined)}>{text}</NavLink>)}
     </nav>
   );
 }

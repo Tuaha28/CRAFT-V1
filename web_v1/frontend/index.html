@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0c0f" />
+    <meta name="theme-color" content="#121110" />
     <meta name="description" content="CRAFT plans garment sewing floors: which order, on which line, with which crew, and when." />
     <title>CRAFT Planner</title>
     <!-- Sets the saved or system theme before the first paint, so no page flashes the wrong one. -->
@@ -13,7 +13,7 @@
         try { saved = localStorage.getItem("craft-theme"); } catch (e) { /* private window */ }
         var light = saved ? saved === "light" : window.matchMedia("(prefers-color-scheme: light)").matches;
         document.documentElement.dataset.theme = light ? "light" : "dark";
-        if (light) document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f4f7f7");
+        if (light) document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f7f5f2");
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
