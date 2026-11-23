@@ -59,6 +59,19 @@ describe("CRAFT planner", () => {
     expect(screen.getByRole("button", { name: "10×" })).toHaveAttribute("aria-pressed", "true");
   }, 15_000);
 
+  it("explains a locked sign-in in words", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => String(url).includes("/governance/login")
+      ? new Response(JSON.stringify({ error: "LOCKED", message: "Too many wrong passwords. Try again in 15 minutes." }), { status: 429 })
+      : new Response(JSON.stringify({ csrf_token: "t", authenticated: false, username: null, can_request: false, can_approve: false, production_activation: false }))));
+    const App = await freshApp();
+    const { fireEvent } = await import("@testing-library/react");
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText("Username"), { target: { value: "demo_manager" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "wrong-password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText(/Too many wrong passwords/)).toBeInTheDocument();
+  }, 15_000);
+
   it("reports an unreachable server plainly", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     const App = await freshApp();

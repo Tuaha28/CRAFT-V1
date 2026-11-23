@@ -87,7 +87,8 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
   }
   const data = await response.json().catch(() => null) as ({ error?: unknown; detail?: unknown } & Record<string, unknown>) | null;
   if (!response.ok) {
-    const raw = data?.error ?? data?.detail ?? (data && Object.values(data).flat().join(" "));
+    // a readable message when the server sends one (e.g. a locked sign-in), else its error code or details
+    const raw = (typeof data?.message === "string" && data.message) || (data?.error ?? data?.detail ?? (data && Object.values(data).flat().join(" ")));
     throw new ApiError(typeof raw === "string" && raw ? raw : `Request failed (${response.status})`, response.status);
   }
   return data as T;
@@ -179,7 +180,25 @@ export interface FloorOp {
   key: string; order_id: string; step: number; name: string | null; machine_type: string | null; crew: number; pieces: number | null;
   workers: string[]; machines: string[]; worker_names: string[]; machine_models: string[]; windows: [string, string][];
   planned_today: number; planned_before: number; due_day: number | null; hourly_target: Record<string, number>; recorded_total: number;
+  status?: StepStatus;
 }
+export type StepState = "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "COMPLETE" | "SHORT";
+export interface StepStatus {
+  key: string; order_id: string; step: number; line: number; needed: number; recorded: number; defective: number; good: number;
+  state: StepState; final: number; marked: boolean; reason: string; by: string | null; finished_at: string | null; planned_end: string;
+  previous: number | null; ready: boolean; limit: number; reopened: boolean;
+}
+export interface ReworkItem { id: number; operation_key: string; checked: number; defects: number; pieces: number; defect_type: string; note: string; created_at: string }
+export type OrderStage = "NOT_STARTED" | "IN_PRODUCTION" | "SEWN" | "QC_PASSED" | "QC_FAILED" | "PACKED" | "SHIPPED" | "CLOSED";
+export interface OrderStatusInfo {
+  order_id: string; stage: OrderStage; stage_label: string; sewn_at: string | null; inspection_note: string; cartons: number | null;
+  carrier: string; tracking: string; shipped_on: string | null; close_reason: string; updated_by: string; updated_at: string;
+}
+export interface OrderProgress {
+  order_id: string; stage: OrderStage; in_plan: boolean; status: OrderStatusInfo | null; steps: StepStatus[];
+  can: { inspect: boolean; pack: boolean; ship: boolean; close: boolean; reopen: boolean };
+}
+export type OrderAction = "inspect" | "pack" | "ship" | "close" | "reopen";
 export interface Issue {
   id: number; kind: string; kind_label: string; status: "OPEN" | "IN_PROGRESS" | "RESOLVED"; status_label: string; line_id: number | null;
   machine_id: number | null; worker_id: number | null; order_id: string; note: string; reported_by: string; handled_by: string | null;
@@ -189,6 +208,7 @@ export interface LineDay {
   plan: FloorPlanInfo; line_id: number; day: number; date: string; days: number[]; today: number; operations: FloorOp[];
   summary: LineDaySummary & { actual_by_op: Record<string, Record<string, number>> }; issues: Issue[];
   can_enter: boolean; can_check: boolean; defect_types: string[];
+  can_complete?: boolean; can_reopen?: boolean; rework?: ReworkItem[];
 }
 export interface Board {
   plan: FloorPlanInfo | null; day?: number; date?: string; days?: number[]; today?: number; open_issues: number;
@@ -230,6 +250,14 @@ export const floor = {
     request<Issue>(`/floor/issues/${id}/status`, { status, resolution }),
   replan: (d: number, f: number, issue_ids: number[], mode: "QUICK" | "FULL") =>
     request<{ run_id: string }>(floorPath(d, f, "replan"), { issue_ids, mode }),
+  completeStep: (d: number, f: number, key: string, input: { pieces?: number | null; reason?: string }) =>
+    request<StepStatus>(floorPath(d, f, `steps/${key}/complete`), input),
+  reopenStep: (d: number, f: number, key: string, reason: string) => request<{ reopened: string }>(floorPath(d, f, `steps/${key}/reopen`), { reason }),
+  rework: (checkId: number) => request<{ id: number }>(`/floor/checks/${checkId}/rework`, {}),
+  order: (d: number, f: number, orderId: string) => request<OrderProgress>(floorPath(d, f, `orders/${orderId}`)),
+  orderStatuses: (d: number, f: number) => request<{ statuses: Record<string, OrderStatusInfo> }>(floorPath(d, f, "orders/statuses")),
+  orderAction: (d: number, f: number, orderId: string, action: OrderAction, input: Record<string, string | number>) =>
+    request<{ stage: OrderStage }>(floorPath(d, f, `orders/${orderId}/${action}`), input),
   users: () => request<{ users: AppUser[]; roles: RoleInfo[] }>("/floor/users"),
   createUser: (input: UserInput & { username: string }) => request<AppUser & { password: string }>("/floor/users", input),
   changeUser: (id: number, input: UserInput & { active: boolean }) => request<AppUser>(`/floor/users/${id}`, input),

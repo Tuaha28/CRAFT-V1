@@ -10,7 +10,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG') == '1'
 INSTALLED_APPS = [*INSTALLED_APPS, 'django.contrib.auth', 'django.contrib.sessions', 'governance', 'planning', 'erp', 'floor', 'portal', 'sim']
 MIDDLEWARE = [*MIDDLEWARE, 'django.contrib.sessions.middleware.SessionMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware',
-              'portal.middleware.CustomerGuard',
+              'portal.middleware.CustomerGuard', 'governance.middleware.ApiSecurityHeaders',
               'django.middleware.clickjacking.XFrameOptionsMiddleware']
 X_FRAME_OPTIONS = 'DENY'
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3',
@@ -103,3 +103,16 @@ SIM_ABSENCE_PER_DAY = float(_local('SIM_ABSENCE_PER_DAY', '0.02'))  # per planne
 # next plan once the approved plan is AUTO_PLAN_NEXT_AT done (share of its pieces recorded).
 AUTO_PLAN_ORDERS = int(_local('AUTO_PLAN_ORDERS', '5'))
 AUTO_PLAN_NEXT_AT = float(_local('AUTO_PLAN_NEXT_AT', '0.8'))
+
+# Accounts: strong passwords (checked when a password is set or changed) and 12-hour sessions for shared PCs.
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 10}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+SESSION_COOKIE_AGE = 12 * 3600
+# One cache for every server process, kept in the app database (sign-in locks survive restarts and are shared).
+# The table is created by `manage.py createcachetable` (the start script runs it).
+CACHES = {'default': {'BACKEND': 'django.core.cache.backends.db.DatabaseCache', 'LOCATION': 'craft_cache',
+                      'TIMEOUT': 15 * 60, 'OPTIONS': {'MAX_ENTRIES': 100000}}}

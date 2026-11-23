@@ -119,3 +119,13 @@ Refreshed from local commit `7987c19` (branch `craft-v1-consolidation`): the fac
 roles enforced by the server, the fixed planning_setup role reset, the production-build start script,
 the orange theme with readable hovers and smooth motion. Still source-only: `handout.md`, `.env`,
 virtual environments, data captures and databases excluded.
+
+## Refresh 2026-11-23 (completing steps and orders, hardening)
+
+Refreshed from local commit `0a19e8e` (branch `craft-v1-consolidation`): completing steps (by
+themselves, Mark complete also without hourly counts, closed short with a reason, rework, reopen)
+and orders (sewn, final inspection, packed, shipped, closed) with their roles, written to the demo
+copies; the customer portal shows packing and shipping; sign-in lock kept in the app database,
+password rules, 12-hour sessions, security headers, WCAG 2.2 AA checks (axe). Both changes were
+reviewed by a second reviewer and the findings fixed. Still source-only: `handout.md`, `.env`,
+virtual environments, data captures and databases excluded.

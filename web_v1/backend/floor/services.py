@@ -224,12 +224,15 @@ def save_output(user, *, dataset_id, factory_id, line_id, day, hour, operation_k
               .aggregate(n=Sum('pieces'))['n'] or 0)
     if op['pieces'] and others + pieces > int(op['pieces']):
         raise ValidationError(f'This operation has {op["pieces"]} pieces in total and {others} are already recorded')
+    from . import completion
+    completion.check_output(dataset_id, factory_id, plan, run, operation_key, slot, pieces)
     entry, created = OutputEntry.objects.update_or_create(
         run=run, operation_key=operation_key, slot=slot,
         defaults={'line_id': int(line_id), 'pieces': pieces, 'entered_by': user})
     planning_services.event(None, user, 'OUTPUT_ENTERED',
                             f'Line {line_id}, {plan.date_of(int(day))} {int(hour):02d}:00: {pieces} pieces of order '
                             f'{op["order_id"]} step {op["step"]}{"" if created else " (corrected)"}')
+    completion.refresh(dataset_id, factory_id, plan, user)
     return entry
 
 

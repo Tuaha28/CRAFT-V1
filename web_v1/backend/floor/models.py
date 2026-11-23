@@ -23,7 +23,10 @@ class Profile(models.Model):
                        ('view_workers', 'See the worker list (names and skills)'),
                        ('view_machines', 'See the machine list'),
                        ('view_overview', 'See the factory overview, stock and quality summary'),
-                       ('view_activity', 'See the activity log (who did what)')]
+                       ('view_activity', 'See the activity log (who did what)'),
+                       ('complete_step', 'Mark a step complete or closed short'),
+                       ('ship_order', 'Pack and ship finished orders'),
+                       ('close_order', 'Close orders')]
 
 
 class Issue(models.Model):
@@ -79,3 +82,49 @@ class DefectCheck(models.Model):
     note = models.TextField(blank=True)
     entered_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
+    # Defective pieces count against the step until someone marks them reworked.
+    reworked_at = models.DateTimeField(null=True, blank=True)
+    reworked_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                                    related_name='+')
+
+
+class StepStatus(models.Model):
+    """A finished step of an order (key "<order>_<operation_id>") in a factory, across plans: complete with all its
+    pieces (by itself or marked), or closed short with fewer pieces and a reason. No row = still open."""
+    STATES = [('COMPLETE', 'Complete'), ('SHORT', 'Closed short'), ('OPEN', 'Reopened')]  # reopened: no auto-complete
+    dataset = models.ForeignKey('planning.Dataset', on_delete=models.PROTECT)
+    factory_id = models.PositiveSmallIntegerField()
+    operation_key = models.CharField(max_length=40)
+    state = models.CharField(max_length=10, choices=STATES)
+    pieces = models.PositiveIntegerField()  # the step's final count
+    marked = models.BooleanField(default=False)  # someone pressed Mark complete (else it filled up by itself)
+    filled = models.PositiveIntegerField(default=0)  # pieces Mark complete recorded for the missing hours
+    fill_entry = models.ForeignKey(OutputEntry, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    reason = models.TextField(blank=True)
+    set_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
+    finished_at = models.DateTimeField()  # factory time
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['dataset', 'factory_id', 'operation_key'], name='one_status_per_step')]
+
+
+class OrderStatus(models.Model):
+    """Where a production order is after sewing. No row = in production (or not started)."""
+    STAGES = [('SEWN', 'Sewn'), ('QC_PASSED', 'Final inspection passed'), ('QC_FAILED', 'Final inspection failed'),
+              ('PACKED', 'Packed'), ('SHIPPED', 'Shipped'), ('CLOSED', 'Closed')]
+    dataset = models.ForeignKey('planning.Dataset', on_delete=models.PROTECT)
+    factory_id = models.PositiveSmallIntegerField()
+    order_id = models.CharField(max_length=20)
+    stage = models.CharField(max_length=10, choices=STAGES)
+    sewn_at = models.DateTimeField(null=True, blank=True)  # factory time; empty when closed before sewing finished
+    inspection_note = models.TextField(blank=True)
+    cartons = models.PositiveIntegerField(null=True, blank=True)
+    carrier = models.CharField(max_length=100, blank=True)
+    tracking = models.CharField(max_length=100, blank=True)
+    shipped_on = models.DateField(null=True, blank=True)
+    close_reason = models.TextField(blank=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['dataset', 'factory_id', 'order_id'], name='one_status_per_order')]

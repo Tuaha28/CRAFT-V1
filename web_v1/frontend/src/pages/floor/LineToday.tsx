@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { erp, floor, type FloorOp, type LineDay, type LineState } from "../../lib/api";
@@ -8,6 +8,7 @@ import { can, useSession } from "../../app/session";
 import { CheckForm, DayNav, HourBars, LinePicker, lineName, ReportProblem, StateChip, useFloorLines } from "../../components/Floor";
 import { FactoryMap, type Hall, type MachineState } from "../../components/FactoryMap";
 import { Loading, Notice } from "../../components/ui";
+import { CompleteStep, ReopenStep, ReworkList, StepChip } from "../../components/Completion";
 
 /** One cell of the hourly grid: planned pieces, and an input for the recorded pieces. */
 function HourCell({ d, f, view, op, hour }: { d: number; f: number; view: LineDay; op: FloorOp; hour: number }) {
@@ -100,6 +101,7 @@ export default function LineToday() {
     queryFn: () => erp.machines(ready![0], ready![1], { size: 200 }) });
   const [panel, setPanel] = useState<"none" | "report" | "check">("none");
   const [tab, setTab] = useState<"hours" | "work" | "machines">("hours");
+  const [acting, setActing] = useState<{ key: string; kind: "complete" | "reopen" } | null>(null);
   const set = (changes: Record<string, string>) => {
     const next = new URLSearchParams(params);
     Object.entries(changes).forEach(([k, v]) => next.set(k, v));
@@ -181,10 +183,10 @@ export default function LineToday() {
                 <p className="muted small">{v.can_enter ? "Type the pieces finished in each hour. It saves when you leave the box or press Enter." : "Recorded and planned pieces per hour."}</p>
                 <HourBars hours={s.hours} passed={s.hours_passed} />
                 {!hours.length ? <p className="muted">No work is planned on this line on this day.</p> : (
-                  <div className="table-wrap"><table className="hour-grid">
+                  <div className="table-wrap" tabIndex={0} role="region" aria-label="Pieces by hour"><table className="hour-grid">
                     <thead><tr><th>Order and step</th>{hours.map((h) => <th key={h} className="num">{String(h).padStart(2, "0")}:00</th>)}</tr></thead>
                     <tbody>{v.operations.filter((o) => Object.keys(o.hourly_target).length).map((o) => (
-                      <tr key={o.key}><th scope="row">Order {o.order_id}, step {o.step}<div className="small muted">{o.name}</div></th>
+                      <tr key={o.key}><th scope="row">Order {o.order_id}, step {o.step}<div className="small muted">{o.name}</div><StepChip status={o.status} /></th>
                         {hours.map((h) => o.hourly_target[String(h)] === undefined && v.summary.actual_by_op[o.key]?.[String(h)] === undefined
                           ? <td key={h} className="muted num">·</td>
                           : <HourCell key={h} d={ready![0]} f={ready![1]} view={v} op={o} hour={h} />)}
@@ -192,17 +194,36 @@ export default function LineToday() {
                   </table></div>)}
               </>)}
               {tab === "work" && (!v.operations.length ? <p className="muted">No work is planned on this line on this day.</p> : (
-                <div className="table-wrap"><table>
-                  <thead><tr><th>Time</th><th>Order, step</th><th>Operation</th><th>Crew</th><th className="num">Pieces today</th><th className="num">Done / total</th></tr></thead>
-                  <tbody>{v.operations.map((o) => (
-                    <tr key={o.key}>
+                <div className="table-wrap" tabIndex={0} role="region" aria-label="Work today"><table>
+                  <thead><tr><th>Time</th><th>Order, step</th><th>Operation</th><th>Crew</th><th className="num">Pieces today</th><th className="num">Done / total</th><th>Status</th></tr></thead>
+                  <tbody>{v.operations.map((o) => {
+                    const st = o.status, finished = st?.state === "COMPLETE" || st?.state === "SHORT";
+                    const label = `order ${o.order_id}, step ${o.step}`;
+                    return (<Fragment key={o.key}>
+                    <tr>
                       <td>{o.windows.map(([x, y]) => `${x} to ${y}`).join(", ")}</td>
                       <td><Link to={`/orders/${o.order_id}`}>Order {o.order_id}</Link>, step {o.step}</td>
                       <td>{o.name ?? "—"}<div className="small muted">{o.machines.length} machine{o.machines.length === 1 ? "" : "s"}: {o.machines.join(", ")}</div></td>
                       <td>{o.worker_names.join(", ")}</td>
                       <td className="num">{o.planned_today}</td>
-                      <td className="num">{o.recorded_total} / {o.pieces ?? "—"}</td>
-                    </tr>))}</tbody>
+                      <td className="num">{st ? `${st.good.toLocaleString()} / ${st.needed.toLocaleString()}` : `${o.recorded_total} / ${o.pieces ?? "—"}`}
+                        {st && st.defective > 0 && <div className="small late-text">{st.defective} for rework</div>}</td>
+                      <td><StepChip status={st} />
+                        {st?.state === "SHORT" && st.reason && <div className="small muted">{st.final} pieces: {st.reason}</div>}
+                        {st && finished && st.by && <div className="small muted">by {st.by}</div>}
+                        {st && !finished && !st.ready && <div className="small muted">Waits for step {st.previous}</div>}
+                        {st && !finished && st.ready && v.can_complete && acting?.key !== o.key && (
+                          <div><button type="button" className="btn small-btn" onClick={() => setActing({ key: o.key, kind: "complete" })}>Mark complete</button></div>)}
+                        {st && finished && v.can_reopen && acting?.key !== o.key && (
+                          <div><button type="button" className="btn small-btn" onClick={() => setActing({ key: o.key, kind: "reopen" })}>Reopen</button></div>)}
+                      </td>
+                    </tr>
+                    {st && acting?.key === o.key && (
+                      <tr className="act-row"><td colSpan={7}>{acting.kind === "complete"
+                        ? <CompleteStep d={ready![0]} f={ready![1]} status={st} label={label} onDone={() => setActing(null)} />
+                        : <ReopenStep d={ready![0]} f={ready![1]} status={st} label={label} onDone={() => setActing(null)} />}</td></tr>)}
+                    </Fragment>);
+                  })}</tbody>
                 </table></div>))}
               {tab === "machines" && (machines.isPending ? <Loading label="Reading machines" /> : !hall ? <p className="muted">No machines are registered to this line.</p> : (
                 <>
@@ -216,6 +237,11 @@ export default function LineToday() {
                 </>))}
             </div>
           </section>
+
+          {(v.can_check || v.can_enter) && <ReworkList items={v.rework ?? []} labelOf={(key) => {
+            const o = v.operations.find((x) => x.key === key);
+            return o ? `Order ${o.order_id}, step ${o.step}` : key;
+          }} />}
         </>)}
     </>
   );

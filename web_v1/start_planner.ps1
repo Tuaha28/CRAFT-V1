@@ -24,6 +24,7 @@ $env:DJANGO_SETTINGS_MODULE = 'config.settings_integration'
 $env:DJANGO_SECRET_KEY = (Get-Content -Raw $secretFile).Trim()
 $env:CRAFT_WORKER_PYTHON = $scheduler
 & $python (Join-Path $backend 'manage.py') migrate --noinput
+& $python (Join-Path $backend 'manage.py') createcachetable
 & $python (Join-Path $backend 'manage.py') planning_setup
 
 $setup = "`$env:DJANGO_SETTINGS_MODULE='config.settings_integration'; `$env:DJANGO_SECRET_KEY=(Get-Content -Raw '$secretFile').Trim(); `$env:CRAFT_WORKER_PYTHON='$scheduler';"

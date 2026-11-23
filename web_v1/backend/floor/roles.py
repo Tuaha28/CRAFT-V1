@@ -16,15 +16,18 @@ ROLES = {
                                 'floor.view_activity']),
     'manager': ('Production manager', ['planning.request_plan', 'planning.approve_plan', 'floor.view_floor',
                                        'floor.report_issue', 'floor.handle_issue', 'portal.handle_request', *OFFICE,
-                                       'floor.view_activity']),
-    'planner': ('Planner', ['planning.request_plan', 'floor.view_floor', 'floor.handle_issue', *OFFICE]),
+                                       'floor.view_activity', 'floor.complete_step', 'floor.ship_order',
+                                       'floor.close_order']),
+    'planner': ('Planner', ['planning.request_plan', 'floor.view_floor', 'floor.handle_issue', *OFFICE,
+                            'floor.close_order']),
     # floor roles: their own work only (no plans, orders lists or worker names)
-    'supervisor': ('Line supervisor', ['floor.view_floor', 'floor.report_issue', 'floor.enter_output']),
+    'supervisor': ('Line supervisor', ['floor.view_floor', 'floor.report_issue', 'floor.enter_output',
+                                       'floor.complete_step']),
     'qc': ('Quality inspector', ['floor.view_floor', 'floor.report_issue', 'floor.record_defect', 'floor.view_orders']),
     'maintenance': ('Maintenance technician', ['floor.view_floor', 'floor.report_issue', 'floor.repair_machine',
                                                'floor.view_machines']),
     'merchandiser': ('Merchandiser', ['portal.handle_request', 'floor.view_plans', 'floor.view_orders',
-                                      'floor.view_overview']),
+                                      'floor.view_overview', 'floor.ship_order']),
 }
 # A line supervisor always works for one line; the others may be limited to one.
 LINE_REQUIRED = {'supervisor'}

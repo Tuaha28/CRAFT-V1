@@ -131,6 +131,33 @@ def _today(account, factory_id):
     return (account.dataset.reference_time or '')[:10]
 
 
+def with_app_status(found, statuses):
+    """Rows with the web app's order status laid over the factory data: sewn (inspection stays inside the
+    factory), packed, shipped with carrier and tracking. Closed orders show as their last real stage."""
+    out = []
+    for r in found:
+        s = statuses.get(str(int(r['production_order_id'])))
+        r = dict(r)
+        if s is not None:
+            stage = s['stage']
+            if stage == 'CLOSED':
+                stage = 'SHIPPED' if s.get('carrier') else 'SEWN' if s.get('sewn_at') else None
+            if stage in ('SEWN', 'QC_PASSED', 'QC_FAILED', 'PACKED', 'SHIPPED'):
+                r['production_status'] = 'Completed'
+            if stage in ('PACKED', 'SHIPPED'):
+                r['delivery_status'] = 'Packing'
+            if stage == 'SHIPPED':
+                r.update(po_status='Shipped', delivery_status='In_Transit', carrier_name=s.get('carrier') or None,
+                         tracking_number=s.get('tracking') or None, actual_shipment_date=s.get('shipped_on'))
+        out.append(r)
+    return out
+
+
+def _app_statuses(account):
+    from floor.completion import statuses
+    return statuses(account.dataset_id)
+
+
 def _stage(r, done, qty, share=None):
     shipped = r.get('po_status') == 'Shipped' or r.get('delivery_status') == 'In_Transit' or bool(r.get('actual_shipment_date'))
     if shipped:
@@ -181,6 +208,7 @@ def _shape(account, r, done, ready, share=None):
 
 def customer_orders(account):
     found, done, *rest = fetch(account)
+    found = with_app_status(found, _app_statuses(account))
     share = rest[0] if rest else {}
     ready = _plan_finish(account, sorted({int(r['factory_id']) for r in found if r.get('factory_id')}))
     return [_shape(account, r, done.get(int(r['production_order_id']), 0), ready,
@@ -194,6 +222,6 @@ def customer_order(account, ref):
     found, done, *rest = fetch(account, pid)
     if not found:
         return None
-    r = found[0]
+    r = with_app_status(found, _app_statuses(account))[0]
     ready = _plan_finish(account, [int(r['factory_id'])] if r.get('factory_id') else [])
     return _shape(account, r, done.get(pid, 0), ready, (rest[0] if rest else {}).get(pid))

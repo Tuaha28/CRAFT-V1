@@ -32,7 +32,7 @@ export default function Styles() {
         {!ready || data.isPending ? <Loading /> : data.isError ? <Notice tone="error">{data.error.message}</Notice> : (
           <>
             <DataTable rows={data.data.items} onRow={(r) => navigate(`/styles/${r.product_id}`)} columns={[
-              { key: "style_code", label: "Style" }, { key: "name", label: "Name" }, { key: "category", label: "Category" },
+              { key: "style_code", label: "Style", render: (r) => <Link to={`/styles/${r.product_id}`}>{String(r.style_code)}</Link> }, { key: "name", label: "Name" }, { key: "category", label: "Category" },
               { key: "steps", label: "Sewing steps", num: true },
               { key: "sam", label: "SAM per piece (min)", num: true, render: (r) => num(Number(r.sam), 2) },
               { key: "orders", label: "Orders here", num: true },

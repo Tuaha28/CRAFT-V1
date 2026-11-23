@@ -680,9 +680,11 @@ dialog.drawer::backdrop { background: var(--overlay); }
 .tl-name small { color: var(--ink-2); font-size: 0.78rem; }
 .tl-track { position: relative; display: block; min-height: 24px; border-radius: 10px; background: var(--hover); }
 .tl-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--rule); }
-.tl-bar { position: absolute; height: 8px; padding: 0; border: 0; border-radius: 99px; cursor: pointer; transform-origin: left center; animation: grow-x 650ms cubic-bezier(.2, .8, .2, 1) both; transition: filter 120ms ease, transform 90ms ease; }
+.tl-bar { position: absolute; height: 24px; padding: 0; border: 0; border-radius: 99px; background: transparent; cursor: pointer; transform-origin: left center; animation: grow-x 650ms cubic-bezier(.2, .8, .2, 1) both; transition: filter 120ms ease, transform 90ms ease; }
 .tl-bar:hover, .tl-bar:focus-visible { filter: brightness(1.15); outline: 2px solid var(--ink); outline-offset: 1px; z-index: 2; }
-.tl-bar.late { box-shadow: 0 0 0 2px var(--late); }
+.tl-fill { position: absolute; left: 0; right: 0; top: 8px; height: 8px; border-radius: 99px; pointer-events: none; }
+.tl-bar.late .tl-fill { box-shadow: 0 0 0 2px var(--late); }
+.tl-bar:hover .tl-fill, .tl-bar:focus-visible .tl-fill { filter: brightness(1.15); }
 .tl-axis .tl-track { background: none; min-height: 18px; }
 .tl-axis small { position: absolute; top: 0; transform: translateX(-50%); color: var(--ink-2); font-size: 0.76rem; white-space: nowrap; }
 .tl-axis small:first-child { transform: none; }
@@ -1117,7 +1119,7 @@ table.against td, table.against th { padding: 7px 6px; }
 /* Order page: journey tracker */
 .order-hero { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
 .order-hero-main { flex: 1 1 520px; min-width: 0; display: grid; gap: 16px; }
-.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
 .journey li { position: relative; display: grid; gap: 4px; justify-items: start; padding-top: 4px; min-width: 0; }
 .journey li::before { content: ""; position: absolute; top: 19px; left: 38px; right: 4px; height: 2px; border-radius: 2px; background: var(--rule-strong); }
 .journey li.done::before { background: var(--accent); }
@@ -1129,7 +1131,7 @@ table.against td, table.against th { padding: 7px 6px; }
 .journey small { color: var(--ink-2); font-size: 0.8rem; }
 .journey li.now strong { color: var(--link); }
 @media (max-width: 760px) {
-  .journey { grid-template-columns: minmax(0, 1fr); }
+  .journey { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); }
   .journey li { grid-template-columns: 32px minmax(0, 1fr); column-gap: 12px; }
   .journey li > strong, .journey li > small { grid-column: 2; }
   .journey li .journey-dot { grid-row: span 2; }
@@ -1296,3 +1298,19 @@ html { scroll-behavior: smooth; }
 :where(:focus-visible) { outline-offset: 3px; transition: outline-offset var(--t-fast) ease; }
 .btn { transition: transform var(--t-med) var(--ease-out), border-color var(--t-fast) ease, background-color var(--t-fast) ease,
   color var(--t-fast) ease, box-shadow var(--t-med) var(--ease-out), filter var(--t-fast) ease; }
+
+/* the 3D floor takes keyboard focus: show it */
+.scene canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* completing steps and orders */
+.complete-form { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); max-width: 720px; }
+.complete-form p { margin: 0; }
+.check-line, .radio-row label { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; cursor: pointer; }
+.check-line input, .radio-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+.radio-row { display: flex; gap: 18px; border: 0; padding: 0; margin: 0; }
+.small-btn { margin-top: 6px; min-height: 28px; padding: 3px 10px; font-size: 0.85rem; }
+.act-row td { background: transparent; }
+.rework-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rework-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.hour-grid th .chip { margin-top: 4px; }
+

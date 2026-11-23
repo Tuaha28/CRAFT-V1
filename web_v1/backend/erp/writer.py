@@ -7,6 +7,13 @@ Tables and columns written (checked on the 30% load database, 2026-11-16):
                                                                                operation_id, execution_status
                                                                                in Scheduled/Delayed
   machinery_assets    current_status ('Active' | 'Breakdown')                  WHERE asset_id
+Completing work (values checked on garment_fyp_db, 2026-11-23):
+  job_shop_schedules  execution_status 'Done' (from Scheduled/Delayed/Running)   WHERE production_order_id, operation_id
+  production_orders   status 'Completed' (sewn) | 'Processing' (reopened)       WHERE production_order_id
+  delivery_logistics  delivery_status 'Packing' | 'In_Transit' (+ carrier_name, tracking_number,
+                      actual_shipment_date) | 'Awaiting_Dispatch' (reopened)    via the order's po_id
+  purchase_orders     po_status 'Shipped' | 'In_Production' (reopened)          via the order's po_id
+  (one purchase order per production order in this data: 1029 of each)
 A CRAFT step key is "<order>_<operation_id>", the same key the capture groups lots by.
 
 Safety: the database must end with CRAFT_DEMO_SUFFIX, and before writing, the account's grants are
@@ -149,3 +156,59 @@ def set_machine_status(dataset, asset_id, status):
     result = _write(dataset, 'MACHINE', None, [('UPDATE machinery_assets SET current_status = %s WHERE asset_id = %s',
                                                 (status, int(asset_id)))])
     return result.ok
+
+
+_DELIVERY = ('UPDATE delivery_logistics d JOIN production_orders p ON p.po_id = d.po_id SET {} '
+             'WHERE p.production_order_id = %s')
+_PO = 'UPDATE purchase_orders o JOIN production_orders p ON p.po_id = o.po_id SET {} WHERE p.production_order_id = %s'
+
+
+def step_done_statements(order_id, operation_id):
+    return [("UPDATE job_shop_schedules SET execution_status = 'Done' WHERE production_order_id = %s AND "
+             "operation_id = %s AND execution_status IN ('Scheduled', 'Delayed', 'Running')",
+             (int(order_id), int(operation_id)))]
+
+
+def order_statements(order_id, stage, carrier='', tracking='', shipped_on=None):
+    """What the factory data copy shows for an order at this stage (nothing for inspection or closing)."""
+    order = int(order_id)
+    if stage == 'SEWN':
+        return [("UPDATE production_orders SET status = 'Completed' WHERE production_order_id = %s", (order,))]
+    if stage == 'PACKED':
+        return [(_DELIVERY.format("d.delivery_status = 'Packing'"), (order,))]
+    if stage == 'SHIPPED':
+        shipped = f'{shipped_on.isoformat()} 00:00:00' if shipped_on else None
+        return [(_DELIVERY.format("d.carrier_name = %s, d.tracking_number = %s, d.actual_shipment_date = %s, "
+                                  "d.delivery_status = 'In_Transit'"), (carrier, tracking, shipped, order)),
+                (_PO.format("o.po_status = 'Shipped'"), (order,))]
+    return []
+
+
+def step_reopen_statements(order_id, operation_id, was_sewn):
+    """A reopened step is scheduled again; a sewn order whose step reopens is back in production."""
+    statements = [("UPDATE job_shop_schedules SET execution_status = 'Scheduled' WHERE production_order_id = %s AND "
+                   "operation_id = %s AND execution_status = 'Done'", (int(order_id), int(operation_id)))]
+    if was_sewn:
+        statements.append(("UPDATE production_orders SET status = 'Processing' WHERE production_order_id = %s",
+                           (int(order_id),)))
+    return statements
+
+
+def order_reopen_statements(order_id, sewn):
+    order = int(order_id)
+    return [("UPDATE production_orders SET status = %s WHERE production_order_id = %s",
+             ('Completed' if sewn else 'Processing', order)),
+            (_DELIVERY.format("d.delivery_status = 'Awaiting_Dispatch'"), (order,)),
+            (_PO.format("o.po_status = 'In_Production'"), (order,))]
+
+
+def write_status(dataset, kind, statements, what):
+    """Write a step or order status into the demo copy. None when write-back is off."""
+    if not settings.CRAFT_WRITEBACK:
+        return None
+    result = _write(dataset, kind, None, statements)
+    if result.ok:
+        event(None, None, 'WRITEBACK_DONE', f'Written to the demo factory data: {what}')
+    else:
+        event(None, None, 'WRITEBACK_FAILED', f'Not written to the demo data ({what}): {str(result.error)[:200]}')
+    return result

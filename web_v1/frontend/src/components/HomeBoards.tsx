@@ -13,6 +13,8 @@ const STANDING_CHIP: Record<Standing, string> = { late: "bad", risk: "warn", ont
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Every order in the plan with its due date, planned finish and whether it makes it. */
+const LANE = 26;  // px between timeline lanes: room for 24 px click targets
+
 export function DeliveryBoard({ rows, reference, onPick }: { rows: OrderRow[]; reference: string; onPick: (row: OrderRow) => void }) {
   const [filter, setFilter] = useState<"all" | "late" | "risk" | "ontime">("all");
   const [all, setAll] = useState(false);
@@ -89,13 +91,16 @@ export function LineTimeline({ rows, orders, reference, lineLabel, onPick }: {
       byOrder.set(r.order_id, s ? { start: Math.min(s.start, r.start), end: Math.max(s.end, r.end) } : { start: r.start, end: r.end });
       spans.set(r.line, byOrder);
     }
+    // A bar is drawn at least 24 px wide (a click target), so for lane-finding it lasts at least that long
+    // on a narrow (about 600 px) track, plus a small gap: short bars side by side never overlap.
+    const minSpan = Math.max(1, ...rows.map((r) => r.end)) * 30 / 600;
     const out = [...spans.entries()].sort(([a], [b]) => a - b).map(([line, byOrder]) => {
       // Orders that overlap in time on one line get their own lane, so no bar hides another.
       const lanesEnd: number[] = [];
       const bars: Bar[] = [...byOrder.entries()].sort((a, b) => a[1].start - b[1].start).map(([order, s]) => {
         let lane = lanesEnd.findIndex((e) => e <= s.start);
         if (lane < 0) { lane = lanesEnd.length; lanesEnd.push(0); }
-        lanesEnd[lane] = s.end;
+        lanesEnd[lane] = Math.max(s.end, s.start + minSpan);
         return { order, start: s.start / DAY, end: s.end / DAY, lane };
       });
       const busy = rows.filter((r) => r.line === line).reduce((t, r) => t + (r.end - r.start), 0) / DAY;
@@ -118,15 +123,18 @@ export function LineTimeline({ rows, orders, reference, lineLabel, onPick }: {
         {lines.map(({ line, bars, lanes, busy }) => (
           <div key={line} className="tl-row" role="listitem">
             <span className="tl-name"><strong>{lineLabel(line)}</strong><small>{plural(bars.length, "order")}, {num(busy, 1)} work-days</small></span>
-            <span className="tl-track" style={{ height: lanes * 11 + 10 }}>
+            <span className="tl-track" style={{ height: lanes * LANE + 4 }}>
               {ticks.map((t) => <i key={t} className="tl-tick" style={{ left: pct(t) }} />)}
               {bars.map((b, i) => (
                 <button key={b.order} type="button" className={`tl-bar${late.has(b.order) ? " late" : ""}`}
-                  style={{ left: pct(b.start), width: `max(4px, calc(${pct(b.end)} - ${pct(b.start)}))`, top: 5 + b.lane * 11,
-                    background: orderColor(Math.max(0, orderIds.indexOf(b.order)), theme), animationDelay: `${Math.min(i, 12) * 25}ms` }}
+                  style={{ left: pct(b.start), width: `max(24px, calc(${pct(b.end)} - ${pct(b.start)}))`, top: 2 + b.lane * LANE,
+                    animationDelay: `${Math.min(i, 12) * 25}ms` }}
                   title={`Order ${b.order} on ${lineLabel(line)}: ${planDate(reference, b.start)} to ${planDate(reference, b.end)}${late.has(b.order) ? ", finishes late" : ""}`}
                   aria-label={`Order ${b.order}, ${planDate(reference, b.start)} to ${planDate(reference, b.end)}${late.has(b.order) ? ", late" : ""}. Open details`}
-                  onClick={() => onPick(b.order)} />
+                  onClick={() => onPick(b.order)}>
+                  {/* the button is a 24 px tall target (WCAG 2.2); the bar inside is the thin line you see */}
+                  <span className="tl-fill" style={{ background: orderColor(Math.max(0, orderIds.indexOf(b.order)), theme) }} />
+                </button>
               ))}
             </span>
           </div>

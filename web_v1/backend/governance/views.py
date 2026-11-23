@@ -31,6 +31,10 @@ def session(request):
                      'environment': 'ISOLATED_TEST', 'live_admission': False})
 
 
+SIGNIN_ATTEMPTS = 5        # wrong passwords in a row before the account waits
+SIGNIN_LOCK_MINUTES = 15
+
+
 @csrf_protect
 def sign_in(request):
     if request.method != 'POST':
@@ -42,9 +46,27 @@ def sign_in(request):
         return JsonResponse({'error': 'INVALID_JSON'}, status=400)
     if not isinstance(data, dict):
         return JsonResponse({'error': 'INVALID_JSON'}, status=400)
+    from django.contrib.auth import get_user_model
+    from django.core.cache import cache
+    name = str(data.get('username') or '').strip().lower()[:150]
+    key = f'signin-fail:{name}'
+    # Count only real accounts (junk names cannot crowd a lock out of the shared database cache), and count
+    # the attempt before the password is checked, so parallel guesses cannot all slip past the limit.
+    if get_user_model().objects.filter(username__iexact=name).exists():
+        cache.add(key, 0, timeout=SIGNIN_LOCK_MINUTES * 60)
+        try:
+            attempts = cache.incr(key)
+        except ValueError:  # expired in between
+            cache.set(key, 1, timeout=SIGNIN_LOCK_MINUTES * 60)
+            attempts = 1
+        if attempts > SIGNIN_ATTEMPTS:  # too many wrong passwords: wait, even with the right one
+            return JsonResponse({'error': 'LOCKED', 'message': f'Too many wrong passwords. Try again in {SIGNIN_LOCK_MINUTES} '
+                                                                'minutes or ask an administrator to reset your password.'},
+                                status=429)
     user = authenticate(request, username=data.get('username'), password=data.get('password'))
     if user is None:
         return JsonResponse({'error': 'INVALID_CREDENTIALS'}, status=401)
+    cache.delete(key)
     login(request, user)
     return JsonResponse({'authenticated': True, 'csrf_token': get_token(request)})
 

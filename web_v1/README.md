@@ -214,6 +214,43 @@ Rebuild a copy from its original (throws away the app's changes):
 .venv\Scripts\python.exe manage.py reset_demo_data --load 30 --run   # asks you to type RESET
 ```
 
+## Completing steps and orders
+
+| Stage | Who | Where |
+|---|---|---|
+| Pieces per hour | Line supervisor (or the simulated factory) | My line, Pieces by hour |
+| Step complete | By itself when all good pieces are recorded; or **Mark complete** by the line supervisor (own line) or production manager, also with no hourly counts (the missing pieces are added as one entry); **closed short** needs the real count and a reason | My line, Work today |
+| Rework | QC or the line supervisor marks defective pieces repaired (they count again) | My line |
+| Sewn | Automatic when every step of the order is complete | |
+| Final inspection | Quality inspector: pass, or fail with what to rework | Order page, Finishing |
+| Packed, shipped | Merchandiser or production manager (cartons; carrier, tracking, date) | Order page, Finishing |
+| Closed | Production manager or planner (a reason unless shipped) | Order page, Finishing |
+| Reopen a step or order | Production manager (a packed or shipped order must be reopened first) | My line / order page |
+
+Rules: a step never finishes before the step before it, nor makes more pieces than that step did; a step
+on a broken machine shows Paused. Everything is in the Activity log. Closed and shipped work leaves
+auto-planning. The customer portal shows packing and shipping (carrier, tracking). With demo copies on,
+the demo factory data follows: step Done, order Completed, delivery Packing / In_Transit, PO Shipped.
+
+## Security and accessibility
+
+- Sign-in: after 5 wrong passwords in a row an account waits 15 minutes (even the
+  right password); a good sign-in resets the count. Sessions end after 12 hours.
+  The count lives in the app database (shared by every server process, kept over restarts).
+  Trade-off: anyone who knows a user name can lock that account for 15 minutes; an
+  administrator can reset the password. A deployment should also limit sign-ins per address.
+- Passwords set or changed (`manage.py changepassword`) need 10+ characters, not
+  common, not all digits, not like the user name. Generated passwords already pass.
+- Every page needs its role's permission on the server (least privilege), not only
+  in the menu; customers reach only the portal.
+- Headers: the API sends a strict Content-Security-Policy, X-Frame-Options DENY,
+  nosniff, Referrer-Policy and Permissions-Policy; the served page (`vite preview`,
+  see `vite.config.ts`) allows scripts only from the app itself and Google Fonts.
+  A production web server must send the same page headers, plus HTTPS with secure
+  cookies and HSTS (deployment step).
+- Accessibility: `e2e/accessibility.spec.ts` runs axe (WCAG 2.2 AA rules) on 16
+  pages in dark and light; 0 violations. Clickable targets are at least 24 px.
+
 ## Start it
 
 Requirements: the repository scheduler virtualenv (`venv\`), the backend

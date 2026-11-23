@@ -283,3 +283,26 @@ class StaffTests(PortalBase):
                                                                     'dataset_id': self.dataset.pk}, format='json')
         self.assertEqual(missing.status_code, 400)
         self.assertEqual(self.staff('portal.handle_request').get('/api/v1/portal/staff/accounts').status_code, 403)
+
+
+class AppStatusOverlayTests(TestCase):
+    """Packing and shipping recorded in the web app show in the portal (the factory data may not know yet)."""
+    def row(self, **extra):
+        return {'production_order_id': 7, 'po_status': 'In_Production', 'production_status': 'Processing',
+                'delivery_status': 'Awaiting_Dispatch', **extra}
+
+    def test_shipped_in_the_app_shows_shipped_with_carrier_and_tracking(self):
+        from portal.orders import _stage, with_app_status
+        r = with_app_status([self.row()], {'7': {'stage': 'SHIPPED', 'carrier': 'Aramex Logistics', 'tracking': 'AX-1',
+                                                 'shipped_on': '2026-11-23'}})[0]
+        self.assertEqual(_stage(r, 0, 100)[0], 'Shipped')
+        self.assertEqual((r['carrier_name'], r['tracking_number'], r['actual_shipment_date']),
+                         ('Aramex Logistics', 'AX-1', '2026-11-23'))
+
+    def test_sewn_inspected_and_packed_stages(self):
+        from portal.orders import _stage, with_app_status
+        for stage, shown in (('SEWN', 'All pieces sewn'), ('QC_FAILED', 'All pieces sewn'), ('PACKED', 'Packing')):
+            r = with_app_status([self.row()], {'7': {'stage': stage, 'carrier': '', 'tracking': '', 'shipped_on': None}})[0]
+            self.assertEqual(_stage(r, 0, 100)[0], shown, stage)
+        untouched = with_app_status([self.row()], {})[0]
+        self.assertEqual(_stage(untouched, 0, 100)[0], 'In production')

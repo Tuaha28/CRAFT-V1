@@ -6,16 +6,8 @@
     <meta name="theme-color" content="#121110" />
     <meta name="description" content="CRAFT plans garment sewing floors: which order, on which line, with which crew, and when." />
     <title>CRAFT Planner</title>
-    <!-- Sets the saved or system theme before the first paint, so no page flashes the wrong one. -->
-    <script>
-      (function () {
-        var saved = null;
-        try { saved = localStorage.getItem("craft-theme"); } catch (e) { /* private window */ }
-        var light = saved ? saved === "light" : window.matchMedia("(prefers-color-scheme: light)").matches;
-        document.documentElement.dataset.theme = light ? "light" : "dark";
-        if (light) document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f7f5f2");
-      })();
-    </script>
+    <!-- Sets the saved or system theme before the first paint (a file, so the security policy allows no inline script). -->
+    <script src="/theme.js"></script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

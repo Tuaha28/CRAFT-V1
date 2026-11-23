@@ -353,10 +353,13 @@ def _progress(approved):
     from django.db.models import Sum
     from floor.models import OutputEntry
     from floor.plan import load
+    from floor.completion import finished_keys
     plan = load(approved)
     done = {r['operation_key']: int(r['n'] or 0) for r in OutputEntry.objects.filter(
         run__dataset_id=approved.dataset_id, run__factory_id=approved.factory_id, operation_key__in=list(plan.ops))
         .values('operation_key').annotate(n=Sum('pieces'))}
+    for key in finished_keys(approved.dataset_id, approved.factory_id, plan):  # closed short or past sewing
+        done[key] = int(plan.ops[key].get('pieces') or 0)
     total = sum(int(op.get('pieces') or 0) for op in plan.ops.values())
     finished = sum(min(done.get(k, 0), int(op.get('pieces') or 0)) for k, op in plan.ops.items())
     orders = list(dict.fromkeys(op['order_id'] for op in sorted(plan.ops.values(), key=lambda o: (o['start'], o['key']))))

@@ -6,7 +6,7 @@ from django.db.models import Sum
 from rest_framework import serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from . import lookup, services
+from . import completion, lookup, services
 from .models import DefectCheck, Issue, OutputEntry, Profile
 from .roles import LINE_REQUIRED, ROLES, role_of
 
@@ -149,7 +149,9 @@ def line_day(request, dataset_id, factory_id, line_id):
     targets = plan.hourly_targets(line_id, day)
     done = dict(OutputEntry.objects.filter(run=run, operation_key__in=[o['key'] for o in ops])
                 .values_list('operation_key').annotate(n=Sum('pieces')))
+    states = completion.step_states(dataset_id, factory_id, plan)
     for op in ops:
+        op['status'] = states.get(op['key'])
         op['worker_names'] = [people.get(str(w), f'Worker {w}') for w in op['workers']]
         op['machine_models'] = [models.get(str(m), '') for m in op['machines']]
         op['hourly_target'] = {h: round(v, 1) for h, v in targets.get(op['key'], {}).items()}
@@ -161,7 +163,116 @@ def line_day(request, dataset_id, factory_id, line_id):
                      'issues': [_issue(i) for i in issues.select_related('reported_by', 'handled_by')],
                      'can_enter': request.user.has_perm('floor.enter_output'),
                      'can_check': request.user.has_perm('floor.record_defect'),
+                     'can_complete': request.user.has_perm('floor.complete_step'),
+                     'can_reopen': request.user.has_perm('planning.approve_plan'),
+                     'rework': _rework(dataset_id, factory_id, line_id),
                      'defect_types': DefectCheck.TYPES})
+
+
+def _rework(dataset_id, factory_id, line_id):
+    """Quality checks on this line (any day) whose defective pieces still wait for rework."""
+    found = DefectCheck.objects.filter(run__dataset_id=dataset_id, run__factory_id=factory_id, line_id=line_id,
+                                       defects__gt=0, reworked_at__isnull=True).order_by('created_at')
+    return [{'id': c.pk, 'operation_key': c.operation_key, 'checked': c.checked, 'defects': c.defects,
+             'pieces': min(c.checked, c.defects), 'defect_type': c.defect_type, 'note': c.note,
+             'created_at': c.created_at.isoformat()} for c in found]
+
+
+class StepIn(serializers.Serializer):
+    pieces = serializers.IntegerField(min_value=0, required=False, allow_null=True, default=None)
+    reason = serializers.CharField(max_length=2000, required=False, allow_blank=True, default='')
+
+
+@api_view(['POST'])
+def complete_step(request, dataset_id, factory_id, key):
+    data = StepIn(data=request.data)
+    data.is_valid(raise_exception=True)
+    try:
+        state = completion.complete_step(request.user, dataset_id=dataset_id, factory_id=factory_id, operation_key=key,
+                                         **data.validated_data)
+    except ERRORS as exc:
+        return _fail(exc)
+    return Response(state)
+
+
+@api_view(['POST'])
+def reopen_step(request, dataset_id, factory_id, key):
+    try:
+        completion.reopen_step(request.user, dataset_id=dataset_id, factory_id=factory_id, operation_key=key,
+                               reason=str(request.data.get('reason') or ''))
+    except ERRORS as exc:
+        return _fail(exc)
+    return Response({'reopened': key})
+
+
+@api_view(['POST'])
+def rework(request, check_id):
+    try:
+        check = completion.mark_reworked(request.user, check_id)
+    except ERRORS as exc:
+        return _fail(exc)
+    return Response({'id': check.pk, 'reworked_at': check.reworked_at.isoformat()})
+
+
+def _order_viewer(request, factory_id):
+    if not (request.user.has_perm('floor.view_orders') or request.user.has_perm('floor.view_plans')):
+        raise PermissionDenied('Permission required: view_orders')
+    services.check_scope(request.user, factory_id)
+
+
+@api_view(['GET'])
+def order_statuses(request, dataset_id, factory_id):
+    try:
+        _order_viewer(request, factory_id)
+        services._dataset(dataset_id, factory_id)
+    except ERRORS as exc:
+        return _fail(exc)
+    return Response({'statuses': completion.statuses(dataset_id, factory_id)})
+
+
+@api_view(['GET'])
+def order_status(request, dataset_id, factory_id, order_id):
+    """An order's stage, its steps and what this user may do with it."""
+    try:
+        _order_viewer(request, factory_id)
+        services._dataset(dataset_id, factory_id)
+    except ERRORS as exc:
+        return _fail(exc)
+    stage = completion.order_stage(dataset_id, factory_id, order_id)
+    plan = completion.plan_for(dataset_id, factory_id, order_id)
+    steps = sorted((s for s in completion.step_states(dataset_id, factory_id, plan).values()
+                    if s['order_id'] == str(order_id)), key=lambda s: s['step']) if plan else []
+    row = completion.statuses(dataset_id, factory_id).get(str(order_id))
+    has = request.user.has_perm
+    can = {'inspect': has('floor.record_defect') and stage in completion.INSPECTABLE,
+           'pack': has('floor.ship_order') and stage == 'QC_PASSED',
+           'ship': has('floor.ship_order') and stage == 'PACKED',
+           'close': has('floor.close_order') and plan is not None and stage != 'CLOSED',
+           'reopen': has('planning.approve_plan') and stage in ('QC_PASSED', 'QC_FAILED', 'PACKED', 'SHIPPED', 'CLOSED')}
+    return Response({'order_id': str(order_id), 'stage': stage, 'in_plan': plan is not None, 'status': row,
+                     'steps': steps, 'can': can})
+
+
+ORDER_ACTIONS = {'inspect': ('inspect_order', ('result', 'note')), 'pack': ('pack_order', ('cartons',)),
+                 'ship': ('ship_order', ('carrier', 'tracking', 'shipped_on')), 'close': ('close_order', ('reason',)),
+                 'reopen': ('reopen_order', ('reason',))}
+
+
+@api_view(['POST'])
+def order_action(request, dataset_id, factory_id, order_id, action):
+    if action not in ORDER_ACTIONS:
+        return Response({'error': 'Unknown action'}, status=404)
+    name, fields = ORDER_ACTIONS[action]
+    values = {f: request.data.get(f) for f in fields if request.data.get(f) not in (None, '')}
+    try:
+        getattr(completion, name)(request.user, dataset_id=dataset_id, factory_id=factory_id, order_id=order_id,
+                                  **values)
+    except ERRORS as exc:
+        return _fail(exc)
+    except TypeError:  # a required value is missing
+        return Response({'error': 'Fill in the required fields'}, status=400)
+    return Response({'order_id': str(order_id), 'stage': completion.order_stage(dataset_id, factory_id, order_id),
+                     'status': completion.statuses(dataset_id, factory_id).get(str(order_id))})
 
 
 @api_view(['GET'])

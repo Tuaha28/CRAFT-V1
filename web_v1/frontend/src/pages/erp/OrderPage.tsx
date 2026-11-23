@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { erp, type ApiError } from "../../lib/api";
+import { erp, type ApiError, type OrderStage, type Row } from "../../lib/api";
+import { OrderFinishing, StepChip, useOrderProgress } from "../../components/Completion";
 import { num, qty as quantity } from "../../lib/format";
 import { useReadyScope } from "../../app/scope";
 import { Chip, DataTable, Meter } from "../../components/DataTable";
@@ -10,19 +11,26 @@ import { useSession } from "../../app/session";
 
 type Stage = { name: string; sub: string; done: boolean };
 
-/** Where the order is, from the factory records: PO status, production status, step progress and the shipment. */
-function journey(o: Record<string, unknown>, delivery: Record<string, unknown> | null, done: number, ordered: number): Stage[] {
+const AFTER = (stage: OrderStage | undefined, ...stages: OrderStage[]) => Boolean(stage && stages.includes(stage));
+
+/** Where the order is: the factory records (PO, production, shipment) and the finishing recorded in this app. */
+function journey(o: Record<string, unknown>, delivery: Record<string, unknown> | null, done: number, ordered: number,
+  app?: { stage: OrderStage; shipped_on: string | null; carrier: string }): Stage[] {
   const po = String(o.po_status ?? ""), prod = String(o.production_status ?? ""), ship = String(delivery?.delivery_status ?? "");
-  const shipped = po === "Shipped" || ship === "In_Transit" || Boolean(delivery?.actual_shipment_date);
-  const sewn = shipped || prod === "Completed" || (ordered > 0 && done >= ordered);
-  const started = sewn || prod === "Processing" || po === "In_Production" || done > 0;
-  const packed = shipped;
+  const stage = app?.stage === "CLOSED" ? (app.carrier ? "SHIPPED" : undefined) : app?.stage;
+  const shipped = po === "Shipped" || ship === "In_Transit" || Boolean(delivery?.actual_shipment_date) || stage === "SHIPPED";
+  const packed = shipped || stage === "PACKED";
+  const inspected = packed || stage === "QC_PASSED";
+  const sewn = inspected || AFTER(stage, "SEWN", "QC_FAILED") || prod === "Completed" || (ordered > 0 && done >= ordered);
+  const started = sewn || prod === "Processing" || po === "In_Production" || done > 0 || stage === "IN_PRODUCTION";
+  const shippedOn = app?.shipped_on ?? (delivery?.actual_shipment_date ? String(delivery.actual_shipment_date).slice(0, 10) : null);
   return [
     { name: "Confirmed", sub: o.order_date ? `Ordered ${String(o.order_date).slice(0, 10)}` : "PO received", done: true },
     { name: "In production", sub: started ? "Started on the lines" : "Not started", done: started },
     { name: "All pieces sewn", sub: `${done.toLocaleString("en-US")} of ${ordered.toLocaleString("en-US")} through every step`, done: sewn },
-    { name: "Packing", sub: ship === "Packing" ? "Being packed now" : packed ? "Packed" : "Not yet", done: packed },
-    { name: "Shipped", sub: delivery?.actual_shipment_date ? `Shipped ${String(delivery.actual_shipment_date).slice(0, 10)}` : shipped ? "Shipped" : "Not yet", done: shipped },
+    { name: "Final inspection", sub: inspected ? "Passed" : stage === "QC_FAILED" ? "Failed: being reworked" : "Not yet", done: inspected },
+    { name: "Packing", sub: ship === "Packing" && !packed ? "Being packed now" : packed ? "Packed" : "Not yet", done: packed },
+    { name: "Shipped", sub: shippedOn ? `Shipped ${shippedOn}` : shipped ? "Shipped" : "Not yet", done: shipped },
   ];
 }
 
@@ -47,15 +55,24 @@ export default function OrderPage() {
   const session = useSession();
   const planner = session.can_request;
   const priority = usePriority(ready?.[0], ready?.[1], planner);
+  const progress = useOrderProgress(ready?.[0], ready?.[1], id);
   if (!ready || data.isPending) return <Loading />;
   if (data.isError) return <Notice tone="error">{(data.error as ApiError).status === 404 ? "This order is not in the chosen factory." : data.error.message}</Notice>;
-  const { order: o, routing, materials, delivery } = data.data;
+  const { order: o, materials, delivery } = data.data;
+  // Pieces recorded in this app (line supervisors, Mark complete, the simulated factory) count with the factory records.
+  const appDone = (step: unknown) => {
+    const st = progress.data?.steps.find((x) => x.step === Number(step));
+    return st ? (st.state === "COMPLETE" || st.state === "SHORT" ? st.final : st.good) : 0;
+  };
+  const routing = data.data.routing.map((r): Row => ({ ...r, pieces_done: Math.max(Number(r.pieces_done), appDone(r.step)) }));
   const ordered = Number(o.target_quantity);
   const done = routing.length ? Math.min(...routing.map((r) => Number(r.pieces_done))) : 0;
   const inspected = routing.reduce((s, r) => s + Number(r.inspected), 0);
   const defective = routing.reduce((s, r) => s + Number(r.defective), 0);
   const dhu = inspected ? (100 * defective) / inspected : null;
-  const stages = journey(o, delivery && Object.keys(delivery).length ? delivery : null, done, ordered);
+  const app = progress.data;
+  const stages = journey(o, delivery && Object.keys(delivery).length ? delivery : null, done, ordered,
+    app ? { stage: app.stage, shipped_on: app.status?.shipped_on ?? null, carrier: app.status?.carrier ?? "" } : undefined);
   const now = stages.findIndex((st) => !st.done);
   return (
     <>
@@ -85,9 +102,14 @@ export default function OrderPage() {
             { key: "pieces_done", label: "Pieces done", num: true, render: (r) => Number(r.pieces_done).toLocaleString("en-US") },
             { key: "progress", label: "Progress", render: (r) => <Meter value={Number(r.pieces_done)} max={ordered} /> },
             { key: "defective", label: "Defects", num: true },
+            ...(app?.in_plan ? [{ key: "app_state", label: "Status", render: (r: Record<string, unknown>) => {
+              const st = app.steps.find((x) => x.step === Number(r.step));
+              return st ? <><StepChip status={st} /><div className="small muted">{st.good.toLocaleString("en-US")} / {st.needed.toLocaleString("en-US")}{st.state === "SHORT" && st.reason ? `: ${st.reason}` : ""}</div></> : "—";
+            } }] : []),
           ]} />
         </section>
         <aside className="plan-side">
+          {app && <OrderFinishing d={ready[0]} f={ready[1]} order={app} />}
           {planner && <PriorityControl d={ready[0]} f={ready[1]} orderId={String(o.production_order_id)} canChange={planner} />}
           <section className="panel section">
             <h2>Quality</h2>

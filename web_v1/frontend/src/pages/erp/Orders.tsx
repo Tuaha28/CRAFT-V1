@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
-import { erp, type Row } from "../../lib/api";
+import { erp, floor, type Row } from "../../lib/api";
+import { StageChip } from "../../components/Completion";
 import { num } from "../../lib/format";
 import { useReadyScope } from "../../app/scope";
 import { Chip, DataTable, Meter, Pager, useListParams } from "../../components/DataTable";
@@ -61,6 +62,10 @@ export default function Orders() {
   const status = get("status");
   const params = { q: get("q"), status, sort: get("sort"), page, size: SIZE };
   const priority = usePriority(ready?.[0], ready?.[1], useSession().can_request);
+  // Finishing recorded in this app (sewn, inspected, packed, shipped, closed) shows over the factory records.
+  const finishing = useQuery({ queryKey: ["order-statuses", ready], queryFn: () => floor.orderStatuses(ready![0], ready![1]),
+    enabled: Boolean(ready), refetchInterval: 60_000 });
+  const appStage = (r: Row) => finishing.data?.statuses[String(r.production_order_id)];
   const data = useQuery({ queryKey: ["erp-orders", ready, params], queryFn: () => erp.orders(ready![0], ready![1], params),
     enabled: Boolean(ready), placeholderData: keepPreviousData });
   // One cheap count per status (a page of one row; only the total is read).
@@ -111,7 +116,11 @@ export default function Orders() {
                   { key: "style_code", label: "Style", render: (r) => <>{String(r.style_code)}<br /><span className="muted small">{String(r.category)}</span></> },
                   { key: "target_quantity", label: "Pieces", num: true, render: (r) => Number(r.target_quantity).toLocaleString() },
                   { key: "delivery_deadline", label: "Due", render: (r) => <><span className="nowrap">{String(r.delivery_deadline)}</span><br /><span className="small"><DaysLeft row={r} /></span></> },
-                  { key: "po_status", label: "Status", render: (r) => <Chip value={overdue(r) ? "Overdue" : r.po_status} /> },
+                  { key: "po_status", label: "Status", render: (r) => {
+                    const s = appStage(r), done = s && (s.stage === "SHIPPED" || s.stage === "CLOSED");
+                    if (s && !(overdue(r) && !done)) return <StageChip stage={s.stage} />;
+                    return <><Chip value={overdue(r) ? "Overdue" : r.po_status} />{s && <div className="small muted">{s.stage_label}</div>}</>;
+                  } },
                 ]} />
               <Pager page={page} size={SIZE} total={data.data.total} onPage={(p) => set({ page: String(p) })} />
             </div>
